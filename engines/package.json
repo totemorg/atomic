@@ -1,0 +1,21 @@
+{
+  "name": "tauif",
+  "version": "1.0.0",
+  "description": "stateful workflow model to maximize data-at-rest and to share compute threads between many clients",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test.js",
+    "install": "node-gyp rebuild"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@git.geointapps.org:geonode-dev-team/tauif.git"
+  },
+  "keywords": [
+    "stateful",
+    "workflows"
+  ],
+  "author": "brian.d.james@NGA Research",
+  "license": "ISC",
+  "gypfile": true
+}
