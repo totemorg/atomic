@@ -1,19 +1,18 @@
 // UNCLASSIFIED
 
 /**
- * @module geoEngine
+ * @module ENGINE
  * @public
- * @requires geonode
  * @requires engineIF
  * @requires child_process
  * @requires fs
+ * @requires enum
  * @requires mathjs
  * @requires digitalsignals
  * @requires graceful-lwip
  * @requires crypto
  * 
- * The geoEngine client extends the barebones geonode client to 
- * provide a hyperthreaded workflow to both stateless and
+ * Provide a hyperthreaded workflow to both stateless and
  * stateful ENGINE.X engines 
  * 
  * 		X = py,js,sh,opencv,mat,matlab,csh,r,octave, ...
@@ -71,7 +70,6 @@
  * */
 
 var															// globals
-	ENV = process.env,
 	DOT = ".",
 	LIST = ",";
 	
@@ -81,24 +79,29 @@ var 														// NodeJS modules
 	CLUSTER = require("cluster");
 	
 var 														// geoNode modules
-	ENGINE = require('./engines/build/Release/engineIF'),  	//< engineIF built by node-gyp
-	ENUM = require("../geonode");
+	ENGINE = require("./engines/build/Release/engineIF"),  	//< engineIF built by node-gyp
+	ENUM = require("../enum");
 	
 var															// shortcuts
-	Thread = ENUM.thread,
 	Copy = ENUM.copy,
 	Each = ENUM.each,
-	Trace = ENUM.trace 
-		? function (msg) {
-			console.log(msg);
-		}
-		: function () {};
+	Trace = function (msg) {
+		console.log(msg);
+	};
 	
-ENGINE.init = function (geoENG) {
+module.exports = ENGINE;
+
+ENGINE.thread = null;
+
+ENGINE.config = function (opts) {
 	
-	Thread( function (sql) {
+	Trace(`Engines configured`);
+
+	if (opts) Copy(opts,ENGINE);
 	
-		Trace(`INITIALIZING ENGINES ${geoENG.name||undefined}`);
+	if (ENGINE.thread)
+	ENGINE.thread( function (sql) {
+	
 		//ENGINE.paths.jobs = args.jobspath;
 		//ENGINE.nextcore = args.cores ? 1 : 0;
 		//ENGINE.app = args.vtl;
@@ -165,6 +168,7 @@ ENGINE.init = function (geoENG) {
 			});
 	});
 	
+	return ENGINE;
 };
 
 ENGINE.plugin = {
@@ -730,10 +734,10 @@ ENGINE.sh = function (name,port,tau,context,code) {
 	return 0;
 }
 
+/*
 function Initialize() {
 	Trace("##geoEngine initialized");
 
-	/*
 	if (IO) 
 		sqlThread( function (sql) {
 			sql.query("SELECT * from simcores WHERE ?",{pid: process.pid})
@@ -742,8 +746,7 @@ function Initialize() {
 				IO.sockets.emit("alert", {msg: err, to: core.client, from: ENUM.TITLE});
 			});
 		});
-	*/
 
-}
+} */
 
 // UNCLASSIFIED
