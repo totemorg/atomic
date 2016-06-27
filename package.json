@@ -1,0 +1,23 @@
+{
+  "name": "engine",
+  "version": "1.0.0",
+  "description": "Language agnost machines",
+  "main": "engine.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@git.geointapps.org:geoproto/engine.git"
+  },
+  "keywords": [
+    "machines",
+    "python",
+    "js",
+    "matlab",
+    "r",
+    "opencv"
+  ],
+  "author": "",
+  "license": "ISC"
+}
