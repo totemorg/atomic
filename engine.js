@@ -76,10 +76,10 @@ var															// globals
 var 														// NodeJS modules
 	CP = require("child_process"),
 	FS = require("fs"),	
-	CLUSTER = require("cluster");
+	CLUSTER = require("cluster"),
+	VM = require("vm");
 	
 var 														// geoNode modules
-	ENGINE = require("./engines/build/Release/engineIF"),  	//< engineIF built by node-gyp
 	ENUM = require("../enum");
 	
 var															// shortcuts
@@ -89,7 +89,12 @@ var															// shortcuts
 		console.log(msg);
 	};
 	
-module.exports = ENGINE;
+var
+	ENGINE = module.exports = require("./engines/build/Release/engineIF");  	//< engineIF built by node-gyp
+
+ENGINE.paths = {
+	jobs: "./jobs/"
+};
 
 ENGINE.thread = null;
 
@@ -238,9 +243,7 @@ ENGINE.tau = function (job) {
 */
 ENGINE.core = function (req,args,cb) {	  // called by master to thread a stateful engine
 	var sql = req.sql,
-		log = req.log,
-		client = log.Client,
-		name = client+DOT+log.Table+DOT+(req.body.thread || "0");
+		name = `${req.client}.${req.table}.${req.body.thread || "0"}`;
 
 	// Get assocated engine core if already allocated; otherwise allocate a new core.  We keep the
 	// cores in a sql table so that all cluster workers have a common place to access engine
@@ -253,7 +256,7 @@ ENGINE.core = function (req,args,cb) {	  // called by master to thread a statefu
 	.on("result", function (core) { 	// Engine already initialized/programmed
 
 		if (core.found) {
-			EVENT.log("CORE "+core.wid+" SWITCHED TO "+name);
+			console.log("CORE "+core.wid+" SWITCHED TO "+name);
 				
 			core.code = "";
 			core.vars = "";
@@ -282,7 +285,7 @@ ENGINE.core = function (req,args,cb) {	  // called by master to thread a statefu
 				cb(ENGINE.error[107]);
 		}
 		else 
-			sql.query("SELECT *,count(ID) AS found FROM engines WHERE least(?) LIMIT 0,1", {Name:log.Table,Enabled:true,Period:0})
+			sql.query("SELECT *,count(ID) AS found FROM engines WHERE least(?) LIMIT 0,1", {Name:req.table,Enabled:true,Period:0})
 			.on("result", function (eng) {
 
 				if (eng.found) {
@@ -290,7 +293,7 @@ ENGINE.core = function (req,args,cb) {	  // called by master to thread a statefu
 						name: name,
 						type: eng.Engine.toUpperCase(),
 						wid: CLUSTER.isMaster ? 0 : CLUSTER.worker.id,
-						client: client,
+						client: req.client,
 						code: eng.Code,
 						vars: eng.Vars
 					};
@@ -301,7 +304,7 @@ ENGINE.core = function (req,args,cb) {	  // called by master to thread a statefu
 							CLUSTER.workers[core.wid = ENGINE.nextcore = 1];	
 					}
 
-					EVENT.log("CORE "+core.wid+" ASSIGNED TO "+name);
+					console.log("CORE "+core.wid+" ASSIGNED TO "+name);
 
 					sql.query("INSERT INTO simcores SET ?", {
 						name:core.name,
@@ -441,10 +444,10 @@ ENGINE.insert = ENGINE.step = function (req,res) {	// called by worker to step a
 }
 
 ENGINE.delete = ENGINE.kill = function (req,res) {	// called by worker to free a stateful engine
-	var sql = req.sql, log = req.log;
+	var sql = req.sql;
 
-	sql.query("DELETE FROM simcores WHERE ?", {client:log.Client});
-	res("freed engines for "+log.Client);
+	sql.query("DELETE FROM simcores WHERE ?", {client:req.client});
+	res("freed engines belonging to "+req.client);
 }
 
 ENGINE.select = ENGINE.read = function (req,res) {	// called by worker to read a stateless engine 
@@ -559,7 +562,10 @@ ENGINE.maptau = function (context) {
 ENGINE.run = function (context,cb) {
 	var vars = context.vars, sql = context.sql;
 
-	if (vars) {
+console.log("runentry");
+console.log(context.entry);
+
+	if (false && vars) {
 		if ( vars.length ) {
 			var n = vars[vars.length-1]; vars.length--;
 			var query = context.sqls[n];
@@ -630,6 +636,10 @@ ENGINE.run = function (context,cb) {
  * @method thread
  * */
 ENGINE.compute = function (core,args,cb) {	
+	
+console.log("code="+core.code);
+console.log(core.vars);
+	
 	if (core.code) {
 		try {
 			eval("var vars = "+ (core.vars || "{}"));
