@@ -98,6 +98,9 @@ ENGINE.paths = {
 
 ENGINE.thread = null;
 
+ENGINE.cores = 0;
+ENGINE.nextcore = 1;
+
 ENGINE.config = function (opts) {
 	
 	Trace(`Engines configured`);
@@ -111,9 +114,11 @@ ENGINE.config = function (opts) {
 		//ENGINE.nextcore = args.cores ? 1 : 0;
 		//ENGINE.app = args.vtl;
 		//sql = args.sql;
-		return;
+		//return;
 		
-		sql.query("DELETE FROM simcores");
+		sql.query("DELETE FROM app1.simcores", function (err) {
+			//console.log("clear="+err);
+		});
 		
 		if (CLUSTER.isWorker) 
 			CLUSTER.worker.process.on("message", function (eng,socket) {
@@ -137,7 +142,7 @@ ENGINE.config = function (opts) {
 											count: 0,
 											data: []
 										})
-										: ENGINE.error[rtn]||"error"
+										: new Error(ENGINE.error[rtn]||"error")
 									);
 
 								else  								// engine worked
@@ -256,20 +261,21 @@ ENGINE.core = function (req,args,cb) {	  // called by master to thread a statefu
 	.on("result", function (core) { 	// Engine already initialized/programmed
 
 		if (core.found) {
-			console.log("CORE "+core.wid+" SWITCHED TO "+name);
+			console.log("CORE"+core.wid+" SWITCHED TO "+name);
 				
 			core.code = "";
 			core.vars = "";
+console.log(core);
 			
 			if ( CLUSTER.isMaster ) {
 				if (core.wid) { 		// engine was assigned to a worker
-					var engine = CLUSTER.workers[core.wid];
+					var worker = CLUSTER.workers[core.wid];
 					delete args.sql;
 					
-					if (engine) 		// pass to assigned stateful worker
-						engine.send({core:core,args:args}, req.connection );
+					if (worker) 		// pass to assigned stateful worker
+						worker.send({core:core,args:args}, req.connection );
 					else 
-						cb(ENGINE.error[107]); 
+						cb(new Error(ENGINE.error[107]) ); 
 				}
 				else  					// engine was assigned to this master
 					ENGINE.compute(core, args, function (context) {
@@ -282,7 +288,7 @@ ENGINE.core = function (req,args,cb) {	  // called by master to thread a statefu
 					ENGINE.call(core, context, cb);
 				});
 			else 
-				cb(ENGINE.error[107]);
+				cb( new Error(ENGINE.error[107]) );
 		}
 		else 
 			sql.query("SELECT *,count(ID) AS found FROM engines WHERE least(?) LIMIT 0,1", {Name:req.table,Enabled:true,Period:0})
@@ -291,20 +297,20 @@ ENGINE.core = function (req,args,cb) {	  // called by master to thread a statefu
 				if (eng.found) {
 					var core = { 												// define engine core
 						name: name,
-						type: eng.Engine.toUpperCase(),
+						type: eng.Engine.toLowerCase(),
 						wid: CLUSTER.isMaster ? 0 : CLUSTER.worker.id,
 						client: req.client,
 						code: eng.Code,
 						vars: eng.Vars
 					};
 
-					if (CLUSTER.isMaster && ENGINE.nextcore) {   	// assign to next worker
-						var engine = 
-							CLUSTER.workers[core.wid = ENGINE.nextcore++] ||
-							CLUSTER.workers[core.wid = ENGINE.nextcore = 1];	
+					if (CLUSTER.isMaster && ENGINE.cores) {   	// assign to next worker
+						var worker = 		// recycle workers
+							CLUSTER.workers[core.wid = ENGINE.nextcore];
+							ENGINE.nextcore = (ENGINE.nextcore % ENGINE.cores)+1;
 					}
 
-					console.log("CORE "+core.wid+" ASSIGNED TO "+name);
+					console.log("CORE"+core.wid+" ASSIGNED TO "+name);
 
 					sql.query("INSERT INTO simcores SET ?", {
 						name:core.name,
@@ -316,11 +322,11 @@ ENGINE.core = function (req,args,cb) {	  // called by master to thread a statefu
 					if (ENGINE.nextcore) {  										// handoff to assigned worker
 						delete args.sql;
 
-						if (engine) 
-							engine.send({core:core,args:args}, req.connection);
+						if (worker) 
+							worker.send({core:core,args:args}, req.connection);
 
 						else 
-							cb(ENGINE.error[107]); 
+							cb( new Error(ENGINE.error[107]) ); 
 					}
 					else  														// pass to this worker
 						ENGINE.compute(core, args, function (context) {
@@ -394,13 +400,16 @@ ENGINE.call = function (core,context,cb) {
 		tau.job = ENGINE.paths.jobs + tau.job;
 	});
 
-	try {  												// call the module
-		var rtn = ENGINE[core.type](core.name,context.port,context.tau,context,core.code);
-		cb(null,context);
-	}
-	catch (err) {
-		cb(err+"",context);
-	}
+	if ( engine = ENGINE[core.type] )
+		try {  												// call the module
+			var rtn = engine(core.name,context.port,context.tau,context,core.code);
+			cb(null,context);
+		}
+		catch (err) {
+			cb(err+"",context);
+		}
+	else
+		cb (new Error(`Bad engine type ${core.type}`));
 	
 	//ENGINE.save(sql,context.otau,context.port,core.name,core.save);
 
@@ -556,14 +565,15 @@ ENGINE.maptau = function (context) {
 /**
  * @method run
  * 
- * Run the callback cb in the context as imported by the context.entry sql 
- * hash, and exported by the context.exit sql hash.
+ * Run the callback cb in the given context with imports defined by the
+ * context.entry sql hash, and as exported by the context.exit sql hash.
  * */
 ENGINE.run = function (context,cb) {
 	var vars = context.vars, sql = context.sql;
 
 console.log("runentry");
-console.log(context.entry);
+//return;
+//console.log(context.entry);
 
 	if (false && vars) {
 		if ( vars.length ) {
@@ -613,7 +623,7 @@ console.log(context.entry);
 		if (cb) {
 			cb(context);
 			
-			if (context.exit) {
+			if (false && context.exit) {
 				var sqls = context.sqls = context.exit;
 				var vars = context.vars = []; for (var n in sqls) vars.push(n);
 
@@ -622,7 +632,7 @@ console.log(context.entry);
 		}
 	}
 	else
-	if (context.entry) {
+	if (false && context.entry) {
 		var sqls = context.sqls = context.entry;
 		var vars = context.vars = []; for (var n in sqls) vars.push(n);
 		
@@ -702,12 +712,20 @@ ENGINE.mat = function (name,port,tau,context,code) {
 
 ENGINE.js = function (name,port,tau,context,code) {
 	
+console.log([name,port,tau,code]);
+
 	if (port) 
 		//return context[port](context.tau,context.context[port]);
-		return context[port](tau,context.ports[port]);
+		if (engine = context[port])
+			return engine(tau,context.ports[port]);
+		else
+			return new Error(`No engine port ${port}`);
 		
 	if (code) context.code = code;
 
+//context.M = 213;
+//context.A = [1,2,3];
+//context.B = [1,2];
 	VM.runInContext(context.code,context);
 	return 0;
 }
