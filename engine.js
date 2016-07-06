@@ -69,10 +69,6 @@
  * 		See client.js for usage examples.
  * */
 
-var															// globals
-	DOT = ".",
-	LIST = ",";
-	
 var 														// NodeJS modules
 	CP = require("child_process"),
 	FS = require("fs"),	
@@ -99,7 +95,7 @@ ENGINE.paths = {
 ENGINE.thread = null;
 
 ENGINE.cores = 0;
-ENGINE.nextcore = 1;
+ENGINE.nextcore = 0;
 
 ENGINE.config = function (opts) {
 	
@@ -110,68 +106,53 @@ ENGINE.config = function (opts) {
 	if (ENGINE.thread)
 	ENGINE.thread( function (sql) {
 	
-		//ENGINE.paths.jobs = args.jobspath;
-		//ENGINE.nextcore = args.cores ? 1 : 0;
-		//ENGINE.app = args.vtl;
-		//sql = args.sql;
-		//return;
-		
 		sql.query("DELETE FROM app1.simcores", function (err) {
-			//console.log("clear="+err);
+			Trace(err || "RESET ENGINE CORES");
 		});
+
+		ENGINE.nextcore = ENGINE.cores ? 1 : 0;
 		
-		if (CLUSTER.isWorker) 
+		if (CLUSTER.isWorker) 	
 			CLUSTER.worker.process.on("message", function (eng,socket) {
+
 				if (eng.core) { 		// process only tau messages (ignores sockets, etc)
-	Trace(eng);
-					var args = eng.args;
-					var core = eng.core;
+	
+//Trace(eng);
+					var args = eng.args,
+						core = eng.core,
+						format = eng.format;
 					
-					ENGINE.compute(function (sql) {					
+					ENGINE.thread(function (sql) {
 						args.sql = sql;
+						
 						ENGINE.compute(core, args, function (context) {
-							try {
-								var rtn = ENGINE[core.type](core.name,args.port,context.tau,context,core.code);
 
-								if (rtn) 								// engine failed
-									socket.end( 
-										context.query 			// query defined if this is a read; otherwise this is a step
-										? JSON.stringify({
-											success: false,
-											msg: ENGINE.error[rtn]||"error",
-											count: 0,
-											data: []
-										})
-										: new Error(ENGINE.error[rtn]||"error")
-									);
+							if (engine = ENGINE[core.type] )
+								try {
+									var rtn = ENGINE.error[engine(core.name,args.port,context.tau,context,core.code)] || "ok";
+								}
+								catch (err) {
+									var rtn = err+"";
+								}
+							else
+								var rtn = ENGINE.error[110];
 
-								else  								// engine worked
-									socket.end( 					// query defined if this is a read; otherwise this is a step
-										context.query
-										? JSON.stringify({  
-												success: true,
-												msg: "ok",
-												count: 0,
-												data: ENGINE.maptau(context)
-											})
-										: JSON.stringify(context.tau) 
-									);
+//Trace("rtn="+rtn);
 
+							switch (format) {
+								case "db":
+									socket.end( JSON.stringify({ 
+										success: true,
+										msg: rtn,
+										count: 0,
+										data: ENGINE.maptau(context)
+									}) );
+									break;
+									
+								default:
+									socket.end( JSON.stringify(context.tau) );
 							}
-							catch (err) {
-								
-								socket.end( 
-									context.query 
-									? JSON.stringify({
-											success: false,
-											msg: err+"",  
-											count: 0,
-											data: []
-										})
-									: err+""
-								);
-								
-							}
+							
 						});
 					});
 				}
@@ -192,15 +173,18 @@ ENGINE.plugin = {
 
 ENGINE.error = {
 	"-1": "engine returned invalid code",
+	0: "ok",
 	101: "engine could not be loaded",
 	102: "engine received bad port/query",
 	103: "engine could not be compiled",
 	104: "engine failed entry/exit",
 	105: "engine exhausted engine pool",
 	106: "engine received bad query",
-	107: "engine has no worker at this port",
+	107: "engine cant reach assigned worker at this port",
 	108: "engine has no context",
-	109: "engine could not handoff to worker"
+	109: "engine could not handoff to worker",
+	110: "engine type not supported",
+	111: "engine does not exists or is not enabled"
 };
 
 ENGINE.context = {};
@@ -227,28 +211,61 @@ ENGINE.tau = function (job) {
 * on the same compile-step thread); otherwise, the engine is assumed to be standalone (thus forcing
 * the engine to re-compile every time it is stepped).
 * 
-* The terms "process", "engine core", "safety core", are "worker" are equivalent concepts, and 
-* should not be confused with a physical "cpu core".  Because heavyweight (spawned) workers 
-* run in their own V8 instance, they can tollerate all faults (even infamous core-dump exceptions).
-* Lightweight (cluster) workers, however, share the same V8 instance.  Heavyweight workers thus
-* provide greater safety for bound executables (like opencv and python) at the expense of greater
-* cpu overhead.  
+* As used here (and elsewhere) the terms "process", "engine core", "safety core", and "worker" are 
+* equivalent concepts, and should not be confused with a physical "cpu core".  Because heavyweight 
+* (spawned) workers run in their own V8 instance, these workers can tollerate all faults (even 
+* core-dump exceptions). The lightweight (cluster) workers used here, however, share the same V8 
+* instance.  Heavyweight workers thus provide greater safety for bound executables (like opencv and 
+* python) at the expense of greater cpu overhead.  
 *
-* The goal hyperthreading \is to balance threads across cpu cores.  The workerless (master only)
+* The goal of hyperthreading is to balance threads across cpu cores.  The workerless (master only)
 * configuration will intrinsically utilize only one of its underlying cpu cores (the OS remains, 
 * however, free to bounce between cpu cores via SMP).  A worker cluster, however, tends to 
 * balance threads across all cpu cores, especially when the number of allocated workers exceeds
 * the number of physical cpu cores.
 * 
-* To support hyperthreading on stateful engines, the master and workers should be listening on
-* different ports: e.g, master on port N+1 and all workers on the same port N.  In this way 
-* hyperthreading is provided to stateless sql (and assumed stateless tau) engines by accessing 
-* the service on port N, while stateful tau engines can be hyperthreaded by accessing the service 
-* on port N+1.
+* Only the cluster master can see its workers; thus workers can not send work to other workers, only
+* the master can send work to workers.  Thus hyperthreading to *stateful* engines can be supported
+* only when master and workers are listening on different ports (workers are all listening on 
+* same ports to provide *stateless* engines).  So typically place master on port N+1 (to server
+* stateful engines) and its workers on port N (to serve stateless engines).  
 */
 ENGINE.core = function (req,args,cb) {	  // called by master to thread a stateful engine
 	var sql = req.sql,
 		name = `${req.client}.${req.table}.${req.body.thread || "0"}`;
+
+
+	function execute(args,core,cb) {
+
+		var my_wid = CLUSTER.isMaster ? 0 : CLUSTER.worker.id;
+
+//Trace(core);
+
+		if (CLUSTER.isMaster) 		// only the master can send work to its workers (and itself)
+			
+			if (core.wid) { 		// engine was assigned to a worker
+				var worker = CLUSTER.workers[core.wid];
+				delete args.sql;
+				
+				if (worker) 		// let assigned stateful engine respond on this socket
+					worker.send({core:core,args:args,format:req.type}, req.connection);
+				else 
+					cb(new Error(ENGINE.error[107]) ); 
+			}
+			else  					// engine was assigned to the master
+				ENGINE.compute(core, args, function (context) {
+					ENGINE.call(core, context, cb);
+				});
+
+		else
+		if (core.wid == my_wid)   	// client on worker port, but got lucky - pass to this stateful worker
+			ENGINE.compute(core, args, function (context) {
+				ENGINE.call(core, context, cb);
+			});
+			
+		else 						// client on worker port and unlucky - should be using master port
+			cb( new Error(ENGINE.error[107]) );
+	}
 
 	// Get assocated engine core if already allocated; otherwise allocate a new core.  We keep the
 	// cores in a sql table so that all cluster workers have a common place to access engine
@@ -261,56 +278,38 @@ ENGINE.core = function (req,args,cb) {	  // called by master to thread a statefu
 	.on("result", function (core) { 	// Engine already initialized/programmed
 
 		if (core.found) {
-			console.log("CORE"+core.wid+" SWITCHED TO "+name);
-				
+			Trace("CORE"+core.wid+" SWITCHED TO "+name);
+
 			core.code = "";
 			core.vars = "";
-console.log(core);
-			
-			if ( CLUSTER.isMaster ) {
-				if (core.wid) { 		// engine was assigned to a worker
-					var worker = CLUSTER.workers[core.wid];
-					delete args.sql;
-					
-					if (worker) 		// pass to assigned stateful worker
-						worker.send({core:core,args:args}, req.connection );
-					else 
-						cb(new Error(ENGINE.error[107]) ); 
-				}
-				else  					// engine was assigned to this master
-					ENGINE.compute(core, args, function (context) {
-						ENGINE.call(core, context, cb);
-					});
-			}
-			else 						// pass to this stateful worker
-			if (core.wid == CLUSTER.worker.id) 
-				ENGINE.compute(core, args, function (context) {
-					ENGINE.call(core, context, cb);
-				});
-			else 
-				cb( new Error(ENGINE.error[107]) );
+
+			execute(args,core,cb);
 		}
 		else 
-			sql.query("SELECT *,count(ID) AS found FROM engines WHERE least(?) LIMIT 0,1", {Name:req.table,Enabled:true,Period:0})
+			sql.query(
+				"SELECT *,count(ID) AS found FROM engines WHERE least(?) LIMIT 0,1", 
+				{Name:req.table,Enabled:true})
+				
 			.on("result", function (eng) {
 
 				if (eng.found) {
-					var core = { 												// define engine core
+					if (CLUSTER.isMaster)
+						var wid = ENGINE.cores 			// provide stateful worker
+								? ENGINE.nextcore = (ENGINE.nextcore % ENGINE.cores) + 1 
+								: 0;
+					else
+						var wid = CLUSTER.worker.id;  	// provide stateless worker
+
+					var core = { 								// provide an engine core
 						name: name,
 						type: eng.Engine.toLowerCase(),
-						wid: CLUSTER.isMaster ? 0 : CLUSTER.worker.id,
+						wid: wid,
 						client: req.client,
 						code: eng.Code,
 						vars: eng.Vars
 					};
 
-					if (CLUSTER.isMaster && ENGINE.cores) {   	// assign to next worker
-						var worker = 		// recycle workers
-							CLUSTER.workers[core.wid = ENGINE.nextcore];
-							ENGINE.nextcore = (ENGINE.nextcore % ENGINE.cores)+1;
-					}
-
-					console.log("CORE"+core.wid+" ASSIGNED TO "+name);
+					Trace("CORE"+core.wid+" ASSIGNED TO "+name);
 
 					sql.query("INSERT INTO simcores SET ?", {
 						name:core.name,
@@ -319,22 +318,11 @@ console.log(core);
 						client:core.client
 					});
 
-					if (ENGINE.nextcore) {  										// handoff to assigned worker
-						delete args.sql;
-
-						if (worker) 
-							worker.send({core:core,args:args}, req.connection);
-
-						else 
-							cb( new Error(ENGINE.error[107]) ); 
-					}
-					else  														// pass to this worker
-						ENGINE.compute(core, args, function (context) {
-							ENGINE.call(core, context, cb);
-						});
+					execute(args,core,cb);
 				}
 				else
-					cb(new Error("No such enabled engine"));
+					cb( new Error(ENGINE.error[111]) );
+
 			});			
 
 	});
@@ -355,12 +343,7 @@ ENGINE.save = function (sql,taus,port,engine,saves) {	// called by cluster worke
 
 			FS.readFile(tau.job+".json", {encoding: "utf8"}, function (err,data) {
 				if (!err) {
-					try {
-						var rtn = JSON.parse(data) || {};
-					}
-					catch (err) {
-						var rtn = {};
-					}
+					var rtn = data.parse({});
 				
 					Each(saves.split(","), function (i,save) {
 						if (save in rtn)
@@ -380,14 +363,14 @@ ENGINE.save = function (sql,taus,port,engine,saves) {	// called by cluster worke
 					sql.query("INSERT INTO simresults SET ?", {
 						t: t,
 						input: tau.job,
-						output: engine + DOT + port,
+						output: `${engine}.${port}`,
 						name: logn,
 						value: logv,
 						special: logv
 					});
 				});						
-			});			
-		}	
+			});	
+		}
 	});
 }
 
@@ -436,8 +419,8 @@ ENGINE.call = function (core,context,cb) {
 ENGINE.insert = ENGINE.step = function (req,res) {	// called by worker to step a stateful engine
 	try {
 		var args = {
-			tau: JSON.parse(req.body.tau || '[]'),
-			port: JSON.parse(req.body.port || '""'),
+			tau: req.body.tau.parse([]),
+			port: req.body.port.parse(""),
 			sql: req.sql,
 			query: false,
 			action: "insert"
@@ -456,14 +439,14 @@ ENGINE.delete = ENGINE.kill = function (req,res) {	// called by worker to free a
 	var sql = req.sql;
 
 	sql.query("DELETE FROM simcores WHERE ?", {client:req.client});
-	res("freed engines belonging to "+req.client);
+	res(`FREED ${req.client} ENGINES`);
 }
 
 ENGINE.select = ENGINE.read = function (req,res) {	// called by worker to read a stateless engine 
 	function guard(q) {
 		if (q != true) {
 			for (var n in q) 
-				try { q[n] = JSON.parse(q[n]); } catch (err) { }
+				try { q[n] = (q[n]||"").parse(0); } catch (err) { }
 			
 			for (var n in q) return q;
 		}
@@ -571,59 +554,54 @@ ENGINE.maptau = function (context) {
 ENGINE.run = function (context,cb) {
 	var vars = context.vars, sql = context.sql;
 
-console.log("runentry");
-//return;
-//console.log(context.entry);
+	// The sqls = {var:"sql", ...} are defined by the context.entry (to import vars into the context before an 
+	// is run) or by the context.exit (export vars from context after engine is run).  If an sqls entry/exit 
+	// exists, this will cause the context.vars = [var, ...] list to be built to synchronously import/export
+	// the vars into/from the engine's context.
 
-	if (false && vars) {
-		if ( vars.length ) {
-			var n = vars[vars.length-1]; vars.length--;
-			var query = context.sqls[n];
+	if (vars) {    	
+		if ( vars.length ) { 						// more vars to import/export
+			var varn = vars[vars.length-1]; vars.length--; 	// var to import/export
+			var query = context.sqls[varn]; 					// sql to import/export
 			
 			if (typeof query != "string") {
 				query = query[0];
 				args = query.slice(1);
 			}
 			
-			if (context.sqls == context.entry) {
-				var data = context[n] = [];
+//Trace([varn,query]);
+
+			if (context.sqls == context.entry) {  	// importing this var into the context
+				var data = context[varn] = [];
 				var args = context.query;
 			}
-			else {
-				var data = context[n] || [];
-				var args = [n, {result:data}, context.query];
+			else { 									// exporting this var from the context
+				var data = context[varn] || [];
+				var args = [varn, {result:data}, context.query];
 			}
 				
-			sql.query(query, args)
-			.on("error", function (err) {
+			var q = sql.query(query, args, function (err, recs) { 	// import/export this var
+
+//Trace([varn,err,q.sql]);
 				
-				context.err = err;
-				context[n] = null;
-				
-			})
-			.on("result", function (rec) {
-				
-				if (rec.hash)
-					data.push(rec);
-				else {
-					var vec=[];
-					for (var n in rec) 
-						if (rec.hasOwnProperty(n)) vec.push(rec[n]);
-					
-					data.push(vec);
+				if (err) {
+					context.err = err;
+					context[varn] = null;
 				}
+				else 
+					if (context.sqls == context.entry)  // importing
+						for (var n=0,N=recs.length; n<N; n++) data[n] = Copy(recs[n], {});
+					else { 								// exporting
+					}					
 				
-			})
-			.on("end", function () {
-//Trace(n+"="+q.sql+"="+data);
 				ENGINE.run(context,cb);
 			});
 		}
-		else
-		if (cb) {
+		else 					// no more vars to load
+		if (cb) {				// run engine in its context
 			cb(context);
 			
-			if (false && context.exit) {
+			if (context.exit) {	// save selected engine context vars
 				var sqls = context.sqls = context.exit;
 				var vars = context.vars = []; for (var n in sqls) vars.push(n);
 
@@ -632,10 +610,11 @@ console.log("runentry");
 		}
 	}
 	else
-	if (false && context.entry) {
+	if (context.entry) {  // build the context.vars from the context.entry sqls
 		var sqls = context.sqls = context.entry;
 		var vars = context.vars = []; for (var n in sqls) vars.push(n);
 		
+//Trace("entry vars="+vars);
 		ENGINE.run(context, cb);
 	}
 	else
@@ -646,9 +625,6 @@ console.log("runentry");
  * @method thread
  * */
 ENGINE.compute = function (core,args,cb) {	
-	
-console.log("code="+core.code);
-console.log(core.vars);
 	
 	if (core.code) {
 		try {
@@ -712,20 +688,17 @@ ENGINE.mat = function (name,port,tau,context,code) {
 
 ENGINE.js = function (name,port,tau,context,code) {
 	
-console.log([name,port,tau,code]);
+//Trace([name,port,tau,code]);
 
 	if (port) 
-		//return context[port](context.tau,context.context[port]);
 		if (engine = context[port])
-			return engine(tau,context.ports[port]);
+			return engine(tau,context.ports[port]);  		//context[port](context.tau,context.context[port]);
+
 		else
 			return new Error(`No engine port ${port}`);
 		
 	if (code) context.code = code;
 
-//context.M = 213;
-//context.A = [1,2,3];
-//context.B = [1,2];
 	VM.runInContext(context.code,context);
 	return 0;
 }
