@@ -1,1 +1,0 @@
-cmd_Release/obj.target/pythonIF.so := g++ -shared -pthread -rdynamic -m64  -Wl,-soname=pythonIF.so -o Release/obj.target/pythonIF.so -Wl,--whole-archive ./Release/obj.target/pythonIF/pythonIF.o -Wl,--no-whole-archive /usr/local/anaconda/lib/libpython2.7.so

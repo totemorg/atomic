@@ -365,7 +365,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 						PYTAU "," PYPORTS "[" PYPORT "]"
 					);
 
-//printf(TRACE "pgm compile=\n%s\n",comp);
+printf(TRACE "pgm compile=\n%s\n",comp);
 
 					pCode = (PyCodeObject*) Py_CompileString(comp, "pycode", Py_file_input);
 					//Py_Finalize(); // dont do this - will cause segment fault
@@ -424,7 +424,7 @@ printf(TRACE "portless call\n");
 				err = PyInt_AsLong( LOCAL(PYERR) );						
 			}
 					
-//printf(TRACE "err=%d\n",err);
+printf(TRACE "err=%d\n",err);
 			
 			return err;
 		}

@@ -12,49 +12,49 @@
  * @requires graceful-lwip
  * @requires crypto
  * 
- * Provide a hyperthreaded workflow to both stateless and
- * stateful ENGINE.X engines 
+ * Provides a foundation for hyperthreaded workflows to both stateless
+ * and stateful engines ENGINE.X 
  * 
  * 		X = py,js,sh,opencv,mat,matlab,csh,r,octave, ...
  * 
- * having methods (restful http):
+ * having methods (restful http endpoints):
  * 
- *  	insert (POST,insert) to advance a stateful engine
+ *  	step (POST,insert) to advance a stateful engine
  * 		init (PUT,update) to compile a stateful engine
  * 		kill (DELETE,delete) to deallocate a stateful engine
  * 		read (GET,select) to execute a stateless engines
  * 
- * During workflow execution (step/PORT, init/PUT, kill/DELETE 
- * CRUD methods), stateful engines are passed TAU event tokens:
+ * Stateful engines are supported by the step, init and kill endpoints, 
+ * and are passed TAU event tokens:
  * 
- * 	TAU.i = [{tau}, ...] = events arriving to engine's input port
- * 	TAU.o = [{tau}, ...] = events departing from engine's output port
- * 	TAU.p = {port1: {...}, ... port2: {...}, ... sql: {...} }
- * 	TAU.port = engine's in/out port to step
- * 	TAU.thread = engine's 0-base thread counter
+ * 		TAU.i = [{tau}, ...] = events arriving to engine's input port
+ * 		TAU.o = [{tau}, ...] = events departing from engine's output port
+ * 		TAU.p = {port1: {...}, ... port2: {...}, ... sql: {...} }
+ * 		TAU.port = engine's in/out port to step
+ * 		TAU.thread = engine's 0-base thread counter
  * 
  * where input/output port parameters and engine code are taken from
- * the Vars and Code engine parameter at workflow init, and where sql 
- * is a database connector.  
+ * the Vars and Code engine context at workflow initialization, and 
+ * where sql is a mysql database connector.  
  * 
  * Each event token contains the following default fields (they can 
- * be freely extended by the engine):
+ * be freely interpretted and extended by the engine):
  * 
- * 	job = "" 	= Current job thread N.N...
- * 	work = 0 	= Anticipated/delivered data volume (dims bits etc)
- * 	disem = "" 	= Disemination channel for this event
- * 	classif = ""	= Classification of this event
- * 	cost = ""	= Billing center
- * 	policy = ""	= Data retention policy
- * 	status = 0	= Status code
- * 	value = 0	= Flow calculation
+ * 		job = "" 	= Current job thread N.N...
+ * 		work = 0 	= Anticipated/delivered data volume (dims bits etc)
+ * 		disem = "" 	= Disemination channel for this event
+ * 		classif = ""	= Classification of this event
+ * 		cost = ""	= Billing center
+ * 		policy = ""	= Data retention policy
+ * 		status = 0	= Status code
+ * 		value = 0	= Flow calculation
  * 
- * When accessed at an end-point (read/GET CRUD method) stateless 
- * engines are passed the following parameters:
+ * Stateless engines are supported at the read endpoint, and are passed
+ * the following parameters:
  * 
- * 	TAU.i = {tau} = input event sinked to an engine
- * 	TAU.o = {tau} = output event sourced from an engine
- * 	TAU.p = {sql: {...}, query: {...} }
+ * 		TAU.i = {tau} = input event sinked to an engine
+ * 		TAU.o = {tau} = output event sourced from an engine
+ * 		TAU.p = {sql: {...}, query: {...} }
  * 	
  * where the query hash will contain the url parameters.
  * 
@@ -704,6 +704,8 @@ ENGINE.js = function (name,port,tau,context,code) {
 }
 
 ENGINE.py = function (name,port,tau,context,code) {
+
+console.log([name,port,code]);
 	
 	if (code) {
 		context.ports = context.ports || {};  	// engine requires valid ports hash
@@ -734,20 +736,5 @@ ENGINE.sh = function (name,port,tau,context,code) {
 	
 	return 0;
 }
-
-/*
-function Initialize() {
-	Trace("##geoEngine initialized");
-
-	if (IO) 
-		sqlThread( function (sql) {
-			sql.query("SELECT * from simcores WHERE ?",{pid: process.pid})
-			.on("result", function (core) {
-				Trace(`ENGINE ALERT ${core.client}: ${err}`);
-				IO.sockets.emit("alert", {msg: err, to: core.client, from: ENUM.TITLE});
-			});
-		});
-
-} */
 
 // UNCLASSIFIED
