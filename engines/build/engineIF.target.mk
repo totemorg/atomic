@@ -31,10 +31,10 @@ CFLAGS_CC_Debug := \
 	-std=gnu++0x
 
 INCS_Debug := \
-	-I/home/jamesdb/.node-gyp/5.5.0/include/node \
-	-I/home/jamesdb/.node-gyp/5.5.0/src \
-	-I/home/jamesdb/.node-gyp/5.5.0/deps/uv/include \
-	-I/home/jamesdb/.node-gyp/5.5.0/deps/v8/include \
+	-I/home/admin/.node-gyp/5.5.0/include/node \
+	-I/home/admin/.node-gyp/5.5.0/src \
+	-I/home/admin/.node-gyp/5.5.0/deps/uv/include \
+	-I/home/admin/.node-gyp/5.5.0/deps/v8/include \
 	-I$(srcdir)/mac \
 	-I$(srcdir)/.
 
@@ -67,10 +67,10 @@ CFLAGS_CC_Release := \
 	-std=gnu++0x
 
 INCS_Release := \
-	-I/home/jamesdb/.node-gyp/5.5.0/include/node \
-	-I/home/jamesdb/.node-gyp/5.5.0/src \
-	-I/home/jamesdb/.node-gyp/5.5.0/deps/uv/include \
-	-I/home/jamesdb/.node-gyp/5.5.0/deps/v8/include \
+	-I/home/admin/.node-gyp/5.5.0/include/node \
+	-I/home/admin/.node-gyp/5.5.0/src \
+	-I/home/admin/.node-gyp/5.5.0/deps/uv/include \
+	-I/home/admin/.node-gyp/5.5.0/deps/v8/include \
 	-I$(srcdir)/mac \
 	-I$(srcdir)/.
 
@@ -112,9 +112,9 @@ LDFLAGS_Release := \
 	-m64
 
 LIBS := \
-	$(ENGINE)/opencv/build/Release/opencvIF.so \
-	$(ENGINE)/python/build/Release/pythonIF.so \
-	$(ENGINE)/mac/build/Release/macIF.so \
+	$(ENGINES)/opencv/build/Release/opencvIF.so \
+	$(ENGINES)/python/build/Release/pythonIF.so \
+	$(ENGINES)/mac/build/Release/macIF.so \
 	$(PYLINK)/lib/libpython2.7.so
 
 $(obj).target/engineIF.node: GYP_LDFLAGS := $(LDFLAGS_$(BUILDTYPE))

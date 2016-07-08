@@ -1,5 +1,5 @@
 {
-  "name": "tauif",
+  "name": "engineIF",
   "version": "1.0.0",
   "description": "stateful workflow model to maximize data-at-rest and to share compute threads between many clients",
   "main": "index.js",
@@ -15,7 +15,7 @@
     "stateful",
     "workflows"
   ],
-  "author": "brian.d.james@NGA Research",
+  "author": "ACME s/w dispolar service",
   "license": "ISC",
   "gypfile": true
 }

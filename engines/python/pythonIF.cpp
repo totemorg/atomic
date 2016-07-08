@@ -61,13 +61,13 @@ using namespace std;
 
 // Parameters used to wrap python code to provide sql connector and debugging
 
-#define WRAP_TRACE true
+#define WRAP_TRACE false
 #define WRAP_CATCH false
 #define WRAP_DBUSE true
 #define WRAP_DBPASS getenv("DB_PASS")
 #define WRAP_DBNAME getenv("DB_NAME")
 #define WRAP_DBUSER getenv("DB_USER")
-#define PYTHONORIGIN getenv("PYTHONORIGIN")
+//#define PYTHONORIGIN getenv("PYTHONORIGIN")
 
 // Danger zone
 
@@ -127,9 +127,13 @@ str wrap(str code,str port,V8OBJECT parm,str idx,str args) {  // wrap user pytho
 
 #if WRAP_DBUSE
 
+		// install the python2.7 connector (rpm -Uvh mysql-conector-python-2.x.rpm)
+		// into /usr/local/lib/python2.7/site-packages/mysql, then copy
+		// this mysql folder to the anaconda/lib/python2.7/site-packages.
+		
 		strcat(err,
 			"import mysql.connector\n"
-			"print 'TAU imported mysql'\n"
+//			"print 'TAU imported mysql'\n"
 		);
 		strcat(err,"SQL = mysql.connector.connect(user='");
 		strcat(err,WRAP_DBUSER);
@@ -322,7 +326,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
  * AND /usr/lib64/python2.7 to the anaconda/lib/python2.7.  The default python (typically python-2.7.5) appears to be 
  * fully compatible with the anaconda-1.9 python-2.7.6.  Must then override PYTHONHOME to the default PYTHONORIGIN.
  * */
-				Py_SetPythonHome(PYTHONORIGIN);
+				//Py_SetPythonHome(PYTHONORIGIN);
 //printf(TRACE "initialize %s\n",Py_GetPythonHome());
 
 				Py_Initialize(); 
@@ -365,7 +369,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 						PYTAU "," PYPORTS "[" PYPORT "]"
 					);
 
-printf(TRACE "pgm compile=\n%s\n",comp);
+//printf(TRACE "pgm compile=\n%s\n",comp);
 
 					pCode = (PyCodeObject*) Py_CompileString(comp, "pycode", Py_file_input);
 					//Py_Finalize(); // dont do this - will cause segment fault
@@ -399,7 +403,7 @@ printf(TRACE "pgm compile=\n%s\n",comp);
 			}
 			else 					// Step compiled module
 			if (strlen(port)) {		// Stateful step
-printf(TRACE "port call=%s\n",port);
+//printf(TRACE "port call=%s\n",port);
 				PyDict_SetItemString(pLocals, PYPORT, PyString_FromString(port) );
 				PyDict_SetItemString(pLocals, PYTAU, clone(tau) );
 
@@ -409,7 +413,7 @@ printf(TRACE "port call=%s\n",port);
 				set(tau, clone( LOCAL(PYTAU) ));
 			}
 			else {					// Stateless step
-printf(TRACE "portless call\n");
+//printf(TRACE "portless call\n");
 
 				pLocals = PyModule_GetDict(pModule);
 				pGlobals = PyModule_GetDict(pMain);	
@@ -424,7 +428,7 @@ printf(TRACE "portless call\n");
 				err = PyInt_AsLong( LOCAL(PYERR) );						
 			}
 					
-printf(TRACE "err=%d\n",err);
+//printf(TRACE "err=%d\n",err);
 			
 			return err;
 		}

@@ -705,7 +705,7 @@ ENGINE.js = function (name,port,tau,context,code) {
 
 ENGINE.py = function (name,port,tau,context,code) {
 
-console.log([name,port,code]);
+//console.log([name,port,code]);
 	
 	if (code) {
 		context.ports = context.ports || {};  	// engine requires valid ports hash
