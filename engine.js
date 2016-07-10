@@ -63,10 +63,6 @@
  * 
  * 		jobspath path to prefix to a tau.job
  * 		app{...} crud interface to virtual tables
- * 
- * Usage examples:
- * 
- * 		See client.js for usage examples.
  * */
 
 var 														// NodeJS modules
