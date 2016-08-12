@@ -71,8 +71,8 @@ var 														// NodeJS modules
 	CLUSTER = require("cluster"),
 	VM = require("vm");
 	
-var 														// geoNode modules
-	ENUM = require("../enum");
+var 														// Totem modules
+	ENUM = require("enum");
 	
 var															// shortcuts
 	Copy = ENUM.copy,

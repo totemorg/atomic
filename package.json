@@ -1,14 +1,14 @@
 {
   "name": "engine",
   "version": "1.0.0",
-  "description": "Language agnost machines",
+  "description": "Interface to language agnost machines",
   "main": "engine.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git@git.geointapps.org:geoproto/engine.git"
+    "url": "git@git.geointapps.org:acme/engine.git"
   },
   "keywords": [
     "machines",
@@ -18,6 +18,6 @@
     "r",
     "opencv"
   ],
-  "author": "",
+  "author": "ACME Software Disposal Service",
   "license": "ISC"
 }

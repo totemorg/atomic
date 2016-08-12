@@ -9,8 +9,11 @@ export CONDA=$BASE/anaconda
 
 # OpenCV
 export CV=$BASE/opencv
-export PATH=$PATH:$CV/include
+export PATH=$PATH:$CV/include:$CV/bin
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CV/lib
+
+#export PATH=$PATH:/usr/lib/qt-3.3/bin:$CV/bin
+export JOBS=$HERE/jobs
 
 # To use python2.7 under anaconda
 
@@ -28,13 +31,23 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA/lib
 # Engines
 export ENGINES=$HERE/engines
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ENGINES/python/build/Release:$ENGINES/opencv/build/Release:$ENGINES/mac/build/Release
-export PATH=$PATH:/usr/lib/qt-3.3/bin:$CV/bin
-export JOBS=$HERE/jobs
 
 # boost etc
-export BOOST=/usr
+export BOOST=$BASE/boost
 export PATH=$PATH:$BOOST/include
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$BOOST/lib64
+
+export GFLAGS=$BASE/gflags
+export PATH=$PATH:$GFLAGS/include
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$GFLAGS/lib64
+
+export LMDB=$BASE/lmdb
+export PATH=$PATH:$LMDB/include
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LMDB/lib64
+
+export LEVELDB=$BASE/leveldb
+export PATH=$PATH:$LEVELDB/include
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LEVELDB/lib64
 
 # atlas blas
 export ATLAS=$BASE/atlas
