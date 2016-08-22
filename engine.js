@@ -112,7 +112,8 @@ ENGINE.config = function (opts) {
 			CLUSTER.worker.process.on("message", function (eng,socket) {
 
 				if (eng.core) { 		// process only tau messages (ignores sockets, etc)
-	
+
+console.log(">>>>worker run");	
 //Trace(eng);
 					var args = eng.args,
 						core = eng.core,
@@ -133,7 +134,7 @@ ENGINE.config = function (opts) {
 							else
 								var rtn = ENGINE.error[110];
 
-//Trace("rtn="+rtn);
+Trace(">>>>rtn="+rtn+" fmt="+format);
 
 							switch (format) {
 								case "db":
@@ -141,8 +142,14 @@ ENGINE.config = function (opts) {
 										success: true,
 										msg: rtn,
 										count: 0,
-										data: ENGINE.maptau(context)
+										data: 0 //ENGINE.maptau(context)
 									}) );
+console.log({
+	success: true,
+	msg: rtn,
+	count: 0,
+	data: 0 //ENGINE.maptau(context)
+});	
 									break;
 									
 								default:
@@ -235,11 +242,14 @@ ENGINE.core = function (req,args,cb) {	  // called by master to thread a statefu
 
 		var my_wid = CLUSTER.isMaster ? 0 : CLUSTER.worker.id;
 
+//console.log(">>>>exec isMas="+CLUSTER.isMaster);
 //Trace(core);
 
 		if (CLUSTER.isMaster) 		// only the master can send work to its workers (and itself)
 			
 			if (core.wid) { 		// engine was assigned to a worker
+//console.log(">>>>get worker wid="+core.wid);
+//console.log(args);
 				var worker = CLUSTER.workers[core.wid];
 				delete args.sql;
 				
@@ -287,6 +297,9 @@ ENGINE.core = function (req,args,cb) {	  // called by master to thread a statefu
 				{Name:req.table,Enabled:true})
 				
 			.on("result", function (eng) {
+
+//console.log(">>>>new engine");
+//console.log(eng);
 
 				if (eng.found) {
 					if (CLUSTER.isMaster)
@@ -375,27 +388,35 @@ ENGINE.save = function (sql,taus,port,engine,saves) {	// called by cluster worke
  * Compile and/or step an engine in its context.
  * */
 ENGINE.call = function (core,context,cb) {
+	
+//console.log(">>>>call");
+
 	Each(context.tau, function (n,tau) { 			// prefix jobs with mount point
 		tau.job = ENGINE.paths.jobs + tau.job;
 	});
 
 	if ( engine = ENGINE[core.type] )
 		try {  												// call the module
+//console.log(">>>>context");
+//console.log(context);
 			var rtn = engine(core.name,context.port,context.tau,context,core.code);
+console.log(">>>>call="+rtn);
+
+			//>>>> move here
+			Each(context.tau, function (n,tau) { 			// remove mount point from jobs
+				if (tau.job) 
+					tau.job = tau.job.substr(ENGINE.paths.jobs.length);
+			}); 
+
 			cb(null,context);
 		}
 		catch (err) {
-			cb(err+"",context);
+			cb(err,context);  //>>>>
 		}
 	else
 		cb (new Error(`Bad engine type ${core.type}`));
 	
 	//ENGINE.save(sql,context.otau,context.port,core.name,core.save);
-
-	Each(context.tau, function (n,tau) { 			// remove mount point from jobs
-		if (tau.job) 
-			tau.job = tau.job.substr(ENGINE.paths.jobs.length);
-	});
 
 }
 
@@ -413,6 +434,9 @@ ENGINE.call = function (core,context,cb) {
 */
 
 ENGINE.insert = ENGINE.step = function (req,res) {	// called by worker to step a stateful engine
+
+	//>>
+	/*
 	try {
 		var args = {
 			tau: req.body.tau.parse([]),
@@ -423,19 +447,31 @@ ENGINE.insert = ENGINE.step = function (req,res) {	// called by worker to step a
 		};
 	}
 	catch (err) {
-		res(err+"");
-	}
+		res(err);  //>>>>
+	}*/
+	
+	var args = {
+		tau: req.body.tau || [],
+		port: req.body.port || "",
+		sql: req.sql,
+		query: false,
+		action: "insert"
+	};
 
 	ENGINE.core(req,args,function (err,context) {
-		res(err || JSON.stringify(context.tau));
+console.log(">>>>step "+err);
+		res(err || context.tau);  //>>>> fixed
+		//>>>> JSON.stringify(context.tau));
 	});
 }
 
 ENGINE.delete = ENGINE.kill = function (req,res) {	// called by worker to free a stateful engine
 	var sql = req.sql;
+console.log(">>>>kill");
 
 	sql.query("DELETE FROM simcores WHERE ?", {client:req.client});
-	res(`FREED ${req.client} ENGINES`);
+	//>>>>
+	res( "ok" ); //`FREED ${req.client} ENGINES`);
 }
 
 ENGINE.select = ENGINE.read = function (req,res) {	// called by worker to read a stateless engine 
@@ -450,6 +486,8 @@ ENGINE.select = ENGINE.read = function (req,res) {	// called by worker to read a
 		return true;
 	}
 
+	//>>>>
+	/*
 	try {
 		var args = {
 			tau: [ENGINE.tau()],
@@ -460,15 +498,26 @@ ENGINE.select = ENGINE.read = function (req,res) {	// called by worker to read a
 		};
 	}
 	catch (err) {
-		res(err+"");
+		res(err); //>>>>
 	}
+	*/
 	
+	var args = {
+		tau: [ENGINE.tau()],
+		port: req.query.port || "",
+		sql: req.sql,
+		query: guard(req.query),
+		action: "select"
+	};
+
 	ENGINE.core(req,args,function (err,context) {
 		res( err || ENGINE.maptau(context) );
 	});
 }
 
 ENGINE.update = ENGINE.init = function (req,res) {	// called by worker to initialize a stateful engine
+	
+	/* //>>>>
 	try {
 		var args = {
 			tau: [ENGINE.tau()],
@@ -479,11 +528,21 @@ ENGINE.update = ENGINE.init = function (req,res) {	// called by worker to initia
 		};
 	}
 	catch (err) {
-		res(err+"");
-	}
+		res(err); //>>>>
+	}*/
 	
+	var args = {
+		tau: [ENGINE.tau()],
+		port: "",
+		sql: req.sql,
+		query: false,
+		action: "update"
+	};
+	
+console.log(">>>>init");
+
 	ENGINE.core(req,args,function (err,context) {
-		res(err);
+		res(err || "ok");  //>>>>
 	});
 }
 
@@ -618,10 +677,13 @@ ENGINE.run = function (context,cb) {
 }
 
 /**
- * @method thread
+ * @method compute
  * */
 ENGINE.compute = function (core,args,cb) {	
 	
+//console.log(">>>>compute");
+//console.log(core);
+
 	if (core.code) {
 		try {
 			eval("var vars = "+ (core.vars || "{}"));
