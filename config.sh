@@ -70,12 +70,13 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA/lib64:$DNN/lib64:$CAFFE/lib
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CAFFE/build/lib:$DNN/lib64:$CONDA/lib
 
 #python sql access
-export DB_PASS=NGA
-export DB_USER=root
-export DB_NAME=app1
+export DB_PASS=$MYSQL_PASS
+export DB_USER=$MYSQL_USER
+export DB_NAME=$MYSQL_NAME
+export DB_HOST=$MYSQL_HOST
 
 # engine compile switches
-if [ "$HOST" == "swag-gpu-01.ec2.internal" ]; then
+if [ "$HOST" == "$GPU_HOST" ]; then
 	export HASGPU=1
 	export HASCAFFE=1
 else

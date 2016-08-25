@@ -402,7 +402,6 @@ ENGINE.call = function (core,context,cb) {
 			var rtn = engine(core.name,context.port,context.tau,context,core.code);
 console.log(">>>>call="+rtn);
 
-			//>>>> move here
 			Each(context.tau, function (n,tau) { 			// remove mount point from jobs
 				if (tau.job) 
 					tau.job = tau.job.substr(ENGINE.paths.jobs.length);
@@ -411,7 +410,7 @@ console.log(">>>>call="+rtn);
 			cb(null,context);
 		}
 		catch (err) {
-			cb(err,context);  //>>>>
+			cb(err,context);
 		}
 	else
 		cb (new Error(`Bad engine type ${core.type}`));
@@ -434,21 +433,6 @@ console.log(">>>>call="+rtn);
 */
 
 ENGINE.insert = ENGINE.step = function (req,res) {	// called by worker to step a stateful engine
-
-	//>>
-	/*
-	try {
-		var args = {
-			tau: req.body.tau.parse([]),
-			port: req.body.port.parse(""),
-			sql: req.sql,
-			query: false,
-			action: "insert"
-		};
-	}
-	catch (err) {
-		res(err);  //>>>>
-	}*/
 	
 	var args = {
 		tau: req.body.tau || [],
@@ -460,8 +444,7 @@ ENGINE.insert = ENGINE.step = function (req,res) {	// called by worker to step a
 
 	ENGINE.core(req,args,function (err,context) {
 console.log(">>>>step "+err);
-		res(err || context.tau);  //>>>> fixed
-		//>>>> JSON.stringify(context.tau));
+		res(err || context.tau);
 	});
 }
 
@@ -470,8 +453,7 @@ ENGINE.delete = ENGINE.kill = function (req,res) {	// called by worker to free a
 console.log(">>>>kill");
 
 	sql.query("DELETE FROM simcores WHERE ?", {client:req.client});
-	//>>>>
-	res( "ok" ); //`FREED ${req.client} ENGINES`);
+	res( "ok" ); 
 }
 
 ENGINE.select = ENGINE.read = function (req,res) {	// called by worker to read a stateless engine 
@@ -486,22 +468,6 @@ ENGINE.select = ENGINE.read = function (req,res) {	// called by worker to read a
 		return true;
 	}
 
-	//>>>>
-	/*
-	try {
-		var args = {
-			tau: [ENGINE.tau()],
-			port: req.query.port || "",
-			sql: req.sql,
-			query: guard(req.query),
-			action: "select"
-		};
-	}
-	catch (err) {
-		res(err); //>>>>
-	}
-	*/
-	
 	var args = {
 		tau: [ENGINE.tau()],
 		port: req.query.port || "",
@@ -517,20 +483,6 @@ ENGINE.select = ENGINE.read = function (req,res) {	// called by worker to read a
 
 ENGINE.update = ENGINE.init = function (req,res) {	// called by worker to initialize a stateful engine
 	
-	/* //>>>>
-	try {
-		var args = {
-			tau: [ENGINE.tau()],
-			port: "",
-			sql: req.sql,
-			query: false,
-			action: "update"
-		};
-	}
-	catch (err) {
-		res(err); //>>>>
-	}*/
-	
 	var args = {
 		tau: [ENGINE.tau()],
 		port: "",
@@ -542,7 +494,7 @@ ENGINE.update = ENGINE.init = function (req,res) {	// called by worker to initia
 console.log(">>>>init");
 
 	ENGINE.core(req,args,function (err,context) {
-		res(err || "ok");  //>>>>
+		res(err || "ok"); 
 	});
 }
 
