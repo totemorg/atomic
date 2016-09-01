@@ -76,10 +76,12 @@ var 														// Totem modules
 	
 var															// shortcuts
 	Copy = ENUM.copy,
-	Each = ENUM.each,
-	Trace = function (msg) {
-		console.log(msg);
-	};
+	Each = ENUM.each;
+	
+function Trace(msg,arg) {
+	console.log("E>"+msg);
+	if (arg) console.log(arg);
+};
 	
 var
 	ENGINE = module.exports = require("./engines/build/Release/engineIF");  	//< engineIF built by node-gyp
@@ -113,8 +115,7 @@ ENGINE.config = function (opts) {
 
 				if (eng.core) { 		// process only tau messages (ignores sockets, etc)
 
-console.log(">>>>worker run");	
-//Trace(eng);
+Trace(">worker run");	
 					var args = eng.args,
 						core = eng.core,
 						format = eng.format;
@@ -134,7 +135,7 @@ console.log(">>>>worker run");
 							else
 								var rtn = ENGINE.error[110];
 
-Trace(">>>>rtn="+rtn+" fmt="+format);
+Trace(">rtn="+rtn+" fmt="+format);
 
 							switch (format) {
 								case "db":
@@ -144,12 +145,6 @@ Trace(">>>>rtn="+rtn+" fmt="+format);
 										count: 0,
 										data: 0 //ENGINE.maptau(context)
 									}) );
-console.log({
-	success: true,
-	msg: rtn,
-	count: 0,
-	data: 0 //ENGINE.maptau(context)
-});	
 									break;
 									
 								default:
@@ -242,14 +237,12 @@ ENGINE.core = function (req,args,cb) {	  // called by master to thread a statefu
 
 		var my_wid = CLUSTER.isMaster ? 0 : CLUSTER.worker.id;
 
-//console.log(">>>>exec isMas="+CLUSTER.isMaster);
-//Trace(core);
+//Trace(">exec isMas="+CLUSTER.isMaster);
 
 		if (CLUSTER.isMaster) 		// only the master can send work to its workers (and itself)
 			
 			if (core.wid) { 		// engine was assigned to a worker
-//console.log(">>>>get worker wid="+core.wid);
-//console.log(args);
+//Trace(">worker wid="+core.wid,args);
 				var worker = CLUSTER.workers[core.wid];
 				delete args.sql;
 				
@@ -298,8 +291,7 @@ ENGINE.core = function (req,args,cb) {	  // called by master to thread a statefu
 				
 			.on("result", function (eng) {
 
-//console.log(">>>>new engine");
-//console.log(eng);
+//Trace(">new engine");
 
 				if (eng.found) {
 					if (CLUSTER.isMaster)
@@ -389,7 +381,7 @@ ENGINE.save = function (sql,taus,port,engine,saves) {	// called by cluster worke
  * */
 ENGINE.call = function (core,context,cb) {
 	
-//console.log(">>>>call");
+Trace(">call");
 
 	Each(context.tau, function (n,tau) { 			// prefix jobs with mount point
 		tau.job = ENGINE.paths.jobs + tau.job;
@@ -397,10 +389,9 @@ ENGINE.call = function (core,context,cb) {
 
 	if ( engine = ENGINE[core.type] )
 		try {  												// call the module
-//console.log(">>>>context");
-//console.log(context);
+//Trace(">context",context);
 			var rtn = engine(core.name,context.port,context.tau,context,core.code);
-console.log(">>>>call="+rtn);
+Trace(">rtn="+rtn);
 
 			Each(context.tau, function (n,tau) { 			// remove mount point from jobs
 				if (tau.job) 
@@ -443,14 +434,14 @@ ENGINE.insert = ENGINE.step = function (req,res) {	// called by worker to step a
 	};
 
 	ENGINE.core(req,args,function (err,context) {
-console.log(">>>>step "+err);
+console.log(">step "+err);
 		res(err || context.tau);
 	});
 }
 
 ENGINE.delete = ENGINE.kill = function (req,res) {	// called by worker to free a stateful engine
 	var sql = req.sql;
-console.log(">>>>kill");
+console.log(">kill");
 
 	sql.query("DELETE FROM simcores WHERE ?", {client:req.client});
 	res( "ok" ); 
@@ -491,7 +482,7 @@ ENGINE.update = ENGINE.init = function (req,res) {	// called by worker to initia
 		action: "update"
 	};
 	
-console.log(">>>>init");
+Trace(">init");
 
 	ENGINE.core(req,args,function (err,context) {
 		res(err || "ok"); 
@@ -633,8 +624,7 @@ ENGINE.run = function (context,cb) {
  * */
 ENGINE.compute = function (core,args,cb) {	
 	
-//console.log(">>>>compute");
-//console.log(core);
+//Trace(">compute",core);
 
 	if (core.code) {
 		try {
@@ -715,7 +705,7 @@ ENGINE.js = function (name,port,tau,context,code) {
 
 ENGINE.py = function (name,port,tau,context,code) {
 
-//console.log([name,port,code]);
+//Trace(">py run",[name,port,code]);
 	
 	if (code) {
 		context.ports = context.ports || {};  	// engine requires valid ports hash
