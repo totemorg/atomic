@@ -65,7 +65,7 @@ export CAFFE=$BASE/caffe
 #export PATH=$PATH:$CUDA/bin:$DNN/include
 export PATH=$PATH:$INCLUDE/cuda:$INCLUDE/cuDNN:$INCLUDE/caffe:$INCLUDE/protobuf
 
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIB/cuda:$LIB/cuDNN:$LIB/caffe:$LIB/protobuf:$LIB/leveldb
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIB/cuda:$LIB/cuDNN:$LIB/caffe:$LIB/protobuf
 #export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA/lib64:$DNN/lib64:$CAFFE/lib
 
 # required for node-gyp caffe binding
