@@ -11,7 +11,8 @@
  * @requires digitalsignals
  * @requires graceful-lwip
  * @requires crypto
- * 
+ */
+/**
  * Provides a foundation for hyperthreaded workflows to both stateless
  * and stateful engines ENGINE.X 
  * 
