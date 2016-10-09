@@ -3,18 +3,18 @@
 [![Forked from SourceForge](https://sourceforge.net)]
 
 [Totem](https://git.geointapps.org/acmesds/transfer)'s ENGINE module provides a foundation 
-for hyperthreaded workflows to both stateless and stateful ENGINES.X where
+for hyperthreaded workflows to a stateless or stateful ENGINE.X of type
 
 	X = py,js,sh,opencv,mat,matlab,csh,r,octave, ...
 
-engines have methods (restful http endpoints):
+Engines are controlled via the following methods (restful http endpoints):
 
 	step (POST,insert) to advance a stateful engine
 	init (PUT,update) to compile a stateful engine
 	kill (DELETE,delete) to deallocate a stateful engine
 	read (GET,select) to execute a stateless engines
 
-Stateful engines are supported by the step, init and kill endpoints, 
+Stateful engines are supported by the step, init and kill methods, 
 and are passed TAU event tokens:
 
 	TAU.i = [{tau}, ...] = events arriving to engine's input port
@@ -39,7 +39,7 @@ be freely interpretted and extended by the engine):
 	status = 0	= Status code
 	value = 0	= Flow calculation
 
-Stateless engines are supported at the read endpoint, and are passed
+Stateless engines are supported by the read method, and are passed
 the following parameters:
 
 	TAU.i = {tau} = input event sinked to an engine
@@ -56,7 +56,7 @@ the config parameters:
 
 ## Installation
 
-Download and unzip into your project/totem folder and revise the project/config module as needed
+Download and unzip into your project/engine folder and revise the project/config module as needed
 for your [Totem](https://git.geointapps.org/acmesds/transfer) project.  Typically, you will
 want to:
 
@@ -68,6 +68,67 @@ to override the defaults.
 
 ## Usage
 
+Below sample use-cases are from engine/config.js:
+	
+	E1: function () {
+
+		var ENGINE = require("../engine");
+		var TOTEM = require("../totem");
+
+		Trace( "A default Totem client", {
+			a_tau_template: ENGINE.tau("somejob.pdf"),
+			engine_errors: ENGINE.error,
+			get_endpts: TOTEM.reader,
+			my_paths: TOTEM.paths
+		});
+		
+	},
+	
+	E2: function () {
+
+		var TOTEM = require("../totem");
+		
+		TOTEM.start({
+			
+			init: function () {
+
+				Trace( "Totem being powered down" );
+				
+				TOTEM.stop();
+			}
+		});
+
+		var ENGINE = require("../engine").config({
+			thread: TOTEM.thread
+		});
+
+	},
+			
+	E3: function () {
+		
+		var TOTEM = require("../totem").start({
+
+			"reader.": {
+				chipper: function Chipper(req,res) {				
+					res( 123 );
+				}
+			},
+			
+			mysql: {
+				host: ENV.MYSQL_HOST,
+				user: ENV.MYSQL_USER,
+				pass: ENV.MYSQL_PASS
+			}
+			
+		});
+
+		var ENGINE = require("../engine").config({
+			thread: TOTEM.thread
+		});
+
+		Trace( "Starting a trivial Totem with a chipper fetcher and a database" );
+
+	}
 
 ## License
 
