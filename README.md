@@ -60,76 +60,13 @@ Download and unzip into your project/totem folder and revise the project/config 
 for your [Totem](https://git.geointapps.org/acmesds/transfer) project.  Typically, you will
 want to:
 
-	ln -s project/config/debe.sh config.sh
-	ln -s project/config/maint.sh maint.sh
-	ln -s project/config/certs certs
+	ln -s ../config/debe.sh config.sh
+	ln -s ../config/maint.sh maint.sh
+	ln -s ../config/certs certs
 	
 to override the defaults.
 
 ## Usage
-
-
-Below sample use-cases are from totem/config.js:
-
-	E1: function () {
-
-		var ENGINE = require("../engine");
-		var TOTEM = require("../totem");
-
-		Trace( "A default Totem client", {
-			a_tau_template: ENGINE.tau("somejob.pdf"),
-			engine_errors: ENGINE.error,
-			get_endpts: TOTEM.reader,
-			my_paths: TOTEM.paths
-		});
-		
-	},
-	
-	E2: function () {
-
-		var TOTEM = require("../totem");
-		
-		TOTEM.start({
-			
-			init: function () {
-
-				Trace( "Totem being powered down" );
-				
-				TOTEM.stop();
-			}
-		});
-
-		var ENGINE = require("../engine").config({
-			thread: TOTEM.thread
-		});
-
-	},
-			
-	E3: function () {
-		
-		var TOTEM = require("../totem").start({
-
-			"reader.": {
-				chipper: function Chipper(req,res) {				
-					res( 123 );
-				}
-			},
-			
-			mysql: {
-				host: ENV.MYSQL_HOST,
-				user: ENV.MYSQL_USER,
-				pass: ENV.MYSQL_PASS
-			}
-			
-		});
-
-		var ENGINE = require("../engine").config({
-			thread: TOTEM.thread
-		});
-
-		Trace( "Starting a trivial Totem with a chipper fetcher and a database" );
-
-	},
 
 
 ## License
