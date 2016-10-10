@@ -1,16 +1,22 @@
 /* 
  * testIF is used to exercise the tau machines prepared by tauIF.cpp for the
  * tau index.js simulator.  
+ * 
+ * NOTE: MUST refactor ENGINE.python,js,opencv calls to conform to new engine
+ * call function (name,port,tau,context,code).  But if "node testIF" loads 
+ * w/o error we know the node-gyp bindings (includes and libs) are okey dokey.
  */
  
-var ENGINE = module.exports = require('geonode/tauif/build/Release/tauIF');
+var ENGINE = module.exports = require("../engine");
+	// './build/Release/engineIF');
+	// 'geonode/tauif/build/Release/tauIF'
 
 var itau = [ENGINE.tau()];
 var otau = [ENGINE.tau()];
 //var state = ENGINE.state();	
 var JOBS = "/home/Admin/swag/jobs/";
 
-switch (2.1) {
+switch (3) {
 	case 1: // program and step haar opencv machine 
 		parm =	{ tau: [], ports: {
 			frame:	 {sink:1,scale:0},
@@ -19,9 +25,9 @@ switch (2.1) {
 		}};
 		itau[0].job = "tile5";
 		console.log(parm);
-		console.log("INIT = ", ENGINE.HAAR("HAAR.Me.Thread1",parm,""));
-		console.log("STEP = ", ENGINE.HAAR("HAAR.Me.Thread1","frame",itau));
-		console.log("STEP = ", ENGINE.HAAR("HAAR.Me.Thread1","helipads",otau));
+		console.log("INIT = ", ENGINE.opencv("opencv.Me.Thread1",parm,""));
+		console.log("STEP = ", ENGINE.opencv("opencv.Me.Thread1","frame",itau));
+		console.log("STEP = ", ENGINE.opencv("opencv.Me.Thread1","helipads",otau));
 		console.log(otau);
 		break;
 		
@@ -38,7 +44,7 @@ switch (2.1) {
 		pgm = "print 'py running'\n" 
 		+ "print tau\n"
 		+ "tau = [{'x':[11,12],'y':[21,22]}]\n"
-		console.log("INIT = ", ENGINE.PYTHON("test.thread",parm,pgm));
+		console.log("INIT = ", ENGINE.python("test.thread",parm,pgm));
 		console.log(parm);
 		break;
 
@@ -54,12 +60,12 @@ switch (2.1) {
 		+ "def helipads(tau,parms):\n\tprint parms\n\treturn -102\n"
 		+ "def faces(tau,parms):\n\tprint parms\n\treturn -103\n";
 		
-		console.log("INIT = ", ENGINE.PYTHON("PY.Me.Thread1",parm,pgm));
-		console.log("STEP = ", ENGINE.PYTHON("PY.Me.Thread1","frame",itau));
+		console.log("INIT = ", ENGINE.python("PY.Me.Thread1",parm,pgm));
+		console.log("STEP = ", ENGINE.python("PY.Me.Thread1","frame",itau));
 		console.log(itau);
-		console.log("STEP = ", ENGINE.PYTHON("PY.Me.Thread1","frame",itau));
+		console.log("STEP = ", ENGINE.python("PY.Me.Thread1","frame",itau));
 		console.log(itau);
-		//console.log("STEP = ", ENGINE.PYTHON("PY.Me.Thread1","helipads",otau));
+		//console.log("STEP = ", ENGINE.python("PY.Me.Thread1","helipads",otau));
 		break;
 		
 	case 2.3: // program and step python machine string with reinit along the way
@@ -74,14 +80,14 @@ switch (2.1) {
 		+ "def helipads(tau,parms):\n\tprint parms\n\treturn -102\n"
 		+ "def faces(tau,parms):\n\tprint parms\n\treturn -103\n";
 		
-		console.log("INIT = ", ENGINE.PYTHON("mytest",parm,pgm));
-		console.log("STEP = ", ENGINE.PYTHON("mytest","frame",itau));
-		console.log("REINIT = ", ENGINE.PYTHON("mytest",parm,pgm));
-		console.log("STEP = ", ENGINE.PYTHON("mytest","frame",itau));
+		console.log("INIT = ", ENGINE.python("mytest",parm,pgm));
+		console.log("STEP = ", ENGINE.python("mytest","frame",itau));
+		console.log("REINIT = ", ENGINE.python("mytest",parm,pgm));
+		console.log("STEP = ", ENGINE.python("mytest","frame",itau));
 		console.log(otau);
 		break;
 
-	case 3: // program and step a JS machine string
+	case 3: // program and step a js machine string
 		parm =	{ ports: {	
 			frame:	 {sink:1,scale:0},
 			helipads:{sink:0,scale:1.01,dim:100,delta:0.1,hits:10,cascade:["c1/cascade"]},
@@ -93,10 +99,10 @@ switch (2.1) {
 		+ "TAU.helipads = function(tau,parms) { return -102; }\n"
 		+ "TAU.faces = function(tau,parms) { return -103; }\n";
 		
-		console.log("INIT = ", ENGINE.JS("mytest",parm,jspgm));
-		console.log("STEP = ", ENGINE.JS("mytest","frame",itau));
+		console.log("INIT = ", ENGINE.js("mytest",parm,jspgm));
+		console.log("STEP = ", ENGINE.js("mytest","frame",itau));
 		console.log(otau);
-		//console.log("STEP = ", ENGINE.PYTHON("test","helipads",otau,parm.helipads));
+		//console.log("STEP = ", ENGINE.python("test","helipads",otau,parm.helipads));
 		break;	
 	
 /*

@@ -36,7 +36,7 @@
 
 			# python shared libs
 			
-			"$(PYLINK)/lib/libpython2.7.so",
+			#"$(PYLINK)/lib/libpython2.7.so",
 			
 			# opencv shared libs
 			

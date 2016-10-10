@@ -4,6 +4,9 @@ TOOLSET := target
 TARGET := opencvIF
 DEFS_Debug := \
 	'-DNODE_GYP_MODULE_NAME=opencvIF' \
+	'-DUSING_UV_SHARED=1' \
+	'-DUSING_V8_SHARED=1' \
+	'-DV8_DEPRECATION_WARNINGS=1' \
 	'-D_LARGEFILE_SOURCE' \
 	'-D_FILE_OFFSET_BITS=64' \
 	'-DDEBUG' \
@@ -33,20 +36,22 @@ CFLAGS_CC_Debug := \
 	-fexceptions
 
 INCS_Debug := \
-	-I/home/admin/.node-gyp/5.5.0/include/node \
-	-I/home/admin/.node-gyp/5.5.0/src \
-	-I/home/admin/.node-gyp/5.5.0/deps/uv/include \
-	-I/home/admin/.node-gyp/5.5.0/deps/v8/include \
+	-I/usr/local/nodejs/include/node \
+	-I/usr/local/nodejs/src \
+	-I/usr/local/nodejs/deps/uv/include \
+	-I/usr/local/nodejs/deps/v8/include \
 	-I$(srcdir)/. \
 	-I$(srcdir)/../mac \
-	-I$(CV)/include \
-	-I$(CAFFE)/include \
+	-I$(INCLUDE)/cuda \
 	-I$(CAFFE)/build/src \
-	-I$(CUDA)/include \
-	-I$(ATLAS)/include
+	-I$(INCLUDE)/atlas \
+	-I$(INCLUDE)/opencv
 
 DEFS_Release := \
 	'-DNODE_GYP_MODULE_NAME=opencvIF' \
+	'-DUSING_UV_SHARED=1' \
+	'-DUSING_V8_SHARED=1' \
+	'-DV8_DEPRECATION_WARNINGS=1' \
 	'-D_LARGEFILE_SOURCE' \
 	'-D_FILE_OFFSET_BITS=64'
 
@@ -76,17 +81,16 @@ CFLAGS_CC_Release := \
 	-fexceptions
 
 INCS_Release := \
-	-I/home/admin/.node-gyp/5.5.0/include/node \
-	-I/home/admin/.node-gyp/5.5.0/src \
-	-I/home/admin/.node-gyp/5.5.0/deps/uv/include \
-	-I/home/admin/.node-gyp/5.5.0/deps/v8/include \
+	-I/usr/local/nodejs/include/node \
+	-I/usr/local/nodejs/src \
+	-I/usr/local/nodejs/deps/uv/include \
+	-I/usr/local/nodejs/deps/v8/include \
 	-I$(srcdir)/. \
 	-I$(srcdir)/../mac \
-	-I$(CV)/include \
-	-I$(CAFFE)/include \
+	-I$(INCLUDE)/cuda \
 	-I$(CAFFE)/build/src \
-	-I$(CUDA)/include \
-	-I$(ATLAS)/include
+	-I$(INCLUDE)/atlas \
+	-I$(INCLUDE)/opencv
 
 OBJS := \
 	$(obj).target/$(TARGET)/opencvIF.o
@@ -127,19 +131,19 @@ LDFLAGS_Release := \
 
 LIBS := \
 	$(CAFFE)/build/lib/libcaffe.so \
-	$(CV)/lib/libopencv_calib3d.so \
-	$(CV)/lib/libopencv_core.so \
-	$(CV)/lib/libopencv_features2d.so \
-	$(CV)/lib/libopencv_flann.so \
-	$(CV)/lib/libopencv_highgui.so \
-	$(CV)/lib/libopencv_imgproc.so \
-	$(CV)/lib/libopencv_ml.so \
-	$(CV)/lib/libopencv_objdetect.so \
-	$(CV)/lib/libopencv_photo.so \
-	$(CV)/lib/libopencv_stitching.so \
-	$(CV)/lib/libopencv_superres.so \
-	$(CV)/lib/libopencv_video.so \
-	$(CV)/lib/libopencv_videostab.so
+	$(LIB)/opencv/libopencv_calib3d.so \
+	$(LIB)/opencv/libopencv_core.so \
+	$(LIB)/opencv/libopencv_features2d.so \
+	$(LIB)/opencv/libopencv_flann.so \
+	$(LIB)/opencv/libopencv_highgui.so \
+	$(LIB)/opencv/libopencv_imgproc.so \
+	$(LIB)/opencv/libopencv_ml.so \
+	$(LIB)/opencv/libopencv_objdetect.so \
+	$(LIB)/opencv/libopencv_photo.so \
+	$(LIB)/opencv/libopencv_stitching.so \
+	$(LIB)/opencv/libopencv_superres.so \
+	$(LIB)/opencv/libopencv_video.so \
+	$(LIB)/opencv/libopencv_videostab.so
 
 $(obj).target/opencvIF.so: GYP_LDFLAGS := $(LDFLAGS_$(BUILDTYPE))
 $(obj).target/opencvIF.so: LIBS := $(LIBS)

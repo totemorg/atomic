@@ -4,6 +4,9 @@ TOOLSET := target
 TARGET := pythonIF
 DEFS_Debug := \
 	'-DNODE_GYP_MODULE_NAME=pythonIF' \
+	'-DUSING_UV_SHARED=1' \
+	'-DUSING_V8_SHARED=1' \
+	'-DV8_DEPRECATION_WARNINGS=1' \
 	'-D_LARGEFILE_SOURCE' \
 	'-D_FILE_OFFSET_BITS=64' \
 	'-DDEBUG' \
@@ -30,16 +33,19 @@ CFLAGS_CC_Debug := \
 	-std=gnu++0x
 
 INCS_Debug := \
-	-I/home/admin/.node-gyp/5.5.0/include/node \
-	-I/home/admin/.node-gyp/5.5.0/src \
-	-I/home/admin/.node-gyp/5.5.0/deps/uv/include \
-	-I/home/admin/.node-gyp/5.5.0/deps/v8/include \
+	-I/usr/local/nodejs/include/node \
+	-I/usr/local/nodejs/src \
+	-I/usr/local/nodejs/deps/uv/include \
+	-I/usr/local/nodejs/deps/v8/include \
+	-I$(srcdir)/. \
 	-I$(srcdir)/../mac \
-	-I$(CONDA)/include/python2.7 \
-	-I$(srcdir)/.
+	-I$(INCLUDE)/python
 
 DEFS_Release := \
 	'-DNODE_GYP_MODULE_NAME=pythonIF' \
+	'-DUSING_UV_SHARED=1' \
+	'-DUSING_V8_SHARED=1' \
+	'-DV8_DEPRECATION_WARNINGS=1' \
 	'-D_LARGEFILE_SOURCE' \
 	'-D_FILE_OFFSET_BITS=64'
 
@@ -66,13 +72,13 @@ CFLAGS_CC_Release := \
 	-std=gnu++0x
 
 INCS_Release := \
-	-I/home/admin/.node-gyp/5.5.0/include/node \
-	-I/home/admin/.node-gyp/5.5.0/src \
-	-I/home/admin/.node-gyp/5.5.0/deps/uv/include \
-	-I/home/admin/.node-gyp/5.5.0/deps/v8/include \
+	-I/usr/local/nodejs/include/node \
+	-I/usr/local/nodejs/src \
+	-I/usr/local/nodejs/deps/uv/include \
+	-I/usr/local/nodejs/deps/v8/include \
+	-I$(srcdir)/. \
 	-I$(srcdir)/../mac \
-	-I$(CONDA)/include/python2.7 \
-	-I$(srcdir)/.
+	-I$(INCLUDE)/python
 
 OBJS := \
 	$(obj).target/$(TARGET)/pythonIF.o
@@ -112,7 +118,7 @@ LDFLAGS_Release := \
 	-m64
 
 LIBS := \
-	$(CONDA)/lib/libpython2.7.so
+	$(LIB)/python/libpython2.7.so
 
 $(obj).target/pythonIF.so: GYP_LDFLAGS := $(LDFLAGS_$(BUILDTYPE))
 $(obj).target/pythonIF.so: LIBS := $(LIBS)

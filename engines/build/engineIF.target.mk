@@ -4,6 +4,9 @@ TOOLSET := target
 TARGET := engineIF
 DEFS_Debug := \
 	'-DNODE_GYP_MODULE_NAME=engineIF' \
+	'-DUSING_UV_SHARED=1' \
+	'-DUSING_V8_SHARED=1' \
+	'-DV8_DEPRECATION_WARNINGS=1' \
 	'-D_LARGEFILE_SOURCE' \
 	'-D_FILE_OFFSET_BITS=64' \
 	'-DBUILDING_NODE_EXTENSION' \
@@ -40,6 +43,9 @@ INCS_Debug := \
 
 DEFS_Release := \
 	'-DNODE_GYP_MODULE_NAME=engineIF' \
+	'-DUSING_UV_SHARED=1' \
+	'-DUSING_V8_SHARED=1' \
+	'-DV8_DEPRECATION_WARNINGS=1' \
 	'-D_LARGEFILE_SOURCE' \
 	'-D_FILE_OFFSET_BITS=64' \
 	'-DBUILDING_NODE_EXTENSION'
@@ -114,8 +120,7 @@ LDFLAGS_Release := \
 LIBS := \
 	$(ENGINES)/opencv/build/Release/opencvIF.so \
 	$(ENGINES)/python/build/Release/pythonIF.so \
-	$(ENGINES)/mac/build/Release/macIF.so \
-	$(PYLINK)/lib/libpython2.7.so
+	$(ENGINES)/mac/build/Release/macIF.so
 
 $(obj).target/engineIF.node: GYP_LDFLAGS := $(LDFLAGS_$(BUILDTYPE))
 $(obj).target/engineIF.node: LIBS := $(LIBS)

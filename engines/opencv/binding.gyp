@@ -26,11 +26,15 @@
 		"include_dirs": [
 			".",
 			"../mac",
-			"$(CV)/include",
-			"$(CAFFE)/include",
+			"$(INCLUDE)/cuda",
 			"$(CAFFE)/build/src",
-			"$(CUDA)/include",
-			"$(ATLAS)/include"
+			"$(INCLUDE)/atlas",
+			"$(INCLUDE)/opencv"
+			#"$(CV)/include",
+			#"$(CAFFE)/include",
+			#"$(CAFFE)/build/src",
+			#"$(CUDA)/include",
+			#"$(ATLAS)/include"
 		],
 		
 		"sources": [
@@ -50,19 +54,34 @@
 			#"$(CV)/lib/libopencv_legacy.so",
 			#"$(CV)/lib/libopencv_nonfree.so",
 			#"$(CV)/lib/libopencv_ocl.so",
-			"$(CV)/lib/libopencv_calib3d.so",	
-			"$(CV)/lib/libopencv_core.so",
-			"$(CV)/lib/libopencv_features2d.so",
-			"$(CV)/lib/libopencv_flann.so",
-			"$(CV)/lib/libopencv_highgui.so",
-			"$(CV)/lib/libopencv_imgproc.so",
-			"$(CV)/lib/libopencv_ml.so",
-			"$(CV)/lib/libopencv_objdetect.so",
-			"$(CV)/lib/libopencv_photo.so",
-			"$(CV)/lib/libopencv_stitching.so",
-			"$(CV)/lib/libopencv_superres.so",
-			"$(CV)/lib/libopencv_video.so",
-			"$(CV)/lib/libopencv_videostab.so"
+			
+			#"$(CV)/lib/libopencv_calib3d.so",	
+			#"$(CV)/lib/libopencv_core.so",
+			#"$(CV)/lib/libopencv_features2d.so",
+			#"$(CV)/lib/libopencv_flann.so",
+			#"$(CV)/lib/libopencv_highgui.so",
+			#"$(CV)/lib/libopencv_imgproc.so",
+			#"$(CV)/lib/libopencv_ml.so",
+			#"$(CV)/lib/libopencv_objdetect.so",
+			#"$(CV)/lib/libopencv_photo.so",
+			#"$(CV)/lib/libopencv_stitching.so",
+			#"$(CV)/lib/libopencv_superres.so",
+			#"$(CV)/lib/libopencv_video.so",
+			#"$(CV)/lib/libopencv_videostab.so"
+
+			"$(LIB)/opencv/libopencv_calib3d.so",	
+			"$(LIB)/opencv/libopencv_core.so",
+			"$(LIB)/opencv/libopencv_features2d.so",
+			"$(LIB)/opencv/libopencv_flann.so",
+			"$(LIB)/opencv/libopencv_highgui.so",
+			"$(LIB)/opencv/libopencv_imgproc.so",
+			"$(LIB)/opencv/libopencv_ml.so",
+			"$(LIB)/opencv/libopencv_objdetect.so",
+			"$(LIB)/opencv/libopencv_photo.so",
+			"$(LIB)/opencv/libopencv_stitching.so",
+			"$(LIB)/opencv/libopencv_superres.so",
+			"$(LIB)/opencv/libopencv_video.so",
+			"$(LIB)/opencv/libopencv_videostab.so"
 		],
 
 		"define": [   # caffe make options needed

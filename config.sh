@@ -4,70 +4,72 @@
 export node_path=./node_modules
 export HERE=`pwd`
 
-# Anaconda suite
-export CONDA=$BASE/anaconda
-export JOBS=$HERE/jobs
-
 # OpenCV
-export CV=$BASE/opencv
-export PATH=$PATH:$CV/include:$CV/bin
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CV/lib
+#export OPENCV=$BASE/opencv
+export PATH=$PATH:$INCLUDE/opencv:$BASE/opencv/bin
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIB/opencv
 
 # To use python2.7 under anaconda
 
 # make sure Python2.6 SQL connector was copied to $CONDA/lib/python2.7/site-packages/mysql/connector
 
+# Anaconda suite
+export CONDA=$BASE/anaconda
 export PYLINK=$CONDA
-
 export PYTHON=$CONDA/bin/python2.7
 export PYTHONHOME=$CONDA
 export PYTHONPATH=$HERE/public/py:$CAFFE/python:$PYTHON/:$PYTHON/site-packages
 #export PYTHONORIGIN=/usr
-export PATH=$PATH:$CONDA/bin
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA/lib
+export PATH=$PATH:$CONDA/bin:$INCLUDE/python
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIB/python
 
 # Engines
 export ENGINES=$HERE/engines
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ENGINES/python/build/Release:$ENGINES/opencv/build/Release:$ENGINES/mac/build/Release
-#export PATH=$PATH:/usr/lib/qt-3.3/bin:$CV/bin
+export JOBS=$HERE/jobs
+#export PATH=$PATH:/usr/lib/qt-3.3/bin:$OPENCV/bin
 
 # boost etc
-export BOOST=/local/boost
-export PATH=$PATH:$BOOST/include
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$BOOST/lib64
+#export BOOST=$BASE/boost
+export PATH=$PATH:$INCLUDE/boost
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIB/boost
 
-export GFLAGS=/local/gflags
-export PATH=$PATH:$GFLAGS/include
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$GFLAGS/lib64
+#export GFLAGS=$BASE/gflags
+export PATH=$PATH:$INCLUDE/gflags
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIB/gflags
 
-export GLOG=/local/glog
-export PATH=$PATH:$GLOG/include
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$GLOG/lib64
+#export GLOG=$BASE/glog
+export PATH=$PATH:$INCLUDE/glog
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIB/glog
 
-export LMDB=/local/lmdb
-export PATH=$PATH:$LMDB/include
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LMDB/lib64
+#export LMDB=$BASE/lmdb
+export PATH=$PATH:$INCLUDE/lmdb
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIB/lmdb
 
-export LEVELDB=/local/leveldb
-export PATH=$PATH:$LEVELDB/include
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LEVELDB/lib64
+#export LEVELDB=$BASE/leveldb
+export PATH=$PATH:$INCLUDE/leveldb
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIB/leveldb
 
-export HDF5=/local/hdf5
-export PATH=$PATH:$HDF5/include
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HDF5/lib64
+#export HDF5=$BASE/hdf5
+export PATH=$PATH:$INCLUDE/hdf5
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIB/hdf5
 
-# atlas blas
-export ATLAS=$BASE/atlas
-export PATH=$PATH:$ATLAS/include
+# atlas and blas
+#export ATLAS=$BASE/atlas
+export PATH=$PATH:$INCLUDE/atlas
 
 # cuda-caffe
-export CUDA=$BASE/cuda
-export DNN=$BASE/cuDNN/cuda
+#export CUDA=$BASE/cuda
+#export DNN=$BASE/cuDNN/cuda
 export CAFFE=$BASE/caffe
-export PATH=$PATH:$CUDA/bin:$DNN/include
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA/lib64:$DNN/lib64:$CAFFE/lib
+#export PATH=$PATH:$CUDA/bin:$DNN/include
+export PATH=$PATH:$INCLUDE/cuda:$INCLUDE/cuDNN:$INCLUDE/caffe:$INCLUDE/protobuf
+
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIB/cuda:$LIB/cuDNN:$LIB/caffe:$LIB/protobuf:$LIB/leveldb
+#export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA/lib64:$DNN/lib64:$CAFFE/lib
+
 # required for node-gyp caffe binding
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CAFFE/build/lib:$DNN/lib64:$CONDA/lib
+#export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CAFFE/build/lib:$DNN/lib64:$CONDA/lib
 
 #python sql access
 export DB_PASS=$MYSQL_PASS
@@ -76,7 +78,7 @@ export DB_NAME=$MYSQL_NAME
 export DB_HOST=$MYSQL_HOST
 
 # engine compile switches
-if [ "$HOST" == "$GPU_HOST" ]; then
+if [ "$HOST" == "$GPUHOST" ]; then
 	export HASGPU=1
 	export HASCAFFE=1
 else

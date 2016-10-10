@@ -22,15 +22,17 @@
 		"target_name": "pythonIF",
 		"type": "<(library)",
 		"include_dirs": [
+			".",
 			"../mac",
-			"$(CONDA)/include/python2.7",
-			"."
+			#"$(CONDA)/include/python2.7",
+			"$(INCLUDE)/python"
 		],
 		"sources": [
 			"pythonIF.cpp"
 		],
 		"libraries": [
-			"$(CONDA)/lib/libpython2.7.so"
+			#"$(CONDA)/lib/libpython2.7.so"
+			"$(LIB)/python/libpython2.7.so"
 		]	
 	}]
 }
