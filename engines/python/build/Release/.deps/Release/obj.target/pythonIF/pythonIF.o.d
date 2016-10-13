@@ -1,120 +1,132 @@
-cmd_Release/obj.target/pythonIF/pythonIF.o := g++ '-DNODE_GYP_MODULE_NAME=pythonIF' '-DUSING_UV_SHARED=1' '-DUSING_V8_SHARED=1' '-DV8_DEPRECATION_WARNINGS=1' '-D_LARGEFILE_SOURCE' '-D_FILE_OFFSET_BITS=64' -I/usr/local/nodejs/include/node -I/usr/local/nodejs/src -I/usr/local/nodejs/deps/uv/include -I/usr/local/nodejs/deps/v8/include -I../. -I../../mac -I/usr/local/include/python  -fPIC -pthread -Wall -Wextra -Wno-unused-parameter -m64 -O3 -ffunction-sections -fdata-sections -fno-omit-frame-pointer -fno-rtti -fno-exceptions -std=gnu++0x -MMD -MF ./Release/.deps/Release/obj.target/pythonIF/pythonIF.o.d.raw   -c -o Release/obj.target/pythonIF/pythonIF.o ../pythonIF.cpp
+cmd_Release/obj.target/pythonIF/pythonIF.o := g++ '-DNODE_GYP_MODULE_NAME=pythonIF' '-DUSING_UV_SHARED=1' '-DUSING_V8_SHARED=1' '-DV8_DEPRECATION_WARNINGS=1' '-D_LARGEFILE_SOURCE' '-D_FILE_OFFSET_BITS=64' -I/home/admin/.node-gyp/5.5.0/include/node -I/home/admin/.node-gyp/5.5.0/src -I/home/admin/.node-gyp/5.5.0/deps/uv/include -I/home/admin/.node-gyp/5.5.0/deps/v8/include -I../. -I../../mac -I/home/admin/base/include/python  -fPIC -pthread -Wall -Wextra -Wno-unused-parameter -m64 -O3 -ffunction-sections -fdata-sections -fno-omit-frame-pointer -fno-rtti -fno-exceptions -std=gnu++0x -MMD -MF ./Release/.deps/Release/obj.target/pythonIF/pythonIF.o.d.raw   -c -o Release/obj.target/pythonIF/pythonIF.o ../pythonIF.cpp
 Release/obj.target/pythonIF/pythonIF.o: ../pythonIF.cpp \
- /usr/local/include/python/Python.h \
- /usr/local/include/python/patchlevel.h \
- /usr/local/include/python/pyconfig.h \
- /usr/local/include/python/pymacconfig.h \
- /usr/local/include/python/pyport.h /usr/local/include/python/pymath.h \
- /usr/local/include/python/pymem.h /usr/local/include/python/object.h \
- /usr/local/include/python/objimpl.h /usr/local/include/python/pydebug.h \
- /usr/local/include/python/unicodeobject.h \
- /usr/local/include/python/intobject.h \
- /usr/local/include/python/boolobject.h \
- /usr/local/include/python/longobject.h \
- /usr/local/include/python/floatobject.h \
- /usr/local/include/python/complexobject.h \
- /usr/local/include/python/rangeobject.h \
- /usr/local/include/python/stringobject.h \
- /usr/local/include/python/memoryobject.h \
- /usr/local/include/python/bufferobject.h \
- /usr/local/include/python/bytesobject.h \
- /usr/local/include/python/bytearrayobject.h \
- /usr/local/include/python/tupleobject.h \
- /usr/local/include/python/listobject.h \
- /usr/local/include/python/dictobject.h \
- /usr/local/include/python/enumobject.h \
- /usr/local/include/python/setobject.h \
- /usr/local/include/python/methodobject.h \
- /usr/local/include/python/moduleobject.h \
- /usr/local/include/python/funcobject.h \
- /usr/local/include/python/classobject.h \
- /usr/local/include/python/fileobject.h \
- /usr/local/include/python/cobject.h \
- /usr/local/include/python/pycapsule.h \
- /usr/local/include/python/traceback.h \
- /usr/local/include/python/sliceobject.h \
- /usr/local/include/python/cellobject.h \
- /usr/local/include/python/iterobject.h \
- /usr/local/include/python/genobject.h \
- /usr/local/include/python/descrobject.h \
- /usr/local/include/python/warnings.h \
- /usr/local/include/python/weakrefobject.h \
- /usr/local/include/python/codecs.h /usr/local/include/python/pyerrors.h \
- /usr/local/include/python/pystate.h /usr/local/include/python/pyarena.h \
- /usr/local/include/python/modsupport.h \
- /usr/local/include/python/pythonrun.h /usr/local/include/python/ceval.h \
- /usr/local/include/python/sysmodule.h \
- /usr/local/include/python/intrcheck.h /usr/local/include/python/import.h \
- /usr/local/include/python/abstract.h /usr/local/include/python/compile.h \
- /usr/local/include/python/code.h /usr/local/include/python/eval.h \
- /usr/local/include/python/pyctype.h /usr/local/include/python/pystrtod.h \
- /usr/local/include/python/pystrcmp.h /usr/local/include/python/dtoa.h \
- /usr/local/include/python/pyfpe.h /usr/local/nodejs/include/node/v8.h \
- /usr/local/nodejs/include/node/v8-version.h \
- /usr/local/nodejs/include/node/v8config.h ../../mac/macIF.h
+ /home/admin/base/include/python/Python.h \
+ /home/admin/base/include/python/patchlevel.h \
+ /home/admin/base/include/python/pyconfig.h \
+ /home/admin/base/include/python/pymacconfig.h \
+ /home/admin/base/include/python/pyport.h \
+ /home/admin/base/include/python/pymath.h \
+ /home/admin/base/include/python/pymem.h \
+ /home/admin/base/include/python/object.h \
+ /home/admin/base/include/python/objimpl.h \
+ /home/admin/base/include/python/pydebug.h \
+ /home/admin/base/include/python/unicodeobject.h \
+ /home/admin/base/include/python/intobject.h \
+ /home/admin/base/include/python/boolobject.h \
+ /home/admin/base/include/python/longobject.h \
+ /home/admin/base/include/python/floatobject.h \
+ /home/admin/base/include/python/complexobject.h \
+ /home/admin/base/include/python/rangeobject.h \
+ /home/admin/base/include/python/stringobject.h \
+ /home/admin/base/include/python/memoryobject.h \
+ /home/admin/base/include/python/bufferobject.h \
+ /home/admin/base/include/python/bytesobject.h \
+ /home/admin/base/include/python/bytearrayobject.h \
+ /home/admin/base/include/python/tupleobject.h \
+ /home/admin/base/include/python/listobject.h \
+ /home/admin/base/include/python/dictobject.h \
+ /home/admin/base/include/python/enumobject.h \
+ /home/admin/base/include/python/setobject.h \
+ /home/admin/base/include/python/methodobject.h \
+ /home/admin/base/include/python/moduleobject.h \
+ /home/admin/base/include/python/funcobject.h \
+ /home/admin/base/include/python/classobject.h \
+ /home/admin/base/include/python/fileobject.h \
+ /home/admin/base/include/python/cobject.h \
+ /home/admin/base/include/python/pycapsule.h \
+ /home/admin/base/include/python/traceback.h \
+ /home/admin/base/include/python/sliceobject.h \
+ /home/admin/base/include/python/cellobject.h \
+ /home/admin/base/include/python/iterobject.h \
+ /home/admin/base/include/python/genobject.h \
+ /home/admin/base/include/python/descrobject.h \
+ /home/admin/base/include/python/warnings.h \
+ /home/admin/base/include/python/weakrefobject.h \
+ /home/admin/base/include/python/codecs.h \
+ /home/admin/base/include/python/pyerrors.h \
+ /home/admin/base/include/python/pystate.h \
+ /home/admin/base/include/python/pyarena.h \
+ /home/admin/base/include/python/modsupport.h \
+ /home/admin/base/include/python/pythonrun.h \
+ /home/admin/base/include/python/ceval.h \
+ /home/admin/base/include/python/sysmodule.h \
+ /home/admin/base/include/python/intrcheck.h \
+ /home/admin/base/include/python/import.h \
+ /home/admin/base/include/python/abstract.h \
+ /home/admin/base/include/python/compile.h \
+ /home/admin/base/include/python/code.h \
+ /home/admin/base/include/python/eval.h \
+ /home/admin/base/include/python/pyctype.h \
+ /home/admin/base/include/python/pystrtod.h \
+ /home/admin/base/include/python/pystrcmp.h \
+ /home/admin/base/include/python/dtoa.h \
+ /home/admin/base/include/python/pyfpe.h \
+ /home/admin/.node-gyp/5.5.0/include/node/v8.h \
+ /home/admin/.node-gyp/5.5.0/include/node/v8-version.h \
+ /home/admin/.node-gyp/5.5.0/include/node/v8config.h ../../mac/macIF.h
 ../pythonIF.cpp:
-/usr/local/include/python/Python.h:
-/usr/local/include/python/patchlevel.h:
-/usr/local/include/python/pyconfig.h:
-/usr/local/include/python/pymacconfig.h:
-/usr/local/include/python/pyport.h:
-/usr/local/include/python/pymath.h:
-/usr/local/include/python/pymem.h:
-/usr/local/include/python/object.h:
-/usr/local/include/python/objimpl.h:
-/usr/local/include/python/pydebug.h:
-/usr/local/include/python/unicodeobject.h:
-/usr/local/include/python/intobject.h:
-/usr/local/include/python/boolobject.h:
-/usr/local/include/python/longobject.h:
-/usr/local/include/python/floatobject.h:
-/usr/local/include/python/complexobject.h:
-/usr/local/include/python/rangeobject.h:
-/usr/local/include/python/stringobject.h:
-/usr/local/include/python/memoryobject.h:
-/usr/local/include/python/bufferobject.h:
-/usr/local/include/python/bytesobject.h:
-/usr/local/include/python/bytearrayobject.h:
-/usr/local/include/python/tupleobject.h:
-/usr/local/include/python/listobject.h:
-/usr/local/include/python/dictobject.h:
-/usr/local/include/python/enumobject.h:
-/usr/local/include/python/setobject.h:
-/usr/local/include/python/methodobject.h:
-/usr/local/include/python/moduleobject.h:
-/usr/local/include/python/funcobject.h:
-/usr/local/include/python/classobject.h:
-/usr/local/include/python/fileobject.h:
-/usr/local/include/python/cobject.h:
-/usr/local/include/python/pycapsule.h:
-/usr/local/include/python/traceback.h:
-/usr/local/include/python/sliceobject.h:
-/usr/local/include/python/cellobject.h:
-/usr/local/include/python/iterobject.h:
-/usr/local/include/python/genobject.h:
-/usr/local/include/python/descrobject.h:
-/usr/local/include/python/warnings.h:
-/usr/local/include/python/weakrefobject.h:
-/usr/local/include/python/codecs.h:
-/usr/local/include/python/pyerrors.h:
-/usr/local/include/python/pystate.h:
-/usr/local/include/python/pyarena.h:
-/usr/local/include/python/modsupport.h:
-/usr/local/include/python/pythonrun.h:
-/usr/local/include/python/ceval.h:
-/usr/local/include/python/sysmodule.h:
-/usr/local/include/python/intrcheck.h:
-/usr/local/include/python/import.h:
-/usr/local/include/python/abstract.h:
-/usr/local/include/python/compile.h:
-/usr/local/include/python/code.h:
-/usr/local/include/python/eval.h:
-/usr/local/include/python/pyctype.h:
-/usr/local/include/python/pystrtod.h:
-/usr/local/include/python/pystrcmp.h:
-/usr/local/include/python/dtoa.h:
-/usr/local/include/python/pyfpe.h:
-/usr/local/nodejs/include/node/v8.h:
-/usr/local/nodejs/include/node/v8-version.h:
-/usr/local/nodejs/include/node/v8config.h:
+/home/admin/base/include/python/Python.h:
+/home/admin/base/include/python/patchlevel.h:
+/home/admin/base/include/python/pyconfig.h:
+/home/admin/base/include/python/pymacconfig.h:
+/home/admin/base/include/python/pyport.h:
+/home/admin/base/include/python/pymath.h:
+/home/admin/base/include/python/pymem.h:
+/home/admin/base/include/python/object.h:
+/home/admin/base/include/python/objimpl.h:
+/home/admin/base/include/python/pydebug.h:
+/home/admin/base/include/python/unicodeobject.h:
+/home/admin/base/include/python/intobject.h:
+/home/admin/base/include/python/boolobject.h:
+/home/admin/base/include/python/longobject.h:
+/home/admin/base/include/python/floatobject.h:
+/home/admin/base/include/python/complexobject.h:
+/home/admin/base/include/python/rangeobject.h:
+/home/admin/base/include/python/stringobject.h:
+/home/admin/base/include/python/memoryobject.h:
+/home/admin/base/include/python/bufferobject.h:
+/home/admin/base/include/python/bytesobject.h:
+/home/admin/base/include/python/bytearrayobject.h:
+/home/admin/base/include/python/tupleobject.h:
+/home/admin/base/include/python/listobject.h:
+/home/admin/base/include/python/dictobject.h:
+/home/admin/base/include/python/enumobject.h:
+/home/admin/base/include/python/setobject.h:
+/home/admin/base/include/python/methodobject.h:
+/home/admin/base/include/python/moduleobject.h:
+/home/admin/base/include/python/funcobject.h:
+/home/admin/base/include/python/classobject.h:
+/home/admin/base/include/python/fileobject.h:
+/home/admin/base/include/python/cobject.h:
+/home/admin/base/include/python/pycapsule.h:
+/home/admin/base/include/python/traceback.h:
+/home/admin/base/include/python/sliceobject.h:
+/home/admin/base/include/python/cellobject.h:
+/home/admin/base/include/python/iterobject.h:
+/home/admin/base/include/python/genobject.h:
+/home/admin/base/include/python/descrobject.h:
+/home/admin/base/include/python/warnings.h:
+/home/admin/base/include/python/weakrefobject.h:
+/home/admin/base/include/python/codecs.h:
+/home/admin/base/include/python/pyerrors.h:
+/home/admin/base/include/python/pystate.h:
+/home/admin/base/include/python/pyarena.h:
+/home/admin/base/include/python/modsupport.h:
+/home/admin/base/include/python/pythonrun.h:
+/home/admin/base/include/python/ceval.h:
+/home/admin/base/include/python/sysmodule.h:
+/home/admin/base/include/python/intrcheck.h:
+/home/admin/base/include/python/import.h:
+/home/admin/base/include/python/abstract.h:
+/home/admin/base/include/python/compile.h:
+/home/admin/base/include/python/code.h:
+/home/admin/base/include/python/eval.h:
+/home/admin/base/include/python/pyctype.h:
+/home/admin/base/include/python/pystrtod.h:
+/home/admin/base/include/python/pystrcmp.h:
+/home/admin/base/include/python/dtoa.h:
+/home/admin/base/include/python/pyfpe.h:
+/home/admin/.node-gyp/5.5.0/include/node/v8.h:
+/home/admin/.node-gyp/5.5.0/include/node/v8-version.h:
+/home/admin/.node-gyp/5.5.0/include/node/v8config.h:
 ../../mac/macIF.h:

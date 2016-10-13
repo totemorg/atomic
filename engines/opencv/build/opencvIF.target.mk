@@ -36,15 +36,17 @@ CFLAGS_CC_Debug := \
 	-fexceptions
 
 INCS_Debug := \
-	-I/usr/local/nodejs/include/node \
-	-I/usr/local/nodejs/src \
-	-I/usr/local/nodejs/deps/uv/include \
-	-I/usr/local/nodejs/deps/v8/include \
+	-I/home/admin/.node-gyp/5.5.0/include/node \
+	-I/home/admin/.node-gyp/5.5.0/src \
+	-I/home/admin/.node-gyp/5.5.0/deps/uv/include \
+	-I/home/admin/.node-gyp/5.5.0/deps/v8/include \
 	-I$(srcdir)/. \
 	-I$(srcdir)/../mac \
 	-I$(INCLUDE)/cuda \
 	-I$(CAFFE)/build/src \
+	-I$(CAFFE)/include \
 	-I$(INCLUDE)/atlas \
+	-I$(INCLUDE) \
 	-I$(INCLUDE)/opencv
 
 DEFS_Release := \
@@ -81,15 +83,17 @@ CFLAGS_CC_Release := \
 	-fexceptions
 
 INCS_Release := \
-	-I/usr/local/nodejs/include/node \
-	-I/usr/local/nodejs/src \
-	-I/usr/local/nodejs/deps/uv/include \
-	-I/usr/local/nodejs/deps/v8/include \
+	-I/home/admin/.node-gyp/5.5.0/include/node \
+	-I/home/admin/.node-gyp/5.5.0/src \
+	-I/home/admin/.node-gyp/5.5.0/deps/uv/include \
+	-I/home/admin/.node-gyp/5.5.0/deps/v8/include \
 	-I$(srcdir)/. \
 	-I$(srcdir)/../mac \
 	-I$(INCLUDE)/cuda \
 	-I$(CAFFE)/build/src \
+	-I$(CAFFE)/include \
 	-I$(INCLUDE)/atlas \
+	-I$(INCLUDE) \
 	-I$(INCLUDE)/opencv
 
 OBJS := \

@@ -47,8 +47,8 @@
     "v8_random_seed": 0,
     "v8_use_snapshot": "true",
     "want_separate_host_toolset": 0,
-    "nodedir": "/usr/local/nodejs",
-    "copy_dev_lib": "false",
+    "nodedir": "/home/admin/.node-gyp/5.5.0",
+    "copy_dev_lib": "true",
     "standalone_static_library": 1
   }
 }

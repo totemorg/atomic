@@ -28,8 +28,11 @@
 			"../mac",
 			"$(INCLUDE)/cuda",
 			"$(CAFFE)/build/src",
+			"$(CAFFE)/include",
 			"$(INCLUDE)/atlas",
+			"$(INCLUDE)",
 			"$(INCLUDE)/opencv"
+			
 			#"$(CV)/include",
 			#"$(CAFFE)/include",
 			#"$(CAFFE)/build/src",
