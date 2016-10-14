@@ -58,17 +58,17 @@ the config parameters:
 
 Download and unzip into your project/engine folder and revise the project/config module as needed
 for your [Totem](https://git.geointapps.org/acmesds/transfer) project.  Typically, you will
-want to:
+want to redirect the following to your project/config
 
 	ln -s ../config/debe.sh config.sh
 	ln -s ../config/maint.sh maint.sh
 	ln -s ../config/certs certs
 	
-to override the defaults.
+## Examples
 
-## Usage
+Below sample use-cases are from engine/config.js.
 
-Below sample use-cases are from engine/config.js:
+### E1
 	
 	E1: function () {
 
@@ -83,7 +83,9 @@ Below sample use-cases are from engine/config.js:
 		});
 		
 	},
-	
+
+### E2
+
 	E2: function () {
 
 		var TOTEM = require("../totem");
@@ -103,7 +105,9 @@ Below sample use-cases are from engine/config.js:
 		});
 
 	},
-			
+
+### E3
+
 	E3: function () {
 		
 		var TOTEM = require("../totem").start({
