@@ -1,13 +1,13 @@
-# Totem ENGINE
+# ENGINE
 
 [![Forked from SourceForge](https://sourceforge.net)]
 
-[Totem](https://git.geointapps.org/acmesds/transfer)'s ENGINE module provides a foundation 
-for hyperthreaded workflows to a stateless or stateful ENGINE.X of type
+The ENGINE module provides a foundation for hyperthreaded workflows to both stateless and 
+stateful engines of type
 
 	X = py,js,sh,opencv,mat,matlab,csh,r,octave, ...
 
-Engines are controlled via the following methods (restful http endpoints):
+at ENGINE.X.  Engines are controlled via the following methods (restful http endpoints):
 
 	step (POST,insert) to advance a stateful engine
 	init (PUT,update) to compile a stateful engine
@@ -56,17 +56,18 @@ the config parameters:
 
 ## Installation
 
-Download and unzip into your project/engine folder and revise the project/config module as needed
-for your [Totem](https://git.geointapps.org/acmesds/transfer) project.  Typically, you will
-want to redirect the following to your project/config
+Download the latest version with
 
-	ln -s ../config/debe.sh config.sh
-	ln -s ../config/maint.sh maint.sh
-	ln -s ../config/certs certs
+	git clone https://git.geointapps.org/acmesds/flex
+	
+Typically, you will want to redirect the following to your project/master
+
+	ln -s ../master/test.js test.js
+	ln -s ../master/maint.sh maint.sh
 	
 ## Examples
 
-Below sample use-cases are from engine/config.js.
+Below sample use-cases are from engine/test.js.
 
 ### E1
 	
