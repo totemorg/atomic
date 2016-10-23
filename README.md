@@ -1,8 +1,8 @@
+/**
+@class engine [![Forked from SourceForge](https://sourceforge.net)]
 # ENGINE
 
-[![Forked from SourceForge](https://sourceforge.net)]
-
-The ENGINE module provides a foundation for hyperthreaded workflows to both stateless and 
+The ENGINE NodeJS module provides a foundation for hyperthreaded workflows to both stateless and 
 stateful engines of type
 
 	X = py,js,sh,opencv,mat,matlab,csh,r,octave, ...
@@ -138,3 +138,5 @@ Below sample use-cases are from engine/test.js.
 ## License
 
 [MIT](LICENSE)
+
+*/

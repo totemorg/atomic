@@ -1,7 +1,7 @@
 // UNCLASSIFIED
 
 /**
- * @module ENGINE
+ * @class engine
  * @requires engineIF
  * @requires child_process
  * @requires fs
@@ -10,7 +10,6 @@
  * @requires digitalsignals
  * @requires graceful-lwip
  * @requires crypto
- * @include README.md
  */
 
 var 														// NodeJS modules
