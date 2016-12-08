@@ -79,7 +79,7 @@ export DB_NAME=$MYSQL_NAME
 export DB_HOST=$MYSQL_HOST
 
 # engine compile switches
-if [ "$HOST" == "$GPUHOST" ]; then
+if [ `hostname` == "$GPUHOST" ]; then
 	export HASGPU=1
 	export HASCAFFE=1
 else

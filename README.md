@@ -2,12 +2,11 @@
 @class engine [![Forked from SourceForge](https://sourceforge.net)]
 # ENGINE
 
-The ENGINE NodeJS module provides a foundation for hyperthreaded workflows to both stateless and 
-stateful engines of type
+ENGINE provides a foundation for hyperthreaded workflows to (both stateless and stateful) engines of type
 
 	X = py,js,sh,opencv,mat,matlab,csh,r,octave, ...
 
-at ENGINE.X.  Engines are controlled via the following methods (restful http endpoints):
+at ENGINE[X].  Engines are controlled via the following methods (restful http endpoints):
 
 	step (POST,insert) to advance a stateful engine
 	init (PUT,update) to compile a stateful engine
@@ -60,11 +59,15 @@ Download the latest version with
 
 	git clone https://git.geointapps.org/acmesds/flex
 	
-Typically, you will want to redirect the following to your project/master
+Typically, you will want to redirect the following to your project:
 
-	ln -s ../master/test.js test.js
-	ln -s ../master/maint.sh maint.sh
+	ln -s ../myproject/test.js test.js 					# unit testing
+	ln -s ../myproject/maint.sh maint.sh 			# test startup and maint scripts
 	
+## Usage
+
+See Examples.
+
 ## Examples
 
 Below sample use-cases are from engine/test.js.
