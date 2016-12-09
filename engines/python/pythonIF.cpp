@@ -1,28 +1,28 @@
 // UNCLASSIFIED
 
 /*
- * Reserves a pool of V8 python machines:
- * 
- * 		python(name string, port string, tau list)
- * 		python(name string, parm hash, code string)
- * 
- * A machine name = "Client.Engine.Instance" uniquely identifies the 
- * machine's compute thread and can be freely added to the pool until 
- * the pool becomes full.  
- * 
- * When stepping a machine, the port string specifies either the name of 
- * the input port on which input event taus = [ tau, tau, ... ] list are latched, 
- * or the name of the output port which latches output event taus = [ tau, 
- * tau, ... ] where each event tau is a hash.
- * 
- * When programming a machine, the parm = { ports: {port1: {parm1: ..., parm2: ...}, 
- * port2: {...}, ...}, ...} hash defines parameters to input-output ports, and a
- * code string (or a new-line-less string to import a module under $PYTHONPATH) 
- * to program the machine.
- * 
- * See the tauIF.cpp for usage examples.  This interface is 
- * created using node-gyp with the binding.gyp provided.
- * */
+Reserves a pool of V8 python machines:
+ 
+ 		python([ name string, port string, event list ])
+ 		python([ name string, parm hash, code string ])
+ 
+A machine name (typically "Client.Engine.Instance") uniquely identifies the 
+machine's compute thread and can be freely added to the pool until 
+the pool becomes full.  
+ 
+When stepping a machine, the port string specifies either the name of 
+the input port on which arriving events [ tau, tau, ... ] list are latched, 
+or the name of the output port on which departing events [ tau, 
+tau, ... ] are latched.
+ 
+When programming a machine, parm { ports: {port1: {parm1: ..., parm2: ...}, 
+port2: {...}, ...}, ...} hash defines parameters to input-output ports, and a
+python code string (or a new-line-less string to import a module under $PYTHONPATH) 
+to program the machine.
+ 
+See the tauIF.cpp for usage examples.  This interface is 
+created using node-gyp with the binding.gyp provided.
+*/
  
 // Python interface
 
@@ -46,7 +46,7 @@ using namespace std;
 
 // Machine specs
 
-#define TRACE "python: "
+#define TRACE "py>"
 #define MAXMACHINES 64
 #define TAUIDX(X) "TAU['" X "']"
 #define LOCAL(X) PyDict_GetItemString(pLocals,X)

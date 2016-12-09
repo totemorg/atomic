@@ -1,33 +1,32 @@
 // UNCLASSIFIED
-// // //
 
 /*
- * Reserves a pool of V8 opencv (haar locator, dnn classifier) machines:
- * 
- * 		opencv(name string, port string, tau list)
- * 		opencv(name string, port hash, code string)
- * 
- * A typical machine name = "Client.Engine.Instance" uniquely identifies the 
- * machine's compute thread and can be freely added to the pool until 
- * the pool becomes full.  
- * 
- * When stepping a machine, the port string specifies either the name of 
- * the input port on which input event taus = [ tau, tau, ... ] are latched, 
- * or the name of the output port which latches output event taus = [ tau, 
- * tau, ... ] where each event tau is a hash.
- * 
- * When programming a machine, the parm hash = { ports: {name1: {...}, 
- * name2: {...}, ...}, tau: [tau,tau,...], ... } defines parameters 
- * to machine i/o ports, default i/o event taus, and a code string to 
- * (re)program the machine.
- * 
- * See the tauIF.cpp for usage examples.  This interface is 
- * created using node-gyp with the binding.gyp provided.
- * 
- * Compiler switches:
- * 		HASCAFFE = 1/0 if machine has/hasnot installed caffe
- * 		HASGPU = 1/0 if machine has/hasnot a gpu
- * */
+Reserves a pool of V8 opencv (haar locator, dnn classifier) machines:
+ 
+ 		opencv([ name string, port string, event list ])
+ 		opencv([ name string, port hash, code string ])
+ 
+A machine name (typically "Client.Engine.Instance") uniquely identifies the 
+machine's compute thread and can be freely added to the pool until 
+the pool becomes full.  
+ 
+When stepping a machine, the port string specifies either the name of 
+the input port on which arriving events [ tau, tau, ... ] list are latched, 
+or the name of the output port on which departing events [ tau, 
+tau, ... ] are latched.
+ 
+When programming a machine, parm = { ports: {name1: {...}, 
+name2: {...}, ...}, tau: [tau,tau,...], ... } defines parameters 
+to machine i/o ports, default i/o event taus, and a code string to 
+(re)program the machine (ignored by opencv).
+ 
+See the tauIF.cpp for usage examples.  This interface is 
+created using node-gyp with the binding.gyp provided.
+
+Compile directives:
+ 		HASCAFFE = 1/0 if machine has/hasnot installed caffe
+ 		HASGPU = 1/0 if machine has/hasnot a gpu
+*/
 
 #include <caffe/caffe.hpp>
 using namespace caffe;  // NOLINT(build/namespaces)
@@ -65,7 +64,7 @@ using namespace v8;
 
 #include <macIF.h>
 
-#define TRACE "opencv: "
+#define TRACE "cv>"
 #define MAXPORTS 32
 
 #define STRDEFINED(X) strcmp(X.data(),"undefined")
@@ -439,7 +438,7 @@ class PORT {							 		// HAAR i/o port
 						HAAR_cascade[n] = V8TOSTRING(Cascade->Get(n));
 				}
 
-printf(TRACE "HAAR Locator: cascades=%d scale=%g dim=%g delta=%g hits=%d depth=%d min=%d,%d max=%d,%d\n",
+printf(TRACE "cascades=%d scale=%g dim=%g delta=%g hits=%d depth=%d min=%d,%d max=%d,%d\n",
 	cascades,scale,dim,delta,hits,cascades,min.width,min.height,max.width,max.height);
 
 				for (int n=0; n<cascades; n++) {
@@ -466,13 +465,15 @@ printf(TRACE "CNN Classifier: model=%s train=%s mean=%s label=%s\n",deploy_file.
 
 					CNN_classify = new Classifier (deploy_file, param_file, mean_file, label_file);
 				}
+				else
+					CNN_classify = NULL;
 
 			}
 			else { // input port parameters
 				// reserved
 			}
 			
-printf(TRACE "ports initialized\n");			
+printf(TRACE "ports initialized\n");		
 		};
 		
 		// HAAR Locator parameters
@@ -505,7 +506,7 @@ class FEATURE { 								// Machine output
 		FEATURE(int Depth,Rect AOI,str Name,FRAME Frame,PORT &Port,Classifier *CNN) {
 			name = mac_strclone(Name);
 
-printf(TRACE "Feature Detect depth=%d,%d\n",Depth,Port.cascades);
+printf(TRACE "detect depth=%d,%d CNN=%p\n",Depth,Port.cascades,CNN);
 
 			if ( Depth < Port.cascades ) {
 
@@ -561,18 +562,18 @@ printf(TRACE "Feature Detect depth=%d,%d\n",Depth,Port.cascades);
 						break;
 				}
 				
-printf(TRACE "HAAR feature lens minWH=%d,%d maxWH=%d,%d\n",Port.min.width,Port.min.height,Port.max.width,Port.max.height);
+printf(TRACE "feature minWH=%d,%d maxWH=%d,%d\n",Port.min.width,Port.min.height,Port.max.width,Port.max.height);
 			
 				// Locate phase.  Place feature detections into a dets bounding-box list.
 			
 				std::vector<Rect> dets;
 
-				Port.HAAR_classify[Depth].detectMultiScale( Frame, dets, Port.scale, Port.hits, 0, Port.min, Port.max );
+				Port.HAAR_classify[Depth].detectMultiScale( Frame, dets, 1+Port.scale, Port.hits, 0, Port.min, Port.max );
 
 				features = dets.size(); 						// number of detects (feature rectangles) detected
 				feature = new FEATURE[features];   	// feature information to save on each detection
 
-printf(TRACE "HAAR feature=%s depth=%d whFrame=%d,%d scale=%g hits=%d detects=%d\n",
+printf(TRACE "feature=%s depth=%d frameWH=%d,%d scale=%g hits=%d detects=%d\n",
 	Name,Depth,Frame.cols,Frame.rows,Port.scale,Port.hits,features);
 
 //printf("haar depth=%d at=%s found=%d rows=%d cols=%d\n",Depth,Port.HAAR_cascade[Depth],features,Frame.rows,Frame.cols);
@@ -586,7 +587,7 @@ printf(TRACE "HAAR feature=%s depth=%d whFrame=%d,%d scale=%g hits=%d detects=%d
 					feature[i] = FEATURE(Depth+1, det, Port.HAAR_cascade[Depth], subFrame, Port, CNN);
 				}
 
-				if (true) {  // for debugging
+				if (false) {  // for debugging
 					for(int i = 0; i < features; i++ ) {
 						Rect det = dets[i];
 						rectangle(Frame,det,255);

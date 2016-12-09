@@ -236,7 +236,9 @@ printf(TRACE "setup name=%s port=%s code=%d args=%d init=%d\n",name,port,strlen(
 		Isolate *scope; 		// v8 garbage collection thread
 };
 
-// Generator for machine pool MAC_machine[0,1,...] and its MAC(args) interface.
+// Reserves a pool MAC_machine[0,1,...] of machines.  Each MAC_machine accepts either
+// a [name, port, tau] list to execute a machine, or a [name, parm, code] list to program 
+// a machine.  If the named machine does not exists in the pool, it is added to the pool.
 
 #define V8POOL(MAC,MAX,CLS) \
 CLS MAC##_machine[MAX]; \

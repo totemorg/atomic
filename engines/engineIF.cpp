@@ -1,50 +1,34 @@
 // UNCLASSIFIED
 
 /*
- * Reserves a pool of V8 machine interfaces:
- * 
- *		opencv(args) 
- *		python(args) 
- *		matlab(args) 
- *		R(args) 
- * 
- * where:
- * 
- * 		args = name string, port string, tau list
- * 		args = name string, parm hash, code string
- * 
- * A typical machine name = "Client.Engine.Instance" uniquely identifies the 
- * machine's compute thread and can be freely added to the pool until 
- * the pool becomes full.  
- * 
- * When stepping a machine, the port string specifies either the name of 
- * the input port on which input event taus = [ tau, tau, ... ] are latched, 
- * or the name of the output port which latches output event taus = [ tau, 
- * tau, ... ] where each event tau is a hash.
- * 
- * When programming a machine, the parm hash = { ports: {name1: {...}, 
- * name2: {...}, ...}, tau: [tau,tau,...], ... } defines parameters 
- * to machine i/o ports, default i/o event taus, and a code string to 
- * (re)program the machine.
- * 
- * See testIF.js for JS usage examples.  This interface is created using 
- * node-gyp with the binding.gyp provided.
- * */
-
-/*
-Notes: 
-	google's rapidjson does not provide a useful V8 interface here as (1) its
-	"Value" class conflicts with V8 "Value" class, and (2) passing rapidjson 
-	objects to machines is self-defeating.  Similar conflicts occured with the
-	nodejs nan module.
-
-References:
-	machines/opencv/objdet for an example opencv tau-machine.  
-	machines/python for an example python tau-machine.  
-	http://izs.me/v8-docs/ for API to V8 engine.
-	http://nodejs.org/api/addons.html for node-gyp help.
-	sigma/clients/models.js for the Tau Simulatorf client.
-	tauIF.h for tau structure
+Reserves a pool of V8 machine interfaces:
+ 
+		opencv(args) 
+		python(args) 
+		matlab(args) 
+		R(args) 
+ 
+where:
+ 
+ 		args = [ name string, port string, event list ]
+ 		args = [ name string, parm hash, code string ]
+ 
+A typical machine name (typically "Client.Engine.Instance") uniquely identifies the 
+machine's compute thread and can be freely added to the pool until 
+the pool becomes full.  
+ 
+When stepping a machine, the port string specifies either the name of 
+the input port on which arriving events [ tau, tau, ... ] list are latched, 
+or the name of the output port on which departing events [ tau, 
+tau, ... ] are latched.
+ 
+When programming a machine, parm = { ports: {name1: {...}, 
+name2: {...}, ...}, tau: [tau,tau,...], ... } defines parameters 
+to machine i/o ports, default i/o event taus, and a code string to 
+(re)program the machine.
+ 
+See testIF.js for JS usage examples.  This interface is created using 
+node-gyp with the binding.gyp provided.
 
 Example python machine:
 
@@ -132,10 +116,16 @@ using namespace v8;
 
 // cpu health
 
-void temp(const V8STACK& args) {  // board temp
+void health(const V8STACK& args) {  // reserved for machine health
 	Isolate *scope = V8ENTRY(args);
 	
-	//printf("hello\n");
+	args.V8EXIT( 0 );
+}
+
+void hello(const V8STACK& args) {  // test interface
+	Isolate *scope = V8ENTRY(args);
+	
+	printf("engines connected\n");
 	
 	args.V8EXIT( 0 );
 }
@@ -149,7 +139,8 @@ void init(Handle<Object> exports) {
 	extern V8MACHINE python;
 	NODE_SET_METHOD(exports, "python", python);
 
-	NODE_SET_METHOD(exports, "temp", temp);
+	NODE_SET_METHOD(exports, "health", health);
+	NODE_SET_METHOD(exports, "hello", hello);
 
 	/*
 	extern V8MACHINE R;
