@@ -72,7 +72,7 @@ See Examples.
 
 Below sample use-cases are from engine/test.js.
 
-### E1
+### E1 - A default Totem client
 	
 	E1: function () {
 
@@ -88,7 +88,7 @@ Below sample use-cases are from engine/test.js.
 		
 	},
 
-### E2
+### E2 - Totem being powered up and down
 
 	E2: function () {
 
@@ -110,7 +110,7 @@ Below sample use-cases are from engine/test.js.
 
 	},
 
-### E3
+### E3 - Starting a trivial Totem with a chipper fetcher and a database
 
 	E3: function () {
 		
@@ -138,7 +138,7 @@ Below sample use-cases are from engine/test.js.
 
 	}
 
-### E4
+### E4 - Unit test engines with /test?config=cv | py1 | py2 | py3 | js
 
 	E4: function () {
 		
