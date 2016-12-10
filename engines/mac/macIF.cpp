@@ -5,33 +5,30 @@ Defines a V8 machine pool generator:
  
  		V8POOL(MAC,MAX,CLS)
  
-to generate MAX number of CLS-class machines MAX_machine[0, ...] each machine
-accepting a list of either:
+to generate MAX number of CLS-class machines MAX_machine[0, ...] each machine accepting a list of either:
  
  		[ name string, port string, event list ]
- 		[ name string, parm hash, code string ]
+ 		[ name string, code string, parm hash ]
  
-The engine name (typically "Client.Engine.Instance") uniquely identifies the 
-engine's compute thread and can be freely added to the pool until 
-the pool becomes full.  
- 
-When stepping a machine, the port string specifies either the name of 
-the input port on which arriving events [ tau, tau, ... ] list are latched, 
-or the name of the output port on which departing events [ tau, 
-tau, ... ] are latched.
- 
-When programming a machine, parm = { ports: {name1: {...}, 
-name2: {...}, ...}, tau: [tau,tau,...], ... } defines parameters 
-to machine i/o ports, default i/o events, and a code string to 
-(re)program the machine.
+and returning an interger error code.  CLS specifies the technology being interfaced (opencv, python, ....).
 
-See the opencv.cpp, python.cpp, etc machines for usage examples.  This 
-interface is created using node-gyp with the binding.gyp provided.
+A machine name (typically "Client.Engine.Instance") uniquely identifies the engine's compute thread.  Compute threads
+can be freely added to the pool until the pool becomes full.  
+ 
+When stepping a machine, port specifies either the name of the input port on which arriving events [ tau, tau, ... ] list 
+are latched, or the name of the output port on which departing events [ tau, tau, ... ] are latched; thus stepping the 
+machine in a stateful way (to maximize data restfulness).  Given, however, an empty port will, the machine is 
+stepped in a stateless way: by latching events to all input ports, then latching all output ports to events.
+ 
+When programming a machine with code, parm = { ports: {name1: {...}, name2: {...}, ...}, tau: [tau,tau,...], ... } defines 
+parameters to machine i/o ports and i/o events.  Empty code will monitor current machine parameters.
 
-Notes: 
-	google's rapidjson does not provide a useful V8 interface here as (1) its
-	"Value" class conflicts with V8 "Value" class, and (2) passing rapidjson 
-	objects to machines is self-defeating.  Similar conflicts occured with the
+See the opencv.cpp, python.cpp, etc machines for usage examples.  This interface is created using node-gyp with 
+the binding.gyp provided.
+
+Implementation notes: 
+	google's rapidjson does not provide a useful V8 interface here as (1) its"Value" class conflicts with V8 "Value" 
+	class, and (2) passing rapidjson objects to machines is self-defeating.  Similar conflicts occured with the
 	nodejs nan module.
 
 References:
@@ -39,8 +36,7 @@ References:
 	machines/python for an example python mac-machine.  
 	http://izs.me/v8-docs/ for API to V8 engine.
 	http://nodejs.org/api/addons.html for node-gyp help.
-	sigma/clients/models.js for the Tau Simulatorf client.
-	tauIF.h for mac structure
+	macIF.h for machine classes.
  */
  
 #include <node.h>

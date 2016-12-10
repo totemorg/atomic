@@ -3,27 +3,28 @@
 /*
 Reserves a pool of V8 python machines:
  
- 		python([ name string, port string, event list ])
- 		python([ name string, parm hash, code string ])
+ 		err = python.call([ name string, port string, event list ])
+ 		err = python.call([ name string, code string, parm hash ])
  
-A machine name (typically "Client.Engine.Instance") uniquely identifies the 
-machine's compute thread and can be freely added to the pool until 
-the pool becomes full.  
+where err is an integer error code.
+
+A machine name (typically "Client.Engine.Instance") uniquely identifies the machine's compute thread.  Compute threads
+can be freely added to the pool until the pool becomes full.  
  
-When stepping a machine, the port string specifies either the name of 
-the input port on which arriving events [ tau, tau, ... ] list are latched, 
-or the name of the output port on which departing events [ tau, 
-tau, ... ] are latched.
+When stepping a machine, port specifies either the name of the input port on which arriving events [ tau, tau, ... ] list are latched, 
+or the name of the output port on which departing events [ tau, tau, ... ] are latched; thus stepping
+the machine in a stateful way (to maximize data restfulness).  Given, however, an empty port will, the machine is 
+stepped in a stateless way: by latching events to all input ports, then latching all output ports to events.
  
-When programming a machine, parm { ports: {port1: {parm1: ..., parm2: ...}, 
-port2: {...}, ...}, ...} hash defines parameters to input-output ports, and a
-python code string (or a new-line-less string to import a module under $PYTHONPATH) 
-to program the machine.
+When programming a machine, parm = { ports: {name1: {...}, name2: {...}, ...}, ...} defines parameters to input-output ports, and 
+port = "python program\n" (or "module name"  to import under $PYTHONPATH).  Empty code will monitor current 
+machine parameters.
  
-See the tauIF.cpp for usage examples.  This interface is 
-created using node-gyp with the binding.gyp provided.
+See the tauIF.cpp for usage examples.  This interface is created using node-gyp with the binding.gyp provided.
 */
- 
+
+#define MAXMACHINES 64
+
 // Python interface
 
 #include <Python.h>
@@ -47,7 +48,6 @@ using namespace std;
 // Machine specs
 
 #define TRACE "py>"
-#define MAXMACHINES 64
 #define TAUIDX(X) "TAU['" X "']"
 #define LOCAL(X) PyDict_GetItemString(pLocals,X)
 
@@ -61,9 +61,9 @@ using namespace std;
 
 // Parameters used to wrap python code to provide sql connector and debugging
 
-#define WRAP_TRACE false
-#define WRAP_CATCH false
-#define WRAP_DBUSE true
+#define WRAP_ADDTRACE false
+#define WRAP_ADDCATCH false
+#define WRAP_ADDCONNECT true
 #define WRAP_DBPASS getenv("DB_PASS")
 #define WRAP_DBNAME getenv("DB_NAME")
 #define WRAP_DBUSER getenv("DB_USER")
@@ -93,12 +93,12 @@ str wrap(str code,str port,V8OBJECT parm,str idx,str args) {  // wrap user pytho
 	
 	if (strlen(args)) { // add tau front and back end if python args specified
 
-#if WRAP_TRACE
+#if WRAP_ADDTRACE
 		strcat(err, 
-			"#TAU trace code\n"
-			"print 'TAU running python'\n"
+			"\n#trace code\n"
+			"print 'py>>dumping locals'\n"
 			"print locals()\n"
-			"print 'TAU importing sys'\n"
+			"print 'py>>importing sys'\n"
 			"import sys\n"
 			"print sys.path\n"
 			"print sys.version\n"
@@ -107,8 +107,8 @@ str wrap(str code,str port,V8OBJECT parm,str idx,str args) {  // wrap user pytho
 		);
 #endif
 		
-		strcat(err,		// add entry TAU interface hash
-			"#TAU entry code\n"
+		strcat(err,		// add db connector interface 
+			"\n#connector interface\n"
 		);
 
 		// mysql connection note:
@@ -119,13 +119,13 @@ str wrap(str code,str port,V8OBJECT parm,str idx,str args) {  // wrap user pytho
 		//
 		// after "rpm -i mysql-connector-python-2.X"
 		
-#if WRAP_CATCH
+#if WRAP_ADDCATCH
 		strcat(err,			// add entry-exit excemption catch
 			"try:\n"
 		);
 #endif
 
-#if WRAP_DBUSE
+#if WRAP_ADDCONNECT
 
 		// install the python2.7 connector (rpm -Uvh mysql-conector-python-2.x.rpm)
 		// into /usr/local/lib/python2.7/site-packages/mysql, then copy
@@ -160,16 +160,16 @@ str wrap(str code,str port,V8OBJECT parm,str idx,str args) {  // wrap user pytho
 		}
 #endif
 
-		strcat(err,"#TAU user code\n");		// add user code
+		strcat(err,"\n#supplied code\n");		// add user code
 
-#if WRAP_CATCH
+#if WRAP_ADDCATCH
 		strcat(err,indent(code)); 
 #else
 		strcat(err,code); 
 #endif
 		
-		strcat(err,		// add exit code for port processing
-			"\n#TAU exit code\n"
+		strcat(err,		// add entry code for port processing
+			"\n#entry code\n"
 			"PORTS={"
 		);
 
@@ -195,15 +195,15 @@ str wrap(str code,str port,V8OBJECT parm,str idx,str args) {  // wrap user pytho
 					"\t" PYERR " = 0\n",
 			err,idx,idx,args);
 			
-#if WRAP_DBUSE
+#if WRAP_ADDCONNECT
 		strcat(err,  // close sql connection
-			"\n"
+			"\n#exit code\n"
 			"SQL.commit()\n"
 			"SQL.close()\n"
 		);
 #endif
 	
-#if WRAP_CATCH
+#if WRAP_ADDCATCH
 		strcat(err, 	// catch entry-exit excemptions
 			"except err:\n"
 				"\t" PYERR " = 104\n"
@@ -218,14 +218,17 @@ str wrap(str code,str port,V8OBJECT parm,str idx,str args) {  // wrap user pytho
 
 class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 	public:
+	
+		// inherit the base machine
 		PYMACHINE(void) : MACHINE() { 
 			pModule = NULL;
 			pCode = NULL;
 		};
 
+		// provide V8-python converters
 		V8VALUE clone(PyObject *src) { 				// clone python value into v8 value
 			if (PyList_Check(src)) {
-				int N=PyList_Size(src);
+				int N = PyList_Size(src);
 //printf(TRACE "clone list len=%d\n",N);
 				V8ARRAY tar = v8::Array::New(scope,N);
 				V8OBJECT Tar = tar->ToObject();
@@ -313,29 +316,34 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 			return tar;
 		}
 				
+		// define program/step interface
 		int call(const V8STACK& args) { 			// Monitor/Program/Step machine	
 			
-			if (setup(args)) return err;
-
+			if (setup(args)) 
+				return err;
+			
+			else
 			if ( init ) { 					// Program module
-				//Py_SetProgramName("/base/anaconda/bin/python2.7");
-				//Py_SetPythonHome("/base/anaconda");
 /* 
  * All attempts to redirect Initialize to the anaconda install fail (SetProgramName, SetPythonName, redefine PYTHONHOME,
  * virtualized, etc, etc).  If PYTHONORIGIN = /usr is the default python install base, we must alias /usr/lib/python2.7 
  * AND /usr/lib64/python2.7 to the anaconda/lib/python2.7.  The default python (typically python-2.7.5) appears to be 
  * fully compatible with the anaconda-1.9 python-2.7.6.  Must then override PYTHONHOME to the default PYTHONORIGIN.
  * */
+				//Py_SetProgramName("/base/anaconda/bin/python2.7");
+				//Py_SetPythonHome("/base/anaconda");
 				//Py_SetPythonHome(PYTHONORIGIN);
 //printf(TRACE "initialize %s\n",Py_GetPythonHome());
 
 				Py_Initialize(); 
 				
+				path = strstr(port,"\n") ? NULL : port;
+				
 				if ( path ) { 				// load external module
 					pModule = PyImport_Import(PyString_FromString(path));
 					if ( !pModule ) return badModule;
 				}
-				else { 						// compile code 
+				else { 	// compile code 
 					if (pCode) { 			// free old stuff
 						Py_XDECREF(pCode);
 						Py_XDECREF(pModule);
@@ -361,6 +369,9 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 					pGlobals = PyModule_GetDict(pMain);	
 //printf(TRACE "globals=%p\n",pGlobals);
 
+					code = port;
+					port = "";
+					
 					str comp = wrap(
 						code,
 						port,
@@ -377,7 +388,8 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 			}
 			
 			if (!pCode) 
-				err = badCompile;
+				err = badInit;
+			
 			else		
 			if (path) {			// Step external module
 //printf(TRACE "find port=%s\n",port);
@@ -399,9 +411,10 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 //monitor("py set tau[0]",tau->ToObject()->Get(0)->ToObject());
 				}
 				else 									// Bad call
-					err = badCall; 
+					err = badInit; 
 			}
-			else 					// Step compiled module
+			
+			else 
 			if (strlen(port)) {		// Stateful step
 //printf(TRACE "port call=%s\n",port);
 				PyDict_SetItemString(pLocals, PYPORT, PyString_FromString(port) );
@@ -412,6 +425,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 				
 				set(tau, clone( LOCAL(PYTAU) ));
 			}
+			
 			else {					// Stateless step
 //printf(TRACE "portless call\n");
 
@@ -438,6 +452,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 		PyCodeObject *pCode;
 		PyObject *pArgs, *pValue;
 		PyObject *pGlobals, *pLocals, *pMain, *pParm;
+		str path, code;
 };
 
 /*

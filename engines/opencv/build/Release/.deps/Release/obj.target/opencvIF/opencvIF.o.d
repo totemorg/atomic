@@ -1,6 +1,63 @@
 cmd_Release/obj.target/opencvIF/opencvIF.o := g++ '-DNODE_GYP_MODULE_NAME=opencvIF' '-DUSING_UV_SHARED=1' '-DUSING_V8_SHARED=1' '-DV8_DEPRECATION_WARNINGS=1' '-D_LARGEFILE_SOURCE' '-D_FILE_OFFSET_BITS=64' -I/home/admin/.node-gyp/5.5.0/include/node -I/home/admin/.node-gyp/5.5.0/src -I/home/admin/.node-gyp/5.5.0/deps/uv/include -I/home/admin/.node-gyp/5.5.0/deps/v8/include -I../. -I../../mac -I/home/admin/base/include/cuda -I/home/admin/base/caffe/build/src -I/home/admin/base/caffe/include -I/home/admin/base/include/atlas -I/home/admin/base/include -I/home/admin/base/include/opencv  -fPIC -pthread -Wall -Wextra -Wno-unused-parameter -m64 -O3 -ffunction-sections -fdata-sections -fno-omit-frame-pointer -D HASCAFFE=0 -D HASGPU=0 -fno-rtti -fno-exceptions -std=gnu++0x -fexceptions -MMD -MF ./Release/.deps/Release/obj.target/opencvIF/opencvIF.o.d.raw   -c -o Release/obj.target/opencvIF/opencvIF.o ../opencvIF.cpp
 Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
- /home/admin/base/caffe/include/caffe/caffe.hpp \
+ /home/admin/base/include/opencv/opencv2/objdetect/objdetect.hpp \
+ /home/admin/base/include/opencv/opencv2/objdetect.hpp \
+ /home/admin/base/include/opencv/opencv2/core.hpp \
+ /home/admin/base/include/opencv/opencv2/core/cvdef.h \
+ /home/admin/base/include/opencv/opencv2/hal/defs.h \
+ /home/admin/base/include/opencv/opencv2/core/version.hpp \
+ /home/admin/base/include/opencv/opencv2/core/base.hpp \
+ /home/admin/base/include/opencv/opencv2/core/cvstd.hpp \
+ /home/admin/base/include/opencv/opencv2/core/ptr.inl.hpp \
+ /home/admin/base/include/opencv/opencv2/hal.hpp \
+ /home/admin/base/include/opencv/opencv2/core/sse_utils.hpp \
+ /home/admin/base/include/opencv/opencv2/core/traits.hpp \
+ /home/admin/base/include/opencv/opencv2/core/matx.hpp \
+ /home/admin/base/include/opencv/opencv2/core/types.hpp \
+ /home/admin/base/include/opencv/opencv2/core/mat.hpp \
+ /home/admin/base/include/opencv/opencv2/core/bufferpool.hpp \
+ /home/admin/base/include/opencv/opencv2/core/mat.inl.hpp \
+ /home/admin/base/include/opencv/opencv2/core/persistence.hpp \
+ /home/admin/base/include/opencv/opencv2/core/operations.hpp \
+ /home/admin/base/include/opencv/opencv2/core/cvstd.inl.hpp \
+ /home/admin/base/include/opencv/opencv2/core/utility.hpp \
+ /home/admin/base/include/opencv/opencv2/core/core_c.h \
+ /home/admin/base/include/opencv/opencv2/core/types_c.h \
+ /home/admin/base/include/opencv/opencv2/core/optim.hpp \
+ /home/admin/base/include/opencv/opencv2/objdetect/detection_based_tracker.hpp \
+ /home/admin/base/include/opencv/opencv2/objdetect/objdetect_c.h \
+ /home/admin/base/include/opencv/opencv2/highgui/highgui.hpp \
+ /home/admin/base/include/opencv/opencv2/highgui.hpp \
+ /home/admin/base/include/opencv/opencv2/imgcodecs.hpp \
+ /home/admin/base/include/opencv/opencv2/videoio.hpp \
+ /home/admin/base/include/opencv/opencv2/highgui/highgui_c.h \
+ /home/admin/base/include/opencv/opencv2/imgproc/imgproc_c.h \
+ /home/admin/base/include/opencv/opencv2/imgproc/types_c.h \
+ /home/admin/base/include/opencv/opencv2/imgcodecs/imgcodecs_c.h \
+ /home/admin/base/include/opencv/opencv2/videoio/videoio_c.h \
+ /home/admin/base/include/opencv/opencv2/imgproc/imgproc.hpp \
+ /home/admin/base/include/opencv/opencv2/imgproc.hpp \
+ /home/admin/base/include/opencv/opencv2/opencv.hpp \
+ /home/admin/base/include/opencv/opencv2/photo.hpp \
+ /home/admin/base/include/opencv/opencv2/photo/photo_c.h \
+ /home/admin/base/include/opencv/opencv2/video.hpp \
+ /home/admin/base/include/opencv/opencv2/video/tracking.hpp \
+ /home/admin/base/include/opencv/opencv2/video/background_segm.hpp \
+ /home/admin/base/include/opencv/opencv2/video/tracking_c.h \
+ /home/admin/base/include/opencv/opencv2/features2d.hpp \
+ /home/admin/base/include/opencv/opencv2/flann/miniflann.hpp \
+ /home/admin/base/include/opencv/opencv2/flann/defines.h \
+ /home/admin/base/include/opencv/opencv2/flann/config.h \
+ /home/admin/base/include/opencv/opencv2/calib3d.hpp \
+ /home/admin/base/include/opencv/opencv2/core/affine.hpp \
+ /home/admin/base/include/opencv/opencv2/calib3d/calib3d_c.h \
+ /home/admin/base/include/opencv/opencv2/ml.hpp \
+ /home/admin/.node-gyp/5.5.0/include/node/node.h \
+ /home/admin/.node-gyp/5.5.0/include/node/v8.h \
+ /home/admin/.node-gyp/5.5.0/include/node/v8-version.h \
+ /home/admin/.node-gyp/5.5.0/include/node/v8config.h \
+ /home/admin/.node-gyp/5.5.0/include/node/node_version.h \
+ ../../mac/macIF.h /home/admin/base/caffe/include/caffe/caffe.hpp \
  /home/admin/base/caffe/include/caffe/blob.hpp \
  /home/admin/base/caffe/include/caffe/common.hpp \
  /home/admin/base/include/boost/shared_ptr.hpp \
@@ -732,66 +789,66 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
  /home/admin/base/include/boost/detail/bitmask.hpp \
  /home/admin/base/include/boost/filesystem/convenience.hpp \
  /home/admin/base/caffe/include/caffe/util/format.hpp \
- /home/admin/base/caffe/include/caffe/util/upgrade_proto.hpp \
- /home/admin/base/include/opencv/opencv2/objdetect/objdetect.hpp \
- /home/admin/base/include/opencv/opencv2/objdetect.hpp \
- /home/admin/base/include/opencv/opencv2/core.hpp \
- /home/admin/base/include/opencv/opencv2/core/cvdef.h \
- /home/admin/base/include/opencv/opencv2/hal/defs.h \
- /home/admin/base/include/opencv/opencv2/core/version.hpp \
- /home/admin/base/include/opencv/opencv2/core/base.hpp \
- /home/admin/base/include/opencv/opencv2/core/cvstd.hpp \
- /home/admin/base/include/opencv/opencv2/core/ptr.inl.hpp \
- /home/admin/base/include/opencv/opencv2/hal.hpp \
- /home/admin/base/include/opencv/opencv2/core/sse_utils.hpp \
- /home/admin/base/include/opencv/opencv2/core/traits.hpp \
- /home/admin/base/include/opencv/opencv2/core/matx.hpp \
- /home/admin/base/include/opencv/opencv2/core/types.hpp \
- /home/admin/base/include/opencv/opencv2/core/mat.hpp \
- /home/admin/base/include/opencv/opencv2/core/bufferpool.hpp \
- /home/admin/base/include/opencv/opencv2/core/mat.inl.hpp \
- /home/admin/base/include/opencv/opencv2/core/persistence.hpp \
- /home/admin/base/include/opencv/opencv2/core/operations.hpp \
- /home/admin/base/include/opencv/opencv2/core/cvstd.inl.hpp \
- /home/admin/base/include/opencv/opencv2/core/utility.hpp \
- /home/admin/base/include/opencv/opencv2/core/core_c.h \
- /home/admin/base/include/opencv/opencv2/core/types_c.h \
- /home/admin/base/include/opencv/opencv2/core/optim.hpp \
- /home/admin/base/include/opencv/opencv2/objdetect/detection_based_tracker.hpp \
- /home/admin/base/include/opencv/opencv2/objdetect/objdetect_c.h \
- /home/admin/base/include/opencv/opencv2/highgui/highgui.hpp \
- /home/admin/base/include/opencv/opencv2/highgui.hpp \
- /home/admin/base/include/opencv/opencv2/imgcodecs.hpp \
- /home/admin/base/include/opencv/opencv2/videoio.hpp \
- /home/admin/base/include/opencv/opencv2/highgui/highgui_c.h \
- /home/admin/base/include/opencv/opencv2/imgproc/imgproc_c.h \
- /home/admin/base/include/opencv/opencv2/imgproc/types_c.h \
- /home/admin/base/include/opencv/opencv2/imgcodecs/imgcodecs_c.h \
- /home/admin/base/include/opencv/opencv2/videoio/videoio_c.h \
- /home/admin/base/include/opencv/opencv2/imgproc/imgproc.hpp \
- /home/admin/base/include/opencv/opencv2/imgproc.hpp \
- /home/admin/base/include/opencv/opencv2/opencv.hpp \
- /home/admin/base/include/opencv/opencv2/photo.hpp \
- /home/admin/base/include/opencv/opencv2/photo/photo_c.h \
- /home/admin/base/include/opencv/opencv2/video.hpp \
- /home/admin/base/include/opencv/opencv2/video/tracking.hpp \
- /home/admin/base/include/opencv/opencv2/video/background_segm.hpp \
- /home/admin/base/include/opencv/opencv2/video/tracking_c.h \
- /home/admin/base/include/opencv/opencv2/features2d.hpp \
- /home/admin/base/include/opencv/opencv2/flann/miniflann.hpp \
- /home/admin/base/include/opencv/opencv2/flann/defines.h \
- /home/admin/base/include/opencv/opencv2/flann/config.h \
- /home/admin/base/include/opencv/opencv2/calib3d.hpp \
- /home/admin/base/include/opencv/opencv2/core/affine.hpp \
- /home/admin/base/include/opencv/opencv2/calib3d/calib3d_c.h \
- /home/admin/base/include/opencv/opencv2/ml.hpp \
- /home/admin/.node-gyp/5.5.0/include/node/node.h \
- /home/admin/.node-gyp/5.5.0/include/node/v8.h \
- /home/admin/.node-gyp/5.5.0/include/node/v8-version.h \
- /home/admin/.node-gyp/5.5.0/include/node/v8config.h \
- /home/admin/.node-gyp/5.5.0/include/node/node_version.h \
- ../../mac/macIF.h
+ /home/admin/base/caffe/include/caffe/util/upgrade_proto.hpp
 ../opencvIF.cpp:
+/home/admin/base/include/opencv/opencv2/objdetect/objdetect.hpp:
+/home/admin/base/include/opencv/opencv2/objdetect.hpp:
+/home/admin/base/include/opencv/opencv2/core.hpp:
+/home/admin/base/include/opencv/opencv2/core/cvdef.h:
+/home/admin/base/include/opencv/opencv2/hal/defs.h:
+/home/admin/base/include/opencv/opencv2/core/version.hpp:
+/home/admin/base/include/opencv/opencv2/core/base.hpp:
+/home/admin/base/include/opencv/opencv2/core/cvstd.hpp:
+/home/admin/base/include/opencv/opencv2/core/ptr.inl.hpp:
+/home/admin/base/include/opencv/opencv2/hal.hpp:
+/home/admin/base/include/opencv/opencv2/core/sse_utils.hpp:
+/home/admin/base/include/opencv/opencv2/core/traits.hpp:
+/home/admin/base/include/opencv/opencv2/core/matx.hpp:
+/home/admin/base/include/opencv/opencv2/core/types.hpp:
+/home/admin/base/include/opencv/opencv2/core/mat.hpp:
+/home/admin/base/include/opencv/opencv2/core/bufferpool.hpp:
+/home/admin/base/include/opencv/opencv2/core/mat.inl.hpp:
+/home/admin/base/include/opencv/opencv2/core/persistence.hpp:
+/home/admin/base/include/opencv/opencv2/core/operations.hpp:
+/home/admin/base/include/opencv/opencv2/core/cvstd.inl.hpp:
+/home/admin/base/include/opencv/opencv2/core/utility.hpp:
+/home/admin/base/include/opencv/opencv2/core/core_c.h:
+/home/admin/base/include/opencv/opencv2/core/types_c.h:
+/home/admin/base/include/opencv/opencv2/core/optim.hpp:
+/home/admin/base/include/opencv/opencv2/objdetect/detection_based_tracker.hpp:
+/home/admin/base/include/opencv/opencv2/objdetect/objdetect_c.h:
+/home/admin/base/include/opencv/opencv2/highgui/highgui.hpp:
+/home/admin/base/include/opencv/opencv2/highgui.hpp:
+/home/admin/base/include/opencv/opencv2/imgcodecs.hpp:
+/home/admin/base/include/opencv/opencv2/videoio.hpp:
+/home/admin/base/include/opencv/opencv2/highgui/highgui_c.h:
+/home/admin/base/include/opencv/opencv2/imgproc/imgproc_c.h:
+/home/admin/base/include/opencv/opencv2/imgproc/types_c.h:
+/home/admin/base/include/opencv/opencv2/imgcodecs/imgcodecs_c.h:
+/home/admin/base/include/opencv/opencv2/videoio/videoio_c.h:
+/home/admin/base/include/opencv/opencv2/imgproc/imgproc.hpp:
+/home/admin/base/include/opencv/opencv2/imgproc.hpp:
+/home/admin/base/include/opencv/opencv2/opencv.hpp:
+/home/admin/base/include/opencv/opencv2/photo.hpp:
+/home/admin/base/include/opencv/opencv2/photo/photo_c.h:
+/home/admin/base/include/opencv/opencv2/video.hpp:
+/home/admin/base/include/opencv/opencv2/video/tracking.hpp:
+/home/admin/base/include/opencv/opencv2/video/background_segm.hpp:
+/home/admin/base/include/opencv/opencv2/video/tracking_c.h:
+/home/admin/base/include/opencv/opencv2/features2d.hpp:
+/home/admin/base/include/opencv/opencv2/flann/miniflann.hpp:
+/home/admin/base/include/opencv/opencv2/flann/defines.h:
+/home/admin/base/include/opencv/opencv2/flann/config.h:
+/home/admin/base/include/opencv/opencv2/calib3d.hpp:
+/home/admin/base/include/opencv/opencv2/core/affine.hpp:
+/home/admin/base/include/opencv/opencv2/calib3d/calib3d_c.h:
+/home/admin/base/include/opencv/opencv2/ml.hpp:
+/home/admin/.node-gyp/5.5.0/include/node/node.h:
+/home/admin/.node-gyp/5.5.0/include/node/v8.h:
+/home/admin/.node-gyp/5.5.0/include/node/v8-version.h:
+/home/admin/.node-gyp/5.5.0/include/node/v8config.h:
+/home/admin/.node-gyp/5.5.0/include/node/node_version.h:
+../../mac/macIF.h:
 /home/admin/base/caffe/include/caffe/caffe.hpp:
 /home/admin/base/caffe/include/caffe/blob.hpp:
 /home/admin/base/caffe/include/caffe/common.hpp:
@@ -1525,61 +1582,3 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
 /home/admin/base/include/boost/filesystem/convenience.hpp:
 /home/admin/base/caffe/include/caffe/util/format.hpp:
 /home/admin/base/caffe/include/caffe/util/upgrade_proto.hpp:
-/home/admin/base/include/opencv/opencv2/objdetect/objdetect.hpp:
-/home/admin/base/include/opencv/opencv2/objdetect.hpp:
-/home/admin/base/include/opencv/opencv2/core.hpp:
-/home/admin/base/include/opencv/opencv2/core/cvdef.h:
-/home/admin/base/include/opencv/opencv2/hal/defs.h:
-/home/admin/base/include/opencv/opencv2/core/version.hpp:
-/home/admin/base/include/opencv/opencv2/core/base.hpp:
-/home/admin/base/include/opencv/opencv2/core/cvstd.hpp:
-/home/admin/base/include/opencv/opencv2/core/ptr.inl.hpp:
-/home/admin/base/include/opencv/opencv2/hal.hpp:
-/home/admin/base/include/opencv/opencv2/core/sse_utils.hpp:
-/home/admin/base/include/opencv/opencv2/core/traits.hpp:
-/home/admin/base/include/opencv/opencv2/core/matx.hpp:
-/home/admin/base/include/opencv/opencv2/core/types.hpp:
-/home/admin/base/include/opencv/opencv2/core/mat.hpp:
-/home/admin/base/include/opencv/opencv2/core/bufferpool.hpp:
-/home/admin/base/include/opencv/opencv2/core/mat.inl.hpp:
-/home/admin/base/include/opencv/opencv2/core/persistence.hpp:
-/home/admin/base/include/opencv/opencv2/core/operations.hpp:
-/home/admin/base/include/opencv/opencv2/core/cvstd.inl.hpp:
-/home/admin/base/include/opencv/opencv2/core/utility.hpp:
-/home/admin/base/include/opencv/opencv2/core/core_c.h:
-/home/admin/base/include/opencv/opencv2/core/types_c.h:
-/home/admin/base/include/opencv/opencv2/core/optim.hpp:
-/home/admin/base/include/opencv/opencv2/objdetect/detection_based_tracker.hpp:
-/home/admin/base/include/opencv/opencv2/objdetect/objdetect_c.h:
-/home/admin/base/include/opencv/opencv2/highgui/highgui.hpp:
-/home/admin/base/include/opencv/opencv2/highgui.hpp:
-/home/admin/base/include/opencv/opencv2/imgcodecs.hpp:
-/home/admin/base/include/opencv/opencv2/videoio.hpp:
-/home/admin/base/include/opencv/opencv2/highgui/highgui_c.h:
-/home/admin/base/include/opencv/opencv2/imgproc/imgproc_c.h:
-/home/admin/base/include/opencv/opencv2/imgproc/types_c.h:
-/home/admin/base/include/opencv/opencv2/imgcodecs/imgcodecs_c.h:
-/home/admin/base/include/opencv/opencv2/videoio/videoio_c.h:
-/home/admin/base/include/opencv/opencv2/imgproc/imgproc.hpp:
-/home/admin/base/include/opencv/opencv2/imgproc.hpp:
-/home/admin/base/include/opencv/opencv2/opencv.hpp:
-/home/admin/base/include/opencv/opencv2/photo.hpp:
-/home/admin/base/include/opencv/opencv2/photo/photo_c.h:
-/home/admin/base/include/opencv/opencv2/video.hpp:
-/home/admin/base/include/opencv/opencv2/video/tracking.hpp:
-/home/admin/base/include/opencv/opencv2/video/background_segm.hpp:
-/home/admin/base/include/opencv/opencv2/video/tracking_c.h:
-/home/admin/base/include/opencv/opencv2/features2d.hpp:
-/home/admin/base/include/opencv/opencv2/flann/miniflann.hpp:
-/home/admin/base/include/opencv/opencv2/flann/defines.h:
-/home/admin/base/include/opencv/opencv2/flann/config.h:
-/home/admin/base/include/opencv/opencv2/calib3d.hpp:
-/home/admin/base/include/opencv/opencv2/core/affine.hpp:
-/home/admin/base/include/opencv/opencv2/calib3d/calib3d_c.h:
-/home/admin/base/include/opencv/opencv2/ml.hpp:
-/home/admin/.node-gyp/5.5.0/include/node/node.h:
-/home/admin/.node-gyp/5.5.0/include/node/v8.h:
-/home/admin/.node-gyp/5.5.0/include/node/v8-version.h:
-/home/admin/.node-gyp/5.5.0/include/node/v8config.h:
-/home/admin/.node-gyp/5.5.0/include/node/node_version.h:
-../../mac/macIF.h:

@@ -3,32 +3,30 @@
 /*
 Reserves a pool of V8 machine interfaces:
  
-		opencv(args) 
-		python(args) 
-		matlab(args) 
-		R(args) 
+		err = opencv(args) 
+		err = python(args) 
+		err = matlab(args) 
+		err = R(args) 
  
 where:
  
  		args = [ name string, port string, event list ]
- 		args = [ name string, parm hash, code string ]
+ 		args = [ name string, code string, parm hash ]
  
-A typical machine name (typically "Client.Engine.Instance") uniquely identifies the 
-machine's compute thread and can be freely added to the pool until 
-the pool becomes full.  
+and err is an interger error code.
+
+A machine name (typically "Client.Engine.Instance") uniquely identifies the machine's compute thread.  Compute
+threads can be freely added to the pool until the pool becomes full.  
  
-When stepping a machine, the port string specifies either the name of 
-the input port on which arriving events [ tau, tau, ... ] list are latched, 
-or the name of the output port on which departing events [ tau, 
-tau, ... ] are latched.
+When stepping a machine, port specifies either the name of the input port on which arriving events [ tau, tau, ... ] list 
+are latched, or the name of the output port on which departing events [ tau, tau, ... ] are latched; thus stepping
+the machine in a stateful way (to maximize data restfulness).  Given, however, an empty port will, the machine is 
+stepped in a stateless way: by latching events to all input ports, then latching all output ports to events.
+
+When programming a machine with code, parm = { ports: {name1: {...}, name2: {...}, ...}, tau: [tau,tau,...], ... } defines 
+parameters to machine i/o ports and i/o events.  Empty code will monitor current machine parameters.
  
-When programming a machine, parm = { ports: {name1: {...}, 
-name2: {...}, ...}, tau: [tau,tau,...], ... } defines parameters 
-to machine i/o ports, default i/o event taus, and a code string to 
-(re)program the machine.
- 
-See testIF.js for JS usage examples.  This interface is created using 
-node-gyp with the binding.gyp provided.
+See testIF.js for JS usage examples.  This interface is created using node-gyp with the binding.gyp provided.
 
 Example python machine:
 

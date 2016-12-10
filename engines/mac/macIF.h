@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define TRACE "machine: "
+#define TRACE "mac>"
 
 // v8 interface
 
@@ -71,22 +71,16 @@ typedef void V8MACHINE(const V8STACK& args);
 #define NAMEARG(X) (X[0]->IsString() ? V8TOSTRING(X[0]) : V8NULLSTR)
 #define PORTARG(X) (X[1]->IsString() ? V8TOSTRING(X[1]) : V8NULLSTR)
 #define TAUARG(X)  (X[2]->IsArray()  ? V8TOARRAY(X[2])  : V8NULLARR)
-#define PARMARG(X) (X[1]->IsObject() ? V8TOOBJECT(X[1]) : V8NULLOBJ)
-#define CODEARG(X) (X[2]->IsString() ? V8TOSTRING(X[2]) : V8NULLSTR)
+#define PARMARG(X) (X[2]->IsObject() ? V8TOOBJECT(X[2]) : V8NULLOBJ)
 
 // Error codes
 
 #define badModule 	101
-#define badCall 	102
-#define badCompile 	103
+#define badStep 	102
+#define badInit 	103
 #define badEntryExit 104
 #define badPool		105
 #define badArgs		106
-
-// Test for special keys in machine parms
-
-#define ISSQL(X) (strcmp(X,"sql")==0)
-#define ISQUERY(X) (strcmp(X,"query")==0)
 
 // String minipulators
 
@@ -104,77 +98,59 @@ str
 class MACHINE {
 	public:
 		MACHINE(void) {
-			steps = 0; 
-			depth = 0; 
-			drops = 0; 
-			name = ""; 
-			port = ""; 
-			code = ""; 
-			err = 0;
+			steps = depth = drops = err = 0; 
+			name = port = ""; 
 			init = false;
-			scope = 0;			
+			scope = NULL;
 		}
 		
 		// monitor machine parms for debugging
-		void monitor(str msg,V8OBJECT parm) {
+		int monitor(void) {
 			V8ARRAY keys = parm->GetOwnPropertyNames();
 
-			printf(TRACE "%s keys=%d\n",msg,keys->Length());
+			printf(TRACE "%s keys=%d\n",name,keys->Length());
 			
 			for (int n=0,N=keys->Length(); n<N; n++) {
 				str key = V8TOSTRING(keys->Get(n)->ToString());
 				V8VALUE val = V8INDEX(parm,key);
 				printf(TRACE "key=%s isobj=%d\n",key,val->IsObject());
 			}
-		}
-		
-		// initialize machine with arguments when called
-		int setup(const V8STACK& args) {
-			scope = V8ENTRY(args);
-			err = 0;
-			
-			switch (args.Length()) {
-				case 0:
-					printf(TRACE "%s connected\n",name);
-					break;
-					
-				case 1:
-					monitor(TRACE "parms",parm);
-					break;
-						
-				case 2:
-					err = badArgs;
-					break;
-					
-				case 3:					
-
-					if (args[1]->IsObject()) {
-						parm = PARMARG(args);
-						name = NAMEARG(args);
-						port = "";
-						init = true;
-						tau  = V8GETARRAY(parm,"tau");
-						code = CODEARG(args);
-						path = strstr(code,"\n") ? NULL : code;
-					}
-					else {
-						port = PORTARG(args);
-						init = false;
-						tau  = TAUARG(args);				
-					}
-
-if (init)
-printf(TRACE "setup name=%s port=%s code=%d args=%d init=%d\n",name,port,strlen(code),args.Length(),(int) init);
-
-					break;
-
-				default:
-					err = badArgs;
-			}
 			
 			return err;
 		}
 		
+		// setup machine for future calls to step
+		int setup(const V8STACK& args) {
+			scope = V8ENTRY(args);
+			
+			if (args.Length() != 3)
+				err = badArgs;
+
+			else {
+				err = 0;
+				port = PORTARG(args);
+				name = NAMEARG(args);
+
+				if (args[2]->IsArray()) {
+					init = false;
+					tau  = TAUARG(args);				
+				}
+				else
+				if (args[2]->IsObject()) {
+					init = true;
+					parm = PARMARG(args);
+					tau  = V8GETARRAY(parm,"tau");
+				}
+				else
+					err = badArgs;
+
+//printf(TRACE "setup name=%s port=%s args=%d init=%d\n",name,port,args.Length(),(int) init);
+
+			}
+
+			return err;
+		}
+	
 		// machine output argument setters
 		void set(V8OBJECT tar, V8OBJECT src) {
 			V8ARRAY keys = src->GetOwnPropertyNames();
@@ -229,10 +205,10 @@ printf(TRACE "setup name=%s port=%s code=%d args=%d init=%d\n",name,port,strlen(
 		}
 
 		int steps,depth,drops,err;	// number of steps, current call depth, dropped events, return code
-		bool init;	 		// initialize flag
-		str name, port, path, code;	// engine name, port name being latched, engine code file path, engine code
-		V8ARRAY tau; 			// input/output events
-		V8OBJECT parm;			// parameters
+		bool init;	 	// machine flags
+		str name, port; 		// engine name, port name being latched, engine code file path, engine code
+		V8ARRAY tau; 		// input/output events
+		V8OBJECT parm;		// parameters
 		Isolate *scope; 		// v8 garbage collection thread
 };
 
