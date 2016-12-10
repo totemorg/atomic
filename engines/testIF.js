@@ -5,8 +5,8 @@ var ENGINE = module.exports = require("../engine");
 var itau = [ENGINE.tau()];
 var otau = [ENGINE.tau()];
 
-switch (2.2) {
-	case 1: // program and step haar opencv machine 
+switch ("py2") {
+	case "cv": // program and step haar opencv machine 
 		parm =	{
 			tau: [], 
 			ports: {
@@ -31,7 +31,7 @@ switch (2.2) {
 		
 	// python machines fail with "cant find forkpty" if "import cv2" attempted
 
-	case 2.1: // program python machine
+	case "py1": // program python machine
 		parm =	{ 
 			tau:	["redefine on run"],
 			ports: {	
@@ -40,18 +40,19 @@ switch (2.2) {
 				faces:	 {scale:1.01,dim:100,delta:0.1,hits:10,cascade:["haarcascade_frontalface_alt","haarcascade_eye_tree_eyeglasses"]}
 		}};
 		pgm = `
-print 'Look mom - Im running python!'\n" 
+print 'Look mom - Im running python!'
 print tau
 tau = [{'x':[11,12],'y':[21,22]}]
 `;
 		
 		// By default python attempts to connect to mysql.  
 		// So, if mysql service not running or mysql.connector module not found, this will not run.
-		console.log("INIT = ", ENGINE.python("test.thread",pgm,parm));
 		console.log(parm);
+		console.log("INIT = ", ENGINE.python("py1.thread",pgm,parm));
+		console.log(parm.tau);
 		break;
 
-	case 2.2: // program and step python machine 
+	case "py2": // program and step python machine 
 		parm =	{ 
 			ports: { 	
 				frame:	 {},
@@ -72,15 +73,16 @@ def faces(tau,parms):
 	print parms
 	return -103
 `;		
-		console.log("INIT = ", ENGINE.python("PY.Me.Thread1",pgm,parm));
+		
+		console.log("INIT = ", ENGINE.python("py2.Me.Thread1",pgm,parm));
 		
 		for (var n=0,N=1; n<N; n++)
-			console.log(`STEP[${n}] = `, ENGINE.python("PY.Me.Thread1","frame",itau));
+			console.log(`STEP[${n}] = `, ENGINE.python("py2.Me.Thread1","frame",itau));
 
-		console.log("STEP = ", ENGINE.python("PY.Me.Thread1","helipads",otau));
+		console.log("STEP = ", ENGINE.python("py2.Me.Thread1","helipads",otau));
 		break;
 		
-	case 2.3: // program and step python machine string with reinit along the way
+	case "py3": // program and step python machine string with reinit along the way
 		parm =	{ 
 			ports: {	
 				frame:	 {},
@@ -102,14 +104,14 @@ def faces(tau,parms):
 	return -103
 `;
 		
-		console.log("INIT = ", ENGINE.python("mytest",pgm,parm));
-		console.log("STEP = ", ENGINE.python("mytest","frame",itau));
-		console.log("REINIT = ", ENGINE.python("mytest",pgm,parm));
-		console.log("STEP = ", ENGINE.python("mytest","frame",itau));
+		console.log("INIT = ", ENGINE.python("py3",pgm,parm));
+		console.log("STEP = ", ENGINE.python("py3","frame",itau));
+		console.log("REINIT = ", ENGINE.python("py3",pgm,parm));
+		console.log("STEP = ", ENGINE.python("py3","frame",itau));
 		console.log(otau);
 		break;
 
-	case 3: // program and step a js machine string
+	case "js": // program and step a js machine string
 		parm =	{ 
 			ports: {	
 				frame:	 {},
