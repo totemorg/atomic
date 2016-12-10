@@ -74,15 +74,17 @@ Trace(">worker run");
 
 							if (engine = ENGINE[core.type] )
 								try {
-									var rtn = ENGINE.error[engine(core.name,args.port,context.tau,context,core.code)] || "ok";
+									var rtn = engine(core.name,args.port,context.tau,context,core.code);
 								}
 								catch (err) {
-									var rtn = err+"";
+									var rtn = 110; //err+"";
 								}
 							else
-								var rtn = ENGINE.error[110];
+								var rtn = 110;
 
-Trace(">rtn="+rtn+" fmt="+format);
+							var rtn = ENGINE.errors[rtn];
+							
+Trace(">engine="+rtn+" fmt="+format);
 
 							switch (format) {
 								case "db":
@@ -116,20 +118,20 @@ ENGINE.plugin = {
 	JSON: JSON
 };
 
-ENGINE.error = {
-	"-1": "engine returned invalid code",
-	0: "ok",
-	101: "engine could not be loaded",
-	102: "engine received bad port/query",
-	103: "engine could not be compiled",
-	104: "engine failed entry/exit",
-	105: "engine exhausted engine pool",
-	106: "engine received bad query",
-	107: "engine cant reach assigned worker at this port",
-	108: "engine has no context",
-	109: "engine could not handoff to worker",
-	110: "engine type not supported",
-	111: "engine does not exists or is not enabled"
+ENGINE.errors = {
+	0: null,
+	101: new Error("engine could not be loaded"),
+	102: new Error("engine received bad port/query"),
+	103: new Error("engine could not be compiled"),
+	104: new Error("engine failed entry/exit"),
+	105: new Error("engine exhausted engine pool"),
+	106: new Error("engine received bad query"),
+	107: new Error("engine cant reach assigned worker at this port"),
+	108: new Error("engine has no context"),
+	109: new Error("engine could not handoff to worker"),
+	110: new Error("engine type not supported"),
+	111: new Error("engine does not exists or is not enabled"),
+	200: new Error("engine provided invalid port")	
 };
 
 ENGINE.context = {};
@@ -196,7 +198,7 @@ ENGINE.core = function (req,args,cb) {	  // called by master to thread a statefu
 				if (worker) 		// let assigned stateful engine respond on this socket
 					worker.send({core:core,args:args,format:req.type}, req.connection);
 				else 
-					cb(new Error(ENGINE.error[107]) ); 
+					cb(ENGINE.errors[107] ); 
 			}
 			else  					// engine was assigned to the master
 				ENGINE.compute(core, args, function (context) {
@@ -210,7 +212,7 @@ ENGINE.core = function (req,args,cb) {	  // called by master to thread a statefu
 			});
 			
 		else 						// client on worker port and unlucky - should be using master port
-			cb( new Error(ENGINE.error[107]) );
+			cb( ENGINE.errors[107] );
 	}
 
 	// Get assocated engine core if already allocated; otherwise allocate a new core.  We keep the
@@ -269,7 +271,7 @@ ENGINE.core = function (req,args,cb) {	  // called by master to thread a statefu
 					execute(args,core,cb);
 				}
 				else
-					cb( new Error(ENGINE.error[111]) );
+					cb( ENGINE.errors[111] );
 
 			});			
 
@@ -328,17 +330,18 @@ ENGINE.save = function (sql,taus,port,engine,saves) {	// called by cluster worke
  * */
 ENGINE.call = function (core,context,cb) {
 	
-Trace(">call");
+//Trace(">call");
 
 	Each(context.tau, function (n,tau) { 			// prefix jobs with mount point
 		tau.job = ENGINE.paths.jobs + tau.job;
 	});
 
 	if ( engine = ENGINE[core.type] )
-		try {  												// call the module
+		try {  												// call the engine
 //Trace(">context",context);
 			var rtn = engine(core.name,context.port,context.tau,context,core.code);
-Trace(">rtn="+rtn);
+				
+Trace(">call="+rtn);
 
 			Each(context.tau, function (n,tau) { 			// remove mount point from jobs
 				if (tau.job) 
@@ -637,17 +640,27 @@ ENGINE.js = function (name,port,tau,context,code) {
 	
 //Trace([name,port,tau,code]);
 
+	if (tau.constructor == Object) {
+		context = ENGINE.context[name] = VM.createContext(Copy(ENGINE.plugin,tau));
+		context.code = port;
+		port = "";
+	}
+	else	
+	if (!context) 
+		context = ENGINE.context[name];
+	
 	if (port) 
-		if (engine = context[port])
-			return engine(tau,context.ports[port]);  		//context[port](context.tau,context.context[port]);
-
+		if (engine = context[port]) 
+			var err = engine(tau, context.ports[port]);  		//context[port](context.tau,context.context[port]);
 		else
-			return new Error(`No engine port ${port}`);
-		
-	if (code) context.code = code;
-
-	VM.runInContext(context.code,context);
-	return 0;
+			var err = 200;
+	
+	else {
+		VM.runInContext(context.code,context);
+		var err = 0;
+	}
+	
+	return ENGINE.errors[err];
 }
 
 ENGINE.py = function (name,port,tau,context,code) {
@@ -663,15 +676,39 @@ ENGINE.py = function (name,port,tau,context,code) {
 		for (var n in ENGINE.plugin) 	
 			delete context[n];
 			
-		var err = ENGINE.python(name,context,code);
+		var err = ENGINE.python(name,code,context);
 		
 		for (var n=0,N=context.tau.length; n<N; n++) 
 			tau[n] = context.tau[n];
-		
-		return err;
 	}
 	else
-		return ENGINE.python(name,port,tau);
+		var rtn = ENGINE.python(name,port,tau);
+	
+	return ENGINE.errors[err];
+}
+
+ENGINE.cv = function (name,port,tau,context,code) {
+
+//Trace(">cv run",[name,port,code]);
+	
+	if (code) {
+		context.ports = context.ports || {};  	// engine requires valid ports hash
+		context.tau = tau || []; 				// engine requires valid event list
+
+		delete context.sql;				// remove stuff that would confuse engine
+
+		for (var n in ENGINE.plugin) 	
+			delete context[n];
+			
+		var err = ENGINE.opencv(name,code,context);
+		
+		for (var n=0,N=context.tau.length; n<N; n++) 
+			tau[n] = context.tau[n];
+	}
+	else
+		var err = ENGINE.opencv(name,port,tau);
+
+	return ENGINE.errors[err];
 }
 
 ENGINE.sh = function (name,port,tau,context,code) {
@@ -681,7 +718,7 @@ ENGINE.sh = function (name,port,tau,context,code) {
 		Trace(err || stdout);
 	});
 	
-	return 0;
+	return null;
 }
 
 // UNCLASSIFIED

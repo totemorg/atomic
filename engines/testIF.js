@@ -39,9 +39,11 @@ switch (2.2) {
 				helipads:{scale:1.01,dim:100,delta:0.1,hits:10,cascade:["c1/cascade"]},
 				faces:	 {scale:1.01,dim:100,delta:0.1,hits:10,cascade:["haarcascade_frontalface_alt","haarcascade_eye_tree_eyeglasses"]}
 		}};
-		pgm = "print 'Im running python!'\n" 
-		+ "print tau\n"
-		+ "tau = [{'x':[11,12],'y':[21,22]}]\n"
+		pgm = `
+print 'Look mom - Im running python!'\n" 
+print tau
+tau = [{'x':[11,12],'y':[21,22]}]
+`;
 		
 		// By default python attempts to connect to mysql.  
 		// So, if mysql service not running or mysql.connector module not found, this will not run.
@@ -58,11 +60,18 @@ switch (2.2) {
 		}};
 		
 		itau[0].job = "test.jpg";
-		pgm = "print 'Im running python!'\n" 
-		+ "def frame(tau,parms):\n\tprint parms\n\ttau[0] = {'x':[11,12],'y':[21,22]}\n\treturn -101\n"
-		+ "def helipads(tau,parms):\n\tprint parms\n\treturn -102\n"
-		+ "def faces(tau,parms):\n\tprint parms\n\treturn -103\n";
-		
+		pgm = `
+print 'Look mom - Im running python!'
+def frame(tau,parms):
+	print parms
+	return -101
+def helipads(tau,parms):
+	print parms
+	return -102
+def faces(tau,parms):
+	print parms
+	return -103
+`;		
 		console.log("INIT = ", ENGINE.python("PY.Me.Thread1",pgm,parm));
 		
 		for (var n=0,N=1; n<N; n++)
@@ -80,10 +89,18 @@ switch (2.2) {
 		}};
 		
 		itau[0].job = "test.jpg";
-		pgm = "print 'Im running python!'\n" 
-		+ "def frame(tau,parms):\n\tprint parms\n\treturn -101\n"
-		+ "def helipads(tau,parms):\n\tprint parms\n\treturn -102\n"
-		+ "def faces(tau,parms):\n\tprint parms\n\treturn -103\n";
+		pgm = `
+print 'Look mom - Im running python!'
+def frame(tau,parms):
+	print parms
+	return -101
+def helipads(tau,parms):
+	print parms
+	return -102
+def faces(tau,parms):
+	print parms
+	return -103
+`;
 		
 		console.log("INIT = ", ENGINE.python("mytest",pgm,parm));
 		console.log("STEP = ", ENGINE.python("mytest","frame",itau));
@@ -101,15 +118,27 @@ switch (2.2) {
 		}};
 		
 		itau[0].job = "test.jpg";
-		jspgm = "console.log('js compiled');\n" 
-		+ "TAU.frame = function(tau,parms) { tau[0].xyz=456; return -101; }\n"
-		+ "TAU.helipads = function(tau,parms) { return -102; }\n"
-		+ "TAU.faces = function(tau,parms) { return -103; }\n";
+		pgm = `
+CON.log('Look mom - Im running javascript!');
+function frame(tau,parms) { 
+	CON.log("here I come to save the day");
+	tau[0].xyz=123; 
+	return 0; 
+}
+function helipads(tau,parms) { 
+	tau[0].results=666; 
+	return 101; 
+}
+function faces(tau,parms) { return 102; }
+`;
 		
-		console.log("INIT = ", ENGINE.js("mytest",jspgm,parm));
+		console.log("INIT = ", ENGINE.js("mytest",pgm,parm));
+		// frame should return a 0 = null noerror
 		console.log("STEP = ", ENGINE.js("mytest","frame",itau));
+		console.log(itau);
+		// helipads should return a 101 = badload error
+		console.log("STEP = ", ENGINE.js("mytest","helipads",otau));
 		console.log(otau);
-		//console.log("STEP = ", ENGINE.python("test","helipads",otau,parm.helipads));
 		break;	
 	
 /*
