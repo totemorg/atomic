@@ -36,6 +36,8 @@ parameters:
 Multiple output ports can be defined to detect using, for example, cascades trained for different feature sets
 or the same feature in different symmetries.
 
+Machines DO NOT check validity of input arguments ... so pass 'em correctly!
+
 See the tauIF.cpp for usage examples.  This interface is created using node-gyp with the binding.gyp provided
 and expects the following compile directives:
 

@@ -35,9 +35,6 @@ switch ("py2") {
 		parm =	{ 
 			tau:	["redefine on run"],
 			ports: {	
-				frame:	 {},
-				helipads:{scale:1.01,dim:100,delta:0.1,hits:10,cascade:["c1/cascade"]},
-				faces:	 {scale:1.01,dim:100,delta:0.1,hits:10,cascade:["haarcascade_frontalface_alt","haarcascade_eye_tree_eyeglasses"]}
 		}};
 		pgm = `
 print 'Look mom - Im running python!'

@@ -1,4 +1,4 @@
-// UNCLASSIFIED
+﻿// UNCLASSIFIED
 
 /*
 Reserves a pool of V8 python machines:
@@ -19,6 +19,8 @@ stepped in a stateless way: by latching events to all input ports, then latching
 When programming a machine, parm = { ports: {name1: {...}, name2: {...}, ...}, ...} defines parameters to input-output ports, and 
 port = "python program\n" (or "module name"  to import under $PYTHONPATH).  Empty code will monitor current 
 machine parameters.
+
+Machines DO NOT check validity of input arguments ... so pass 'em correctly!
  
 See the tauIF.cpp for usage examples.  This interface is created using node-gyp with the binding.gyp provided.
 */
@@ -67,7 +69,7 @@ using namespace std;
 #define WRAP_DBPASS getenv("DB_PASS")
 #define WRAP_DBNAME getenv("DB_NAME")
 #define WRAP_DBUSER getenv("DB_USER")
-//#define PYTHONORIGIN getenv("PYTHONORIGIN")
+#define PYTHONORIGIN getenv("PYTHONORIGIN")
 
 // Danger zone
 
@@ -76,25 +78,25 @@ str indent(str code) {
 	
 	for (n=0,M=0; n<N; n++) if (code[n] == '\n') M++;
 	
-	str err = mac_strclone(N+M+1,"\t");
+	str rtn = mac_strclone(N+M+1,"\t");
 	
-	for (n=0,m=strlen(err); n<N; n++) {
-		err[m++] = code[n];
-		if (code[n] == '\n') err[m++] = '\t';
+	for (n=0,m=strlen(rtn); n<N; n++) {
+		rtn[m++] = code[n];
+		if (code[n] == '\n') rtn[m++] = '\t';
 	}
 	
-	err[m] = '\0';
+	rtn[m] = '\0';
 	
-	return err;
+	return rtn;
 }
 
 str wrap(str code,str port,V8OBJECT parm,str idx,str args) {  // wrap user python code in machine interface
-	str err = mac_strclone(strlen(code)+1000,"");
+	str rtn = mac_strclone(strlen(code)+1000,"");
 	
 	if (strlen(args)) { // add tau front and back end if python args specified
 
 #if WRAP_ADDTRACE
-		strcat(err, 
+		strcat(rtn, 
 			"\n#trace code\n"
 			"print 'py>>dumping locals'\n"
 			"print locals()\n"
@@ -107,7 +109,7 @@ str wrap(str code,str port,V8OBJECT parm,str idx,str args) {  // wrap user pytho
 		);
 #endif
 		
-		strcat(err,		// add db connector interface 
+		strcat(rtn,		// add db connector interface 
 			"\n#connector interface\n"
 		);
 
@@ -120,7 +122,7 @@ str wrap(str code,str port,V8OBJECT parm,str idx,str args) {  // wrap user pytho
 		// after "rpm -i mysql-connector-python-2.X"
 		
 #if WRAP_ADDCATCH
-		strcat(err,			// add entry-exit excemption catch
+		strcat(rtn,			// add entry-exit excemption catch
 			"try:\n"
 		);
 #endif
@@ -131,44 +133,44 @@ str wrap(str code,str port,V8OBJECT parm,str idx,str args) {  // wrap user pytho
 		// into /usr/local/lib/python2.7/site-packages/mysql, then copy
 		// this mysql folder to the anaconda/lib/python2.7/site-packages.
 		
-		strcat(err,
+		strcat(rtn,
 			"import mysql.connector\n"
 //			"print 'TAU imported mysql'\n"
 		);
-		strcat(err,"SQL = mysql.connector.connect(user='");
-		strcat(err,WRAP_DBUSER);
-		strcat(err,"', password='");
-		strcat(err,WRAP_DBPASS);
-		strcat(err,"', database='");
-		strcat(err,WRAP_DBNAME);
-		strcat(err,"')\n");
+		strcat(rtn,"SQL = mysql.connector.connect(user='");
+		strcat(rtn,WRAP_DBUSER);
+		strcat(rtn,"', password='");
+		strcat(rtn,WRAP_DBPASS);
+		strcat(rtn,"', database='");
+		strcat(rtn,WRAP_DBNAME);
+		strcat(rtn,"')\n");
 
 		// add two sql cursors (more than 2 causes segment fault for some reason)
 		int N = 2;
 		
 		if (N) {
 			for (int n=0;n<N;n++)
-				sprintf(err,"%sSQL%d=SQL.cursor(buffered=True)\n", err, n);
+				sprintf(rtn,"%sSQL%d=SQL.cursor(buffered=True)\n", rtn, n);
 			/*
-			strcat(err,"TAU['cur'] = [");
+			strcat(rtn,"TAU['cur'] = [");
 
 			for (int n=0; n<N; n++) {
-				sprintf(err,"%s%s%s",err,n?",":"","TAU['cnx'].cursor(buffered=True)");
+				sprintf(rtn,"%s%s%s",rtn,n?",":"","TAU['cnx'].cursor(buffered=True)");
 			}
-			strcat(err,"]\n");
+			strcat(rtn,"]\n");
 			* */
 		}
 #endif
 
-		strcat(err,"\n#supplied code\n");		// add user code
+		strcat(rtn,"\n#supplied code\n");		// add user code
 
 #if WRAP_ADDCATCH
-		strcat(err,indent(code)); 
+		strcat(rtn,indent(code)); 
 #else
-		strcat(err,code); 
+		strcat(rtn,code); 
 #endif
 		
-		strcat(err,		// add entry code for port processing
+		strcat(rtn,		// add entry code for port processing
 			"\n#entry code\n"
 			"PORTS={"
 		);
@@ -178,13 +180,13 @@ str wrap(str code,str port,V8OBJECT parm,str idx,str args) {  // wrap user pytho
 		for (int n=0,k=0,N=keys->Length(); n<N; n++) {
 			str key = V8TOSTRING(keys->Get(n)->ToString());
 			
-			sprintf(err,"%s%s'%s':%s",err,(k++)?",":"",key,key);
+			sprintf(rtn,"%s%s'%s':%s",rtn,(k++)?",":"",key,key);
 		}
 		
-		strcat(err,"}\n");
+		strcat(rtn,"}\n");
 		
 		if (strlen(idx)) 	// if port indexing, 
-			sprintf(err,	// add call to the desired port providing specified arguments
+			sprintf(rtn,	// add call to the desired port providing specified arguments
 				"%s\n"
 				"if " PYPORT ":\n"
 					"\tif %s in PORTS:\n"
@@ -193,10 +195,10 @@ str wrap(str code,str port,V8OBJECT parm,str idx,str args) {  // wrap user pytho
 						"\t\t" PYERR " = 104\n"
 				"else:\n"
 					"\t" PYERR " = 0\n",
-			err,idx,idx,args);
+			rtn,idx,idx,args);
 			
 #if WRAP_ADDCONNECT
-		strcat(err,  // close sql connection
+		strcat(rtn,  // close sql connection
 			"\n#exit code\n"
 			"SQL.commit()\n"
 			"SQL.close()\n"
@@ -204,16 +206,16 @@ str wrap(str code,str port,V8OBJECT parm,str idx,str args) {  // wrap user pytho
 #endif
 	
 #if WRAP_ADDCATCH
-		strcat(err, 	// catch entry-exit excemptions
-			"except err:\n"
+		strcat(rtn, 	// catch entry-exit excemptions
+			"except rtn:\n"
 				"\t" PYERR " = 104\n"
 		);
 #endif
 	}
 	else 		// use user code as-is
-		strcat(err,code);
+		strcat(rtn,code);
 	
-	return err;
+	return rtn;
 }
 
 class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
@@ -324,17 +326,19 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 			
 			else
 			if ( init ) { 					// Program module
-/* 
- * All attempts to redirect Initialize to the anaconda install fail (SetProgramName, SetPythonName, redefine PYTHONHOME,
- * virtualized, etc, etc).  If PYTHONORIGIN = /usr is the default python install base, we must alias /usr/lib/python2.7 
- * AND /usr/lib64/python2.7 to the anaconda/lib/python2.7.  The default python (typically python-2.7.5) appears to be 
- * fully compatible with the anaconda-1.9 python-2.7.6.  Must then override PYTHONHOME to the default PYTHONORIGIN.
- * */
-				//Py_SetProgramName("/base/anaconda/bin/python2.7");
-				//Py_SetPythonHome("/base/anaconda");
-				//Py_SetPythonHome(PYTHONORIGIN);
+				/* 
+				 * All attempts to redirect Initialize to the anaconda install fail (SetProgramName, SetPythonName, redefine PYTHONHOME,
+				 * virtualized, etc, etc).  If PYTHONORIGIN = /usr is the default python install base, we must alias /usr/lib/python2.7 
+				 * AND /usr/lib64/python2.7 to the anaconda/lib/python2.7.  The default python (typically python-2.7.5) appears to be 
+				 * fully compatible with the anaconda-1.9 python-2.7.6.  Must then override PYTHONHOME to the default PYTHONORIGIN.
+				 * */
+				/*
+				Py_SetProgramName("/base/anaconda/bin/python2.7");
+				Py_SetPythonHome("/base/anaconda");
+				Py_SetPythonHome(PYTHONORIGIN);
 //printf(TRACE "initialize %s\n",Py_GetPythonHome());
-
+				*/
+				
 				Py_Initialize(); 
 				
 				path = strstr(port,"\n") ? NULL : port;
@@ -343,10 +347,11 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 					pModule = PyImport_Import(PyString_FromString(path));
 					if ( !pModule ) return badModule;
 				}
-				else { 	// compile code 
+				else {
 					if (pCode) { 			// free old stuff
 						Py_XDECREF(pCode);
-						Py_XDECREF(pModule);
+						Py_XDECREF(pModule);	
+						Py_XDECREF(pArgs);	
 					}
 					
 					// Create a module for this new code
@@ -365,10 +370,11 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 					pArgs = PyTuple_New(3);
 
 					// Create global dictonary object (reserved)
-					pMain = PyImport_AddModule("__main__");	
+					pMain = PyImport_AddModule("__main__");
 					pGlobals = PyModule_GetDict(pMain);	
 //printf(TRACE "globals=%p\n",pGlobals);
 
+					// Compile code with empty port
 					code = port;
 					port = "";
 					
@@ -380,9 +386,15 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 						PYTAU "," PYPORTS "[" PYPORT "]"
 					);
 
-//printf(TRACE "pgm compile=\n%s\n",comp);
+//printf(TRACE "pgm compile=\n%s pfi=%d\n",comp,Py_file_input);
 
-					pCode = (PyCodeObject*) Py_CompileString(comp, "pycode", Py_file_input);
+					// For some reason cant recompile already compiled code.  
+					pCodeTest = (PyCodeObject*) Py_CompileString(comp, "py>traceback", Py_file_input);
+
+					if (pCodeTest) pCode = pCodeTest;
+					else
+						printf(TRACE "reprogram ignored!!\n");
+					
 					//Py_Finalize(); // dont do this - will cause segment fault
 				}
 			}
@@ -449,7 +461,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 		
 	private:
 		PyObject *pName, *pModule, *pFunc;
-		PyCodeObject *pCode;
+		PyCodeObject *pCode, *pCodeTest;
 		PyObject *pArgs, *pValue;
 		PyObject *pGlobals, *pLocals, *pMain, *pParm;
 		str path, code;

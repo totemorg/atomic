@@ -64,10 +64,6 @@ Typically, you will want to redirect the following to your project:
 	ln -s ../myproject/test.js test.js 					# unit testing
 	ln -s ../myproject/maint.sh maint.sh 			# test startup and maint scripts
 	
-## Usage
-
-See Examples.
-
 ## Examples
 
 Below sample use-cases are from engine/test.js.
@@ -110,7 +106,7 @@ Below sample use-cases are from engine/test.js.
 
 	},
 
-### E3 - Starting a trivial Totem with a chipper fetcher and a database
+### E3 - Starting a trivial Totem with a chipper and a database
 
 	E3: function () {
 		

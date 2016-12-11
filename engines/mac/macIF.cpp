@@ -23,6 +23,8 @@ stepped in a stateless way: by latching events to all input ports, then latching
 When programming a machine with code, parm = { ports: {name1: {...}, name2: {...}, ...}, tau: [tau,tau,...], ... } defines 
 parameters to machine i/o ports and i/o events.  Empty code will monitor current machine parameters.
 
+Machines DO NOT check validity of input arguments ... so pass 'em correctly!
+
 See the opencv.cpp, python.cpp, etc machines for usage examples.  This interface is created using node-gyp with 
 the binding.gyp provided.
 
