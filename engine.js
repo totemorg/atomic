@@ -115,6 +115,7 @@ ENGINE.plugin = {
 	DSP: require('digitalsignals'),
 	CRYPTO: require('crypto'),
 	CON: console,
+	console: console,
 	JSON: JSON
 };
 
@@ -341,8 +342,6 @@ ENGINE.call = function (core,context,cb) {
 //Trace(">context",context);
 			var rtn = engine(core.name,context.port,context.tau,context,core.code);
 				
-Trace(">call="+rtn);
-
 			Each(context.tau, function (n,tau) { 			// remove mount point from jobs
 				if (tau.job) 
 					tau.job = tau.job.substr(ENGINE.paths.jobs.length);
@@ -398,7 +397,7 @@ console.log(">kill");
 }
 
 ENGINE.select = ENGINE.read = function (req,res) {	// called by worker to read a stateless engine 
-	function guard(q) {
+	/*function guard(q) {
 		if (q != true) {
 			for (var n in q) 
 				try { q[n] = (q[n]||"").parse(0); } catch (err) { }
@@ -407,16 +406,24 @@ ENGINE.select = ENGINE.read = function (req,res) {	// called by worker to read a
 		}
 			
 		return true;
-	}
+	}*/
 
+	function isempty(h) {
+		for (var n in h) return false;
+		return true;
+	}
+	
 	var args = {
 		tau: [ENGINE.tau()],
 		port: req.query.port || "",
 		sql: req.sql,
-		query: guard(req.query),
 		action: "select"
 	};
 
+	// override the engines query if a request query was given
+	delete req.query[""];
+	if ( !isempty(req.query) ) args.query = req.query;
+	
 	ENGINE.core(req,args,function (err,context) {
 		res( err || ENGINE.maptau(context) );
 	});
@@ -442,7 +449,7 @@ Trace(">init");
 // Methods to execute engine 
 
 /**
- * @method return
+ * @method maptau
  * */
 ENGINE.maptau = function (context) {
 	var tau = context.tau || [];
@@ -494,12 +501,12 @@ ENGINE.maptau = function (context) {
 }
 
 /**
- * @method run
+ * @method prime
  * 
- * Run the callback cb in the given context with imports defined by the
- * context.entry sql hash, and as exported by the context.exit sql hash.
+ * Run the engine at callback cb in its context primed with vars from its context.entry, then export its 
+ * context vars specified by its context.exit.
  * */
-ENGINE.run = function (context,cb) {
+ENGINE.prime = function (context,cb) {
 	var vars = context.vars, sql = context.sql;
 
 	// The sqls = {var:"sql", ...} are defined by the context.entry (to import vars into the context before an 
@@ -527,7 +534,9 @@ ENGINE.run = function (context,cb) {
 				var data = context[varn] || [];
 				var args = [varn, {result:data}, context.query];
 			}
-				
+
+//Trace(JSON.stringify(args));
+			
 			var q = sql.query(query, args, function (err, recs) { 	// import/export this var
 
 //Trace([varn,err,q.sql]);
@@ -537,12 +546,16 @@ ENGINE.run = function (context,cb) {
 					context[varn] = null;
 				}
 				else 
-					if (context.sqls == context.entry)  // importing
-						for (var n=0,N=recs.length; n<N; n++) data[n] = Copy(recs[n], {});
-					else { 								// exporting
+					if (context.sqls == context.entry)   // importing matrix
+						recs.each( function (n,rec) {
+							var vec = [];
+							data.push( vec );
+							for ( var x in rec ) vec.push( rec[x] );
+						});
+					else { 								// exporting matrix
 					}					
-				
-				ENGINE.run(context,cb);
+
+				ENGINE.prime(context,cb);
 			});
 		}
 		else 					// no more vars to load
@@ -553,7 +566,7 @@ ENGINE.run = function (context,cb) {
 				var sqls = context.sqls = context.exit;
 				var vars = context.vars = []; for (var n in sqls) vars.push(n);
 
-				ENGINE.run(context);
+				ENGINE.prime(context);
 			}
 		}
 	}
@@ -563,7 +576,7 @@ ENGINE.run = function (context,cb) {
 		var vars = context.vars = []; for (var n in sqls) vars.push(n);
 		
 //Trace("entry vars="+vars);
-		ENGINE.run(context, cb);
+		ENGINE.prime(context, cb);
 	}
 	else
 		cb(context);
@@ -585,7 +598,7 @@ ENGINE.compute = function (core,args,cb) {
 		}
 		
 		var context = ENGINE.context[core.name] = VM.createContext(Copy(ENGINE.plugin,Copy(args,vars)));
-		ENGINE.run(context,cb);
+		ENGINE.prime(context,cb);
 	}
 	else {
 		var context = Copy( args, ENGINE.context[core.name] || VM.createContext({}) );
@@ -648,6 +661,9 @@ ENGINE.js = function (name,port,tau,context,code) {
 	else	
 	if (!context) 
 		context = ENGINE.context[name];
+	else
+	if (code)
+		context.code = code;
 	
 	if (port) 
 		if (engine = context[port]) 
@@ -656,7 +672,10 @@ ENGINE.js = function (name,port,tau,context,code) {
 			var err = 200;
 	
 	else {
+//console.log(context.query);
+//console.log(context.code);
 		VM.runInContext(context.code,context);
+console.log(context.tau);		
 		var err = 0;
 	}
 	
