@@ -19,7 +19,7 @@ export PYTHON=$CONDA/bin/python2.7
 export PYTHONHOME=$CONDA
 export PYTHONPATH=$CAFFE/python:$PYTHON/:$PYTHON/site-packages
 #export PYTHONORIGIN=/usr
-export PATH=$PATH:$CONDA/bin:$INCLUDE/python
+export PATH=$CONDA/bin:$INCLUDE/python:$PATH
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIB/python
 
 # Engines

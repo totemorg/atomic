@@ -176,9 +176,10 @@ str wrap(str code,str port,V8OBJECT parm,str idx,str args) {  // wrap user pytho
 		);
 
 		V8ARRAY keys = parm->GetOwnPropertyNames();
+		char buf[MAXSTR];
 		
 		for (int n=0,k=0,N=keys->Length(); n<N; n++) {
-			str key = V8TOSTRING(keys->Get(n)->ToString());
+			str key = V8TOSTR(keys->Get(n), buf);
 			
 			sprintf(rtn,"%s%s'%s':%s",rtn,(k++)?",":"",key,key);
 		}
@@ -227,6 +228,9 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 			pCode = NULL;
 		};
 
+		~PYMACHINE(void) {
+		};
+	
 		// provide V8-python converters
 		V8VALUE clone(PyObject *src) { 				// clone python value into v8 value
 			if (PyList_Check(src)) {
@@ -272,9 +276,10 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 		
 		PyObject *clone(V8VALUE src) {  			// clone v8 object into python object
 //printf(TRACE " clone str=%d num=%d arr=%d obj=%d\n ",src->IsString(),src->IsNumber(),src->IsArray(),src->IsObject() );
-
+			char buf[MAXSTR];
+			
 			if ( src->IsString() )
-				return PyString_FromString( V8TOSTRING(src->ToString()) );
+				return PyString_FromString( V8TOSTR(src, buf) );
 			else
 			if ( src->IsNumber() )
 				return PyFloat_FromDouble( src->ToNumber()->Value() );
@@ -306,11 +311,12 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 		PyObject *clone(V8OBJECT src) { 			// clone v8 object into python object
 			PyObject *tar = PyDict_New();
 			V8ARRAY keys = src->GetOwnPropertyNames();
+			char buf[MAXSTR];
 			
 //printf(TRACE "clone object keys=%d\n",keys->Length());
 			
 			for (int n=0,N=keys->Length(); n<N; n++) {
-				str key = V8TOSTRING(keys->Get(n)->ToString());
+				str key = V8TOSTR(keys->Get(n), buf);
 				
 				PyDict_SetItemString(tar, key, clone(V8INDEX(src,key)));
 			}

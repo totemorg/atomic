@@ -4,10 +4,10 @@
 #include <stdlib.h>
 
 #define TRACE "mac>"
+#define QUOTE(X) #X
+#define MAXSTR 512
 
 // v8 interface
-
-#define QUOTE(X) #X
 
 // getters and setters
 
@@ -25,6 +25,7 @@
 
 // convertors
 
+#define V8TOSTR(X,B) mac_strclone(X->ToString(),B)
 #define V8TOSTRING(X) mac_strclone(X->ToString())
 #define V8TOKEY(X) v8::String::NewFromUtf8(scope,X)
 #define V8TOARRAY(X) Local<v8::Array>::Cast(X)
@@ -68,8 +69,8 @@ typedef void V8MACHINE(const V8STACK& args);
 
 // Machine argument getters, entry and exit 
 
-#define NAMEARG(X) (X[0]->IsString() ? V8TOSTRING(X[0]) : V8NULLSTR)
-#define PORTARG(X) (X[1]->IsString() ? V8TOSTRING(X[1]) : V8NULLSTR)
+#define NAMEARG(X,B) (X[0]->IsString() ? V8TOSTR(X[0],B) : V8NULLSTR)
+#define PORTARG(X,B) (X[1]->IsString() ? V8TOSTR(X[1],B) : V8NULLSTR)
 #define TAUARG(X)  (X[2]->IsArray()  ? V8TOARRAY(X[2])  : V8NULLARR)
 #define PARMARG(X) (X[2]->IsObject() ? V8TOOBJECT(X[2]) : V8NULLOBJ)
 
@@ -91,6 +92,7 @@ str
 	mac_strclone(str src),
 	mac_strclone(int N,str init),
 	mac_strclone(V8STRING src),
+	mac_strclone(V8STRING src, str buf),
 	mac_strcat(str src[]),
 	mac_strcat(str src[], int n, str insert),
 	mac_strjson(str buffs[], int N);
@@ -99,19 +101,24 @@ class MACHINE {
 	public:
 		MACHINE(void) {
 			steps = depth = drops = err = 0; 
-			name = port = ""; 
+			name = port = NULL;
+			scope = NULL; 
 			init = false;
-			scope = NULL;
 		}
 		
+		~MACHINE(void) {
+			if (name) free(name);
+		}
+	
 		// monitor machine parms for debugging
 		int monitor(void) {
 			V8ARRAY keys = parm->GetOwnPropertyNames();
-
+			char buf[MAXSTR];
+			
 			printf(TRACE "%s keys=%d\n",name,keys->Length());
 			
 			for (int n=0,N=keys->Length(); n<N; n++) {
-				str key = V8TOSTRING(keys->Get(n)->ToString());
+				str key = V8TOSTR(keys->Get(n), buf);
 				V8VALUE val = V8INDEX(parm,key);
 				printf(TRACE "key=%s isobj=%d\n",key,val->IsObject());
 			}
@@ -128,8 +135,7 @@ class MACHINE {
 
 			else {
 				err = 0;
-				port = PORTARG(args);
-				name = NAMEARG(args);
+				port = PORTARG(args, portbuf);
 
 				if (args[2]->IsArray()) {
 					init = false;
@@ -207,6 +213,7 @@ class MACHINE {
 		int steps,depth,drops,err;	// number of steps, current call depth, dropped events, return code
 		bool init;	 	// machine flags
 		str name, port; 		// engine name, port name being latched, engine code file path, engine code
+		char portbuf[MAXSTR];
 		V8ARRAY tau; 		// input/output events
 		V8OBJECT parm;		// parameters
 		Isolate *scope; 		// v8 garbage collection thread
@@ -221,22 +228,21 @@ CLS MAC##_machine[MAX]; \
 \
 void MAC(const V8STACK& args) { \
 	Isolate *scope = V8ENTRY(args); \
-	str name = NAMEARG(args); \
+	char buf[MAXSTR]; \
+	str name = NAMEARG(args,buf); \
 	int n; \
 \
-	for (n=0; n<MAX; n++) { \
+	for (n=0; MAC##_machine[n].name && n<MAX; n++)  \
 		if ( strcmp(MAC##_machine[n].name,name) == 0 ) { \
 			args.V8EXIT( MAC##_machine[n].call(args) ); \
 			return; \
 		} \
-	} \
 \
-	for (n=0; n<MAX; n++) \
-		if ( strcmp(MAC##_machine[n].name,"") == 0 ) { \
-			MAC##_machine[n].name = mac_strclone(name); \
-			args.V8EXIT( MAC##_machine[n].call(args) ); \
-			return; \
-		} \
+	if (n < MAX) { \
+		MAC##_machine[n].name = mac_strclone(name); \
+		args.V8EXIT( MAC##_machine[n].call(args) ); \
+		return; \
+	} \
 \
 	args.V8EXIT( badPool ); \
 }

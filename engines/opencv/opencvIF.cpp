@@ -46,7 +46,7 @@ and expects the following compile directives:
 */
 
 #define MAXPORTS 32
-#define MAXCASCADE 10
+#define MAXCASCADES 10
 #define MAXMACHINES 64
 
 //==============================================================
@@ -418,10 +418,20 @@ class PORT {							 		// HAAR i/o port
 		PORT(void) {
 			isinput = isoutput = false;
 			cascades = 0;
-			name = "";
+			name = NULL;
 			CNN_classify = NULL;
+			for (int n=0; n<MAXCASCADES; n++) 
+				if (HAAR_cascade[n]) HAAR_cascade[n] = NULL;
 		};
 		
+		~PORT(void) {
+			if (CNN_classify) delete CNN_classify;
+			if (name) free(name);
+			
+			for (int n=0; n<MAXCASCADES; n++) 
+				if (HAAR_cascade[n]) delete HAAR_cascade[n];
+		};
+	
 		PORT(Isolate* scope, str Name, V8OBJECT Parm) {
 			// port type
 			isinput = ISNAN(V8GETVALUE(Parm,"scale"));
@@ -503,8 +513,8 @@ printf(TRACE "CNN model=%s train=%s mean=%s label=%s\n",deploy_file.data(),param
 		Size min,max;
 		int hits;
 		
-		str HAAR_cascade[MAXCASCADE];
-		CascadeClassifier HAAR_classify[MAXCASCADE]; 
+		str HAAR_cascade[MAXCASCADES];
+		CascadeClassifier HAAR_classify[MAXCASCADES]; 
 	
 		// CNN Classifier parameters
 
@@ -514,9 +524,16 @@ printf(TRACE "CNN model=%s train=%s mean=%s label=%s\n",deploy_file.data(),param
 class FEATURE { 								// Machine output 
 	public:
 		FEATURE(void) {
-			name=NULL; features=0; row=0; col=0; rows=0; cols=0; label=NULL; level=0;
+			feature = NULL;
+			label = name = NULL; 
+			features = row = col = rows = cols = level = 0; 
 		};
 		
+		~FEATURE(void) {
+			if (feature) delete[] feature;
+			if (name) free(name);
+		}
+	
 		// Classify features in Frame over specified AOI bounding-box.
 
 		FEATURE(int Depth,Rect AOI,str Name,Mat Frame,PORT &Port,Classifier *CNN) {
@@ -674,6 +691,11 @@ class CVMACHINE : public MACHINE {  	// HAAR machine via the MACHINE class
 				printf(TRACE "need a prime.jpg to avoid an opencv bug\n");
 		};
 	
+		~CVMACHINE(void) {
+			for (int n=0; n<MAXPORTS; n++)
+				if (ports[n]) delete ports[n];
+		};
+	
 		// provide V8-C convertors
 		void set(V8ARRAY tar, FEATURE &src) { 	// Set array of HAAR features
 			int n,N=tar->Length();
@@ -681,6 +703,8 @@ class CVMACHINE : public MACHINE {  	// HAAR machine via the MACHINE class
 //printf(TRACE "set n=%d\n",n);
 				set( tar->Get(n)->ToObject(), src.feature[n] );
 			}
+			
+			delete[] src.feature;
 			// for ( ; n<N; n++) set( tar->Get(n)->ToObject() );  // for debugging
 		}
 
@@ -691,8 +715,8 @@ class CVMACHINE : public MACHINE {  	// HAAR machine via the MACHINE class
 			V8SET(tar,src,col);
 			V8SET(tar,src,rows);
 			V8SET(tar,src,cols);
-			V8SET(tar,src,label);
-			V8SET(tar,src,level);
+			//V8SET(tar,src,label);
+			//V8SET(tar,src,level);
 		}
 
 		void set(V8OBJECT tar) {				// Set null feature vector
@@ -735,6 +759,7 @@ class CVMACHINE : public MACHINE {  	// HAAR machine via the MACHINE class
 
 //printf(TRACE "job=%s\n",job);
 			frame = cv::imread( job , 1 );
+			free(job);
 //printf(TRACE "empty=%d\n",frame.empty());
 
 			//cvtColor(frame,frame,CV_RGB2GRAY);
@@ -784,12 +809,6 @@ printf(TRACE "detects=%d\n",detects.features);
 		 * */
 	
 		int stepStateless(void) {
-			/*
-			// legacy
-			for (int n=0; n<MAXPORTS && ports[n]; n++) 
-				if ( ports[n]->isquery ) 
-					return latch(*ports[n],tau) || latch(tau,*ports[n]);
-			*/
 			err = 0;
 			for (int n=0; n<MAXPORTS && ports[n]; n++) 
 				if ( ports[n]->isinput ) 
@@ -818,12 +837,13 @@ printf(TRACE "detects=%d\n",detects.features);
 		int program (void) { 
 			V8VALUE _Ports = V8INDEX(parm,"ports");
 			V8OBJECT Ports = _Ports->IsObject() ? _Ports->ToObject() : V8NULLOBJ;
-
 			V8ARRAY Keys = Ports->GetOwnPropertyNames();  
+			char buf[MAXSTR];
+			
 //printf(TRACE "pgm ports=%d\n",Keys->Length());
 
 			for (int n=0,m=0,N=Keys->Length(); n<N; n++) {
-				str Key = V8TOSTRING(Keys->Get(n));
+				str Key = V8TOSTR(Keys->Get(n), buf);
 
 				if ( ISSQL(Key) || ISQUERY(Key) ) {
 				}

@@ -102,13 +102,14 @@ str mac_strjson(str buffs[], int N) {
 }
 
 str mac_strclone(V8STRING src) {
-	str rtn = new char[src->Length()+1];
+	str rtn = (str) malloc( src->Length()+1 );
 	
-	if (rtn) {
-		int len = src->WriteUtf8( rtn );
-		rtn[len] = '\0';
-	}
-	
+	rtn[ src->WriteUtf8( rtn, src->Length() ) ] = '\0';
+	return rtn;
+}
+
+str mac_strclone(V8STRING src, str rtn) {
+	rtn[ src->WriteUtf8( rtn, src->Length() ) ] = '\0';
 	return rtn;
 }
 
