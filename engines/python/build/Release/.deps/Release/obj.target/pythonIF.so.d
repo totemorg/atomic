@@ -1,1 +1,1 @@
-cmd_Release/obj.target/pythonIF.so := g++ -shared -pthread -rdynamic -m64  -Wl,-soname=pythonIF.so -o Release/obj.target/pythonIF.so -Wl,--whole-archive ./Release/obj.target/pythonIF/pythonIF.o -Wl,--no-whole-archive /home/admin/base/lib64/python/libpython2.7.so
+cmd_Release/obj.target/pythonIF.so := g++ -shared -pthread -rdynamic -m64  -Wl,-soname=pythonIF.so -o Release/obj.target/pythonIF.so -Wl,--whole-archive ./Release/obj.target/pythonIF/pythonIF.o -Wl,--no-whole-archive /local/lib64/python/libpython2.7.so
