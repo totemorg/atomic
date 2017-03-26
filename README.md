@@ -4,7 +4,7 @@
 
 ENGINE provides a foundation for hyperthreaded workflows to (both stateless and stateful) engines of type
 
-	X = py,js,sh,opencv,mat,matlab,csh,r,octave, ...
+	X = py | js | sh | opencv | mat | csh | r | octave
 
 at ENGINE[X].  Engines are controlled via the following methods (restful http endpoints):
 
@@ -66,80 +66,57 @@ Typically, you will want to redirect the following to your project:
 	
 ## Examples
 
-Below sample use-cases are from engine/test.js.
+Below samples are from engine/test.js unit tester.
 
-### E1 - A default Totem client
-	
-	E1: function () {
+### E1 - Totem and Engine interfaces
 
-		var ENGINE = require("../engine");
-		var TOTEM = require("../totem");
+	var ENGINE = require("../engine");
+	var TOTEM = require("../totem");
 
-		Trace( "A default Totem client", {
-			a_tau_template: ENGINE.tau("somejob.pdf"),
-			engine_errors: ENGINE.error,
-			get_endpts: TOTEM.reader,
-			my_paths: TOTEM.paths
-		});
-		
-	},
+	Trace( "A Totem+Engine client has been created", {
+		a_tau_template: ENGINE.tau("somejob.pdf"),
+		engine_errors: ENGINE.error,
+		get_endpts: TOTEM.reader,
+		my_paths: TOTEM.paths
+	});
 
 ### E2 - Totem being powered up and down
 
-	E2: function () {
+	var TOTEM = require("../totem");
 
-		var TOTEM = require("../totem");
-		
-		TOTEM.start({
-			
-			init: function () {
+	TOTEM.config({}, function (err) {
+		Trace( err || "Started but I will now power down" );
+		TOTEM.stop();
+	});
 
-				Trace( "Totem being powered down" );
-				
-				TOTEM.stop();
+	var ENGINE = require("../engine").config({
+		thread: TOTEM.thread
+	});
+
+### E3 - Totem service with a chipper engine endpoint and a database
+
+	var TOTEM = require("../totem").config({
+		"reader.": {
+			chipper: function Chipper(req,res) {				
+				res( 123 );
 			}
-		});
+		},
 
-		var ENGINE = require("../engine").config({
-			thread: TOTEM.thread
-		});
+		mysql: {
+			host: ENV.MYSQL_HOST,
+			user: ENV.MYSQL_USER,
+			pass: ENV.MYSQL_PASS
+		}
 
-	},
+	});
 
-### E3 - Starting a trivial Totem with a chipper and a database
+	var ENGINE = require("../engine").config({
+		thread: TOTEM.thread
+	});
 
-	E3: function () {
-		
-		var TOTEM = require("../totem").start({
+### E4 - Totem with a complete engine test endpoint
 
-			"reader.": {
-				chipper: function Chipper(req,res) {				
-					res( 123 );
-				}
-			},
-			
-			mysql: {
-				host: ENV.MYSQL_HOST,
-				user: ENV.MYSQL_USER,
-				pass: ENV.MYSQL_PASS
-			}
-			
-		});
-
-		var ENGINE = require("../engine").config({
-			thread: TOTEM.thread
-		});
-
-		Trace( "Starting a trivial Totem with a chipper fetcher and a database" );
-
-	}
-
-### E4 - Unit test engines with /test?config=cv | py1 | py2 | py3 | js
-
-	E4: function () {
-		
-		var TOTEM = require("../totem").start({
-
+		var TOTEM = require("../totem").config({
 			"reader.": {
 				test: function Chipper(req,res) {
 					
@@ -174,11 +151,8 @@ Below sample use-cases are from engine/test.js.
 
 						case "py1": // program python machine
 							parm =	{ 
-								tau:	["redefine on run"],
+								tau:	[{job:"redefine on run"}],
 								ports: {	
-									frame:	 {},
-									helipads:{scale:1.01,dim:100,delta:0.1,hits:10,cascade:["c1/cascade"]},
-									faces:	 {scale:1.01,dim:100,delta:0.1,hits:10,cascade:["haarcascade_frontalface_alt","haarcascade_eye_tree_eyeglasses"]}
 							}};
 							pgm = `
 								print 'Look mom - Im running python!'
@@ -188,13 +162,14 @@ Below sample use-cases are from engine/test.js.
 
 							// By default python attempts to connect to mysql.  
 							// So, if mysql service not running or mysql.connector module not found, this will not run.
-							console.log(parm);
+							console.log({py:pgm, ctx: parm});
 							console.log("INIT = ", ENGINE.python("py1.thread",pgm,parm));
 							console.log(parm.tau);
 							break;
 
 						case "py2": // program and step python machine 
 							parm =	{ 
+								tau:	[{job:"redefine on run"}],
 								ports: { 	
 									frame:	 {},
 									helipads:{scale:1.01,dim:100,delta:0.1,hits:10,cascade:["c1/cascade"]},
@@ -214,7 +189,10 @@ Below sample use-cases are from engine/test.js.
 									print parms
 									return -103
 								`;		
+							console.log({py:pgm, ctx: parm});
 							console.log("INIT = ", ENGINE.python("py2.Me.Thread1",pgm,parm));
+							// reprogramming ignored
+							//console.log("INIT = ", ENGINE.python("py2.Me.Thread1",pgm,parm));
 
 							for (var n=0,N=1; n<N; n++)
 								console.log(`STEP[${n}] = `, ENGINE.python("py2.Me.Thread1","frame",itau));
@@ -224,6 +202,7 @@ Below sample use-cases are from engine/test.js.
 
 						case "py3": // program and step python machine string with reinit along the way
 							parm =	{ 
+								tau:	[{job:"redefine on run"}],
 								ports: {	
 									frame:	 {},
 									helipads:{scale:1.01,dim:100,delta:0.1,hits:10,cascade:["c1/cascade"]},
@@ -232,22 +211,24 @@ Below sample use-cases are from engine/test.js.
 
 							itau[0].job = "test.jpg";
 							pgm = `
-									print 'Look mom - Im running python!'
-									def frame(tau,parms):
-										print parms
-										return -101
-									def helipads(tau,parms):
-										print parms
-										return -102
-									def faces(tau,parms):
-										print parms
-										return -103
-									`;
+								print 'Look mom - Im running python!'
+								def frame(tau,parms):
+									print parms
+									return -101
+								def helipads(tau,parms):
+									print parms
+									return -102
+								def faces(tau,parms):
+									print parms
+									return -103
+								`;
 
+							console.log({py:pgm, ctx: parm});
 							console.log("INIT = ", ENGINE.python("py3",pgm,parm));
 							console.log("STEP = ", ENGINE.python("py3","frame",itau));
-							console.log("REINIT = ", ENGINE.python("py3",pgm,parm));
-							console.log("STEP = ", ENGINE.python("py3","frame",itau));
+							// reprogramming ignored
+							//console.log("REINIT = ", ENGINE.python("py3",pgm,parm));
+							//console.log("STEP = ", ENGINE.python("py3","frame",itau));
 							console.log(otau);
 							break;
 
@@ -274,6 +255,7 @@ Below sample use-cases are from engine/test.js.
 								function faces(tau,parms) { return 102; }
 								`;
 
+							console.log({py:pgm, ctx: parm});
 							console.log("INIT = ", ENGINE.js("mytest",pgm,parm));
 							// frame should return a 0 = null noerror
 							console.log("STEP = ", ENGINE.js("mytest","frame",itau));
@@ -294,15 +276,13 @@ Below sample use-cases are from engine/test.js.
 				pass: ENV.MYSQL_PASS
 			}
 			
+		}, function (err) {
+			Trace( "Unit test my engines with /test?config=cv | py1 | py2 | py3 | js" );
 		});
 
 		var ENGINE = require("../engine").config({
 			thread: TOTEM.thread
 		});
-
-		Trace( "Unit test engines with /test?config=cv | py1 | py2 | py3 | js" );
-
-	}
 	
 ## License
 
