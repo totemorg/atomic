@@ -19,5 +19,8 @@
     "opencv"
   ],
   "author": "ACME Software Disposal Service",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "synaptic": "^1.0.10"
+  }
 }

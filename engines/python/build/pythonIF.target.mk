@@ -33,10 +33,10 @@ CFLAGS_CC_Debug := \
 	-std=gnu++0x
 
 INCS_Debug := \
-	-I/home/jamesbd/.node-gyp/5.5.0/include/node \
-	-I/home/jamesbd/.node-gyp/5.5.0/src \
-	-I/home/jamesbd/.node-gyp/5.5.0/deps/uv/include \
-	-I/home/jamesbd/.node-gyp/5.5.0/deps/v8/include \
+	-I/home/admin/.node-gyp/5.5.0/include/node \
+	-I/home/admin/.node-gyp/5.5.0/src \
+	-I/home/admin/.node-gyp/5.5.0/deps/uv/include \
+	-I/home/admin/.node-gyp/5.5.0/deps/v8/include \
 	-I$(srcdir)/. \
 	-I$(srcdir)/../mac \
 	-I$(INCLUDE)/python
@@ -72,10 +72,10 @@ CFLAGS_CC_Release := \
 	-std=gnu++0x
 
 INCS_Release := \
-	-I/home/jamesbd/.node-gyp/5.5.0/include/node \
-	-I/home/jamesbd/.node-gyp/5.5.0/src \
-	-I/home/jamesbd/.node-gyp/5.5.0/deps/uv/include \
-	-I/home/jamesbd/.node-gyp/5.5.0/deps/v8/include \
+	-I/home/admin/.node-gyp/5.5.0/include/node \
+	-I/home/admin/.node-gyp/5.5.0/src \
+	-I/home/admin/.node-gyp/5.5.0/deps/uv/include \
+	-I/home/admin/.node-gyp/5.5.0/deps/v8/include \
 	-I$(srcdir)/. \
 	-I$(srcdir)/../mac \
 	-I$(INCLUDE)/python

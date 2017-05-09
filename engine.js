@@ -31,16 +31,16 @@ function Trace(msg,arg) {
 };
 	
 var
-	ENGINE = module.exports = require("./engines/build/Release/engineIF");  	//< engineIF built by node-gyp
-
-ENGINE.paths = {
-	jobs: "./jobs/"
-};
-
-ENGINE.thread = null;
-
-ENGINE.cores = 0;
-ENGINE.nextcore = 0;
+	ENGINE = module.exports = Copy({
+		paths: {
+			jobs: "./jobs/"
+		},
+		thread: null,
+		builtins: null,
+		cores: 0,
+		nextcore: 0
+	}, require("./engines/build/Release/engineIF")  //< engineIF built by node-gyp
+	);
 
 ENGINE.config = function (opts) {
 	
@@ -51,11 +51,31 @@ ENGINE.config = function (opts) {
 	if (ENGINE.thread)
 	ENGINE.thread( function (sql) {
 	
+		function compileEngine(engine, name, code, res) {
+			try {
+				VM.runInContext( "FLEX."+engine+"."+name+"="+code, VM.createContext({FLEX:FLEX})  );
+
+				if (res) res("ok");
+			}
+			catch (err) {
+				if (res) res(new Error(err+""));
+			}
+		}	
+		
 		sql.query("DELETE FROM app1.simcores", function (err) {
 			Trace(err || "RESET ENGINE CORES");
 		});
 
 		ENGINE.nextcore = ENGINE.cores ? 1 : 0;
+		
+		if (builtins = ENGINE.builtins)
+			for (var eng in  builtins) 
+				sql.query("INSERT INTO app1.engines SET ?", {
+					Name: eng,
+					Enabled: 0,
+					Engine: "js",
+					Code: builtins[eng]+""
+				});
 		
 		if (CLUSTER.isWorker) 	
 			CLUSTER.worker.process.on("message", function (eng,socket) {
@@ -349,9 +369,11 @@ ENGINE.call = function (core,context,cb) {
 
 			cb(null,context);
 		}
+	
 		catch (err) {
 			cb(err,context);
 		}
+	
 	else
 		cb (new Error(`Bad engine type ${core.type}`));
 	
