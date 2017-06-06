@@ -102,9 +102,13 @@
 			}]
 		],
 		
-		"cflags_cc+": [
+		"cflags_cc+": [   # add gcc flags for opencvIF conditional GPU support
 			"-D HASCAFFE=$(HASCAFFE)",
 			"-D HASGPU=$(HASGPU)"
+		],
+		
+		"cflags_cc!": [  # remove gcc no-rtti for opencv3.x
+			"-fno-rtti" 
 		]
 		
 	}]
