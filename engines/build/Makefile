@@ -308,8 +308,8 @@ ifeq ($(strip $(foreach prefix,$(NO_LOAD),\
 endif
 
 quiet_cmd_regen_makefile = ACTION Regenerating $@
-cmd_regen_makefile = cd $(srcdir); /local/nodejs/lib/node_modules/node-gyp/gyp/gyp_main.py -fmake --ignore-environment "--toplevel-dir=." -I/local/service/engine/engines/build/config.gypi -I/local/nodejs/lib/node_modules/node-gyp/addon.gypi -I/home/admin/.node-gyp/5.5.0/include/node/common.gypi "--depth=." "-Goutput_dir=." "--generator-output=build" "-Dlibrary=shared_library" "-Dvisibility=default" "-Dnode_root_dir=/home/admin/.node-gyp/5.5.0" "-Dnode_gyp_dir=/local/nodejs/lib/node_modules/node-gyp" "-Dnode_lib_file=node.lib" "-Dmodule_root_dir=/local/service/engine/engines" binding.gyp
-Makefile: $(srcdir)/../../../nodejs/lib/node_modules/node-gyp/addon.gypi $(srcdir)/../../../../home/admin/.node-gyp/5.5.0/include/node/common.gypi $(srcdir)/build/config.gypi $(srcdir)/binding.gyp
+cmd_regen_makefile = cd $(srcdir); /local/nodejs-5.5/lib/node_modules/node-gyp/gyp/gyp_main.py -fmake --ignore-environment "--toplevel-dir=." -I/local/service/engine/engines/build/config.gypi -I/local/nodejs-5.5/lib/node_modules/node-gyp/addon.gypi -I/home/jamesbd/.node-gyp/5.5.0/include/node/common.gypi "--depth=." "-Goutput_dir=." "--generator-output=build" "-Dlibrary=shared_library" "-Dvisibility=default" "-Dnode_root_dir=/home/jamesbd/.node-gyp/5.5.0" "-Dnode_gyp_dir=/local/nodejs-5.5/lib/node_modules/node-gyp" "-Dnode_lib_file=node.lib" "-Dmodule_root_dir=/local/service/engine/engines" binding.gyp
+Makefile: $(srcdir)/../../../nodejs-5.5/lib/node_modules/node-gyp/addon.gypi $(srcdir)/build/config.gypi $(srcdir)/binding.gyp $(srcdir)/../../../../home/jamesbd/.node-gyp/5.5.0/include/node/common.gypi
 	$(call do_cmd,regen_makefile)
 
 # "all" is a concatenation of the "all" targets from all the included

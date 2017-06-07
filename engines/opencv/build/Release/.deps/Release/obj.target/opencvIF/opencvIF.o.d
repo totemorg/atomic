@@ -1,18 +1,20 @@
-cmd_Release/obj.target/opencvIF/opencvIF.o := g++ '-DNODE_GYP_MODULE_NAME=opencvIF' '-DUSING_UV_SHARED=1' '-DUSING_V8_SHARED=1' '-DV8_DEPRECATION_WARNINGS=1' '-D_LARGEFILE_SOURCE' '-D_FILE_OFFSET_BITS=64' -I/home/admin/.node-gyp/5.5.0/include/node -I/home/admin/.node-gyp/5.5.0/src -I/home/admin/.node-gyp/5.5.0/deps/uv/include -I/home/admin/.node-gyp/5.5.0/deps/v8/include -I../. -I../../mac -I/local/include/cuda -I/local/caffe/build/src -I/local/caffe/include -I/local/include/atlas -I/local/include -I/local/include/opencv  -fPIC -pthread -Wall -Wextra -Wno-unused-parameter -m64 -O3 -ffunction-sections -fdata-sections -fno-omit-frame-pointer -D HASCAFFE=0 -D HASGPU=0 -fno-rtti -fno-exceptions -std=gnu++0x -fexceptions -MMD -MF ./Release/.deps/Release/obj.target/opencvIF/opencvIF.o.d.raw   -c -o Release/obj.target/opencvIF/opencvIF.o ../opencvIF.cpp
+cmd_Release/obj.target/opencvIF/opencvIF.o := g++ '-DNODE_GYP_MODULE_NAME=opencvIF' '-DUSING_UV_SHARED=1' '-DUSING_V8_SHARED=1' '-DV8_DEPRECATION_WARNINGS=1' '-D_LARGEFILE_SOURCE' '-D_FILE_OFFSET_BITS=64' -I/home/jamesbd/.node-gyp/5.5.0/include/node -I/home/jamesbd/.node-gyp/5.5.0/src -I/home/jamesbd/.node-gyp/5.5.0/deps/uv/include -I/home/jamesbd/.node-gyp/5.5.0/deps/v8/include -I../. -I../../mac -I/local/include/cuda -I/local/caffe/build/src -I/local/caffe/include -I/local/include/atlas -I/local/include -I/local/include/opencv  -fPIC -pthread -Wall -Wextra -Wno-unused-parameter -m64 -O3 -ffunction-sections -fdata-sections -fno-omit-frame-pointer -D HASCAFFE=0 -D HASGPU=0 -fno-exceptions -std=gnu++0x -fexceptions -MMD -MF ./Release/.deps/Release/obj.target/opencvIF/opencvIF.o.d.raw   -c -o Release/obj.target/opencvIF/opencvIF.o ../opencvIF.cpp
 Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
  /local/include/opencv/opencv2/objdetect/objdetect.hpp \
  /local/include/opencv/opencv2/objdetect.hpp \
  /local/include/opencv/opencv2/core.hpp \
  /local/include/opencv/opencv2/core/cvdef.h \
- /local/include/opencv/opencv2/hal/defs.h \
+ /local/include/opencv/opencv2/core/hal/interface.h \
  /local/include/opencv/opencv2/core/version.hpp \
  /local/include/opencv/opencv2/core/base.hpp \
+ /local/include/opencv/opencv2/opencv_modules.hpp \
  /local/include/opencv/opencv2/core/cvstd.hpp \
  /local/include/opencv/opencv2/core/ptr.inl.hpp \
- /local/include/opencv/opencv2/hal.hpp \
- /local/include/opencv/opencv2/core/sse_utils.hpp \
+ /local/include/opencv/opencv2/core/neon_utils.hpp \
  /local/include/opencv/opencv2/core/traits.hpp \
  /local/include/opencv/opencv2/core/matx.hpp \
+ /local/include/opencv/opencv2/core/saturate.hpp \
+ /local/include/opencv/opencv2/core/fast_math.hpp \
  /local/include/opencv/opencv2/core/types.hpp \
  /local/include/opencv/opencv2/core/mat.hpp \
  /local/include/opencv/opencv2/core/bufferpool.hpp \
@@ -24,6 +26,8 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
  /local/include/opencv/opencv2/core/core_c.h \
  /local/include/opencv/opencv2/core/types_c.h \
  /local/include/opencv/opencv2/core/optim.hpp \
+ /local/include/opencv/opencv2/core/ovx.hpp \
+ /local/include/opencv/opencv2/core/cvdef.h \
  /local/include/opencv/opencv2/objdetect/detection_based_tracker.hpp \
  /local/include/opencv/opencv2/objdetect/objdetect_c.h \
  /local/include/opencv/opencv2/highgui/highgui.hpp \
@@ -38,25 +42,110 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
  /local/include/opencv/opencv2/imgproc/imgproc.hpp \
  /local/include/opencv/opencv2/imgproc.hpp \
  /local/include/opencv/opencv2/opencv.hpp \
- /local/include/opencv/opencv2/photo.hpp \
- /local/include/opencv/opencv2/photo/photo_c.h \
- /local/include/opencv/opencv2/video.hpp \
- /local/include/opencv/opencv2/video/tracking.hpp \
- /local/include/opencv/opencv2/video/background_segm.hpp \
- /local/include/opencv/opencv2/video/tracking_c.h \
+ /local/include/opencv/opencv2/calib3d.hpp \
  /local/include/opencv/opencv2/features2d.hpp \
  /local/include/opencv/opencv2/flann/miniflann.hpp \
  /local/include/opencv/opencv2/flann/defines.h \
  /local/include/opencv/opencv2/flann/config.h \
- /local/include/opencv/opencv2/calib3d.hpp \
  /local/include/opencv/opencv2/core/affine.hpp \
  /local/include/opencv/opencv2/calib3d/calib3d_c.h \
+ /local/include/opencv/opencv2/flann.hpp \
+ /local/include/opencv/opencv2/flann/flann_base.hpp \
+ /local/include/opencv/opencv2/flann/general.h \
+ /local/include/opencv/opencv2/flann/matrix.h \
+ /local/include/opencv/opencv2/flann/params.h \
+ /local/include/opencv/opencv2/flann/any.h \
+ /local/include/opencv/opencv2/flann/defines.h \
+ /local/include/opencv/opencv2/flann/saving.h \
+ /local/include/opencv/opencv2/flann/nn_index.h \
+ /local/include/opencv/opencv2/flann/result_set.h \
+ /local/include/opencv/opencv2/flann/all_indices.h \
+ /local/include/opencv/opencv2/flann/kdtree_index.h \
+ /local/include/opencv/opencv2/flann/dynamic_bitset.h \
+ /local/include/opencv/opencv2/flann/dist.h \
+ /local/include/opencv/opencv2/flann/heap.h \
+ /local/include/opencv/opencv2/flann/allocator.h \
+ /local/include/opencv/opencv2/flann/random.h \
+ /local/include/opencv/opencv2/flann/kdtree_single_index.h \
+ /local/include/opencv/opencv2/flann/kmeans_index.h \
+ /local/include/opencv/opencv2/flann/logger.h \
+ /local/include/opencv/opencv2/flann/composite_index.h \
+ /local/include/opencv/opencv2/flann/linear_index.h \
+ /local/include/opencv/opencv2/flann/hierarchical_clustering_index.h \
+ /local/include/opencv/opencv2/flann/lsh_index.h \
+ /local/include/opencv/opencv2/flann/lsh_table.h \
+ /local/include/opencv/opencv2/flann/autotuned_index.h \
+ /local/include/opencv/opencv2/flann/ground_truth.h \
+ /local/include/opencv/opencv2/flann/index_testing.h \
+ /local/include/opencv/opencv2/flann/timer.h \
+ /local/include/opencv/opencv2/flann/sampling.h \
  /local/include/opencv/opencv2/ml.hpp \
- /home/admin/.node-gyp/5.5.0/include/node/node.h \
- /home/admin/.node-gyp/5.5.0/include/node/v8.h \
- /home/admin/.node-gyp/5.5.0/include/node/v8-version.h \
- /home/admin/.node-gyp/5.5.0/include/node/v8config.h \
- /home/admin/.node-gyp/5.5.0/include/node/node_version.h \
+ /local/include/opencv/opencv2/photo.hpp \
+ /local/include/opencv/opencv2/photo/photo_c.h \
+ /local/include/opencv/opencv2/shape.hpp \
+ /local/include/opencv/opencv2/shape/emdL1.hpp \
+ /local/include/opencv/opencv2/shape/shape_transformer.hpp \
+ /local/include/opencv/opencv2/shape/hist_cost.hpp \
+ /local/include/opencv/opencv2/shape/shape_distance.hpp \
+ /local/include/opencv/opencv2/stitching.hpp \
+ /local/include/opencv/opencv2/stitching/warpers.hpp \
+ /local/include/opencv/opencv2/stitching/detail/warpers.hpp \
+ /local/include/opencv/opencv2/core/cuda.hpp \
+ /local/include/opencv/opencv2/core/cuda_types.hpp \
+ /local/include/opencv/opencv2/core/cuda.inl.hpp \
+ /local/include/opencv/opencv2/stitching/detail/warpers_inl.hpp \
+ /local/include/opencv/opencv2/stitching/detail/warpers.hpp \
+ /local/include/opencv/opencv2/stitching/detail/matchers.hpp \
+ /local/include/opencv/opencv2/stitching/detail/motion_estimators.hpp \
+ /local/include/opencv/opencv2/stitching/detail/matchers.hpp \
+ /local/include/opencv/opencv2/stitching/detail/util.hpp \
+ /local/include/opencv/opencv2/stitching/detail/util_inl.hpp \
+ /local/include/opencv/opencv2/stitching/detail/camera.hpp \
+ /local/include/opencv/opencv2/stitching/detail/exposure_compensate.hpp \
+ /local/include/opencv/opencv2/stitching/detail/seam_finders.hpp \
+ /local/include/opencv/opencv2/stitching/detail/blenders.hpp \
+ /local/include/opencv/opencv2/stitching/detail/camera.hpp \
+ /local/include/opencv/opencv2/superres.hpp \
+ /local/include/opencv/opencv2/superres/optical_flow.hpp \
+ /local/include/opencv/opencv2/video.hpp \
+ /local/include/opencv/opencv2/video/tracking.hpp \
+ /local/include/opencv/opencv2/video/background_segm.hpp \
+ /local/include/opencv/opencv2/video/tracking_c.h \
+ /local/include/opencv/opencv2/videostab.hpp \
+ /local/include/opencv/opencv2/videostab/stabilizer.hpp \
+ /local/include/opencv/opencv2/videostab/global_motion.hpp \
+ /local/include/opencv/opencv2/videostab/optical_flow.hpp \
+ /local/include/opencv/opencv2/cudaoptflow.hpp \
+ /local/include/opencv/opencv2/videostab/motion_core.hpp \
+ /local/include/opencv/opencv2/videostab/outlier_rejection.hpp \
+ /local/include/opencv/opencv2/cudaimgproc.hpp \
+ /local/include/opencv/opencv2/videostab/motion_stabilizing.hpp \
+ /local/include/opencv/opencv2/videostab/frame_source.hpp \
+ /local/include/opencv/opencv2/videostab/log.hpp \
+ /local/include/opencv/opencv2/videostab/inpainting.hpp \
+ /local/include/opencv/opencv2/videostab/fast_marching.hpp \
+ /local/include/opencv/opencv2/videostab/fast_marching_inl.hpp \
+ /local/include/opencv/opencv2/videostab/deblurring.hpp \
+ /local/include/opencv/opencv2/videostab/wobble_suppression.hpp \
+ /local/include/opencv/opencv2/videostab/ring_buffer.hpp \
+ /local/include/opencv/opencv2/viz.hpp \
+ /local/include/opencv/opencv2/viz/types.hpp \
+ /local/include/opencv/opencv2/viz/widgets.hpp \
+ /local/include/opencv/opencv2/viz/viz3d.hpp \
+ /local/include/opencv/opencv2/viz/vizcore.hpp \
+ /local/include/opencv/opencv2/cudaarithm.hpp \
+ /local/include/opencv/opencv2/cudabgsegm.hpp \
+ /local/include/opencv/opencv2/cudacodec.hpp \
+ /local/include/opencv/opencv2/cudafeatures2d.hpp \
+ /local/include/opencv/opencv2/cudafilters.hpp \
+ /local/include/opencv/opencv2/cudaobjdetect.hpp \
+ /local/include/opencv/opencv2/cudastereo.hpp \
+ /local/include/opencv/opencv2/cudawarping.hpp \
+ /home/jamesbd/.node-gyp/5.5.0/include/node/node.h \
+ /home/jamesbd/.node-gyp/5.5.0/include/node/v8.h \
+ /home/jamesbd/.node-gyp/5.5.0/include/node/v8-version.h \
+ /home/jamesbd/.node-gyp/5.5.0/include/node/v8config.h \
+ /home/jamesbd/.node-gyp/5.5.0/include/node/node_version.h \
  ../../mac/macIF.h /local/caffe/include/caffe/caffe.hpp \
  /local/caffe/include/caffe/blob.hpp \
  /local/caffe/include/caffe/common.hpp \
@@ -102,9 +191,8 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
  /local/include/cuda/cuComplex.h /local/include/cuda/vector_types.h \
  /local/include/cuda/builtin_types.h /local/include/cuda/device_types.h \
  /local/include/cuda/surface_types.h /local/include/cuda/texture_types.h \
- /local/include/cuda/cuda_fp16.h /local/include/cuda/library_types.h \
- /local/include/cuda/cuda.h /local/include/cuda/cuda_runtime.h \
- /local/include/cuda/host_config.h \
+ /local/include/cuda/cuda_fp16.h /local/include/cuda/cuda.h \
+ /local/include/cuda/cuda_runtime.h /local/include/cuda/host_config.h \
  /local/include/cuda/channel_descriptor.h \
  /local/include/cuda/cuda_runtime_api.h \
  /local/include/cuda/cuda_device_runtime_api.h \
@@ -113,6 +201,17 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
  /local/include/cuda/vector_functions.hpp /local/include/cuda/curand.h \
  /local/include/cuda/driver_types.h \
  /local/caffe/build/src/caffe/proto/caffe.pb.h \
+ /local/include/google/protobuf/stubs/common.h \
+ /local/include/google/protobuf/generated_message_util.h \
+ /local/include/google/protobuf/message.h \
+ /local/include/google/protobuf/message_lite.h \
+ /local/include/google/protobuf/descriptor.h \
+ /local/include/google/protobuf/repeated_field.h \
+ /local/include/google/protobuf/stubs/type_traits.h \
+ /local/include/google/protobuf/stubs/template_util.h \
+ /local/include/google/protobuf/extension_set.h \
+ /local/include/google/protobuf/generated_enum_reflection.h \
+ /local/include/google/protobuf/unknown_field_set.h \
  /local/caffe/include/caffe/syncedmem.hpp \
  /local/caffe/include/caffe/filler.hpp \
  /local/caffe/include/caffe/util/math_functions.hpp \
@@ -121,50 +220,62 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
  /local/caffe/include/caffe/layer_factory.hpp \
  /local/caffe/include/caffe/net.hpp \
  /local/caffe/include/caffe/parallel.hpp \
- /local/caffe/include/caffe/solver.hpp /local/include/boost/function.hpp \
- /local/include/boost/preprocessor/iterate.hpp \
- /local/include/boost/preprocessor/iteration/iterate.hpp \
- /local/include/boost/preprocessor/arithmetic/dec.hpp \
- /local/include/boost/preprocessor/config/config.hpp \
- /local/include/boost/preprocessor/arithmetic/inc.hpp \
- /local/include/boost/preprocessor/array/elem.hpp \
- /local/include/boost/preprocessor/array/data.hpp \
- /local/include/boost/preprocessor/tuple/elem.hpp \
- /local/include/boost/preprocessor/cat.hpp \
- /local/include/boost/preprocessor/facilities/overload.hpp \
- /local/include/boost/preprocessor/variadic/size.hpp \
- /local/include/boost/preprocessor/tuple/rem.hpp \
- /local/include/boost/preprocessor/variadic/elem.hpp \
- /local/include/boost/preprocessor/array/size.hpp \
- /local/include/boost/preprocessor/slot/slot.hpp \
- /local/include/boost/preprocessor/slot/detail/def.hpp \
- /local/include/boost/function/detail/prologue.hpp \
- /local/include/boost/config/no_tr1/functional.hpp \
- /local/include/boost/function/function_base.hpp \
- /local/include/boost/integer.hpp /local/include/boost/integer_fwd.hpp \
- /local/include/boost/limits.hpp /local/include/boost/cstdint.hpp \
- /local/include/boost/integer_traits.hpp \
+ /local/include/boost/date_time/posix_time/posix_time.hpp \
+ /local/include/boost/date_time/compiler_config.hpp \
+ /local/include/boost/date_time/locale_config.hpp \
+ /local/include/boost/cstdint.hpp \
+ /local/include/boost/config/auto_link.hpp \
+ /local/include/boost/date_time/posix_time/ptime.hpp \
+ /local/include/boost/date_time/posix_time/posix_time_system.hpp \
+ /local/include/boost/date_time/posix_time/posix_time_config.hpp \
+ /local/include/boost/limits.hpp \
+ /local/include/boost/config/no_tr1/cmath.hpp \
+ /local/include/boost/date_time/time_duration.hpp \
+ /local/include/boost/operators.hpp /local/include/boost/iterator.hpp \
  /local/include/boost/static_assert.hpp \
- /local/include/boost/type_traits/has_trivial_copy.hpp \
- /local/include/boost/type_traits/config.hpp \
- /local/include/boost/type_traits/intrinsics.hpp \
- /local/include/boost/type_traits/is_same.hpp \
- /local/include/boost/type_traits/detail/bool_trait_def.hpp \
- /local/include/boost/type_traits/detail/template_arity_spec.hpp \
- /local/include/boost/mpl/int.hpp /local/include/boost/mpl/int_fwd.hpp \
+ /local/include/boost/date_time/time_defs.hpp \
+ /local/include/boost/date_time/special_defs.hpp \
+ /local/include/boost/date_time/time_resolution_traits.hpp \
+ /local/include/boost/date_time/int_adapter.hpp \
+ /local/include/boost/date_time/gregorian/gregorian_types.hpp \
+ /local/include/boost/date_time/date.hpp \
+ /local/include/boost/date_time/year_month_day.hpp \
+ /local/include/boost/date_time/period.hpp \
+ /local/include/boost/date_time/gregorian/greg_calendar.hpp \
+ /local/include/boost/date_time/gregorian/greg_weekday.hpp \
+ /local/include/boost/date_time/constrained_value.hpp \
+ /local/include/boost/mpl/if.hpp \
+ /local/include/boost/mpl/aux_/value_wknd.hpp \
+ /local/include/boost/mpl/aux_/static_cast.hpp \
+ /local/include/boost/mpl/aux_/config/workaround.hpp \
+ /local/include/boost/mpl/aux_/config/integral.hpp \
+ /local/include/boost/mpl/aux_/config/msvc.hpp \
+ /local/include/boost/mpl/aux_/config/eti.hpp \
+ /local/include/boost/mpl/aux_/na_spec.hpp \
+ /local/include/boost/mpl/lambda_fwd.hpp \
+ /local/include/boost/mpl/void_fwd.hpp \
  /local/include/boost/mpl/aux_/adl_barrier.hpp \
  /local/include/boost/mpl/aux_/config/adl.hpp \
- /local/include/boost/mpl/aux_/config/msvc.hpp \
  /local/include/boost/mpl/aux_/config/intel.hpp \
  /local/include/boost/mpl/aux_/config/gcc.hpp \
- /local/include/boost/mpl/aux_/config/workaround.hpp \
+ /local/include/boost/mpl/aux_/na.hpp /local/include/boost/mpl/bool.hpp \
+ /local/include/boost/mpl/bool_fwd.hpp \
+ /local/include/boost/mpl/integral_c_tag.hpp \
+ /local/include/boost/mpl/aux_/config/static_constant.hpp \
+ /local/include/boost/mpl/aux_/na_fwd.hpp \
+ /local/include/boost/mpl/aux_/config/ctps.hpp \
+ /local/include/boost/mpl/aux_/config/lambda.hpp \
+ /local/include/boost/mpl/aux_/config/ttp.hpp \
+ /local/include/boost/mpl/int.hpp /local/include/boost/mpl/int_fwd.hpp \
  /local/include/boost/mpl/aux_/nttp_decl.hpp \
  /local/include/boost/mpl/aux_/config/nttp.hpp \
  /local/include/boost/mpl/aux_/integral_wrapper.hpp \
- /local/include/boost/mpl/integral_c_tag.hpp \
- /local/include/boost/mpl/aux_/config/static_constant.hpp \
- /local/include/boost/mpl/aux_/static_cast.hpp \
+ /local/include/boost/preprocessor/cat.hpp \
+ /local/include/boost/preprocessor/config/config.hpp \
+ /local/include/boost/mpl/aux_/lambda_arity_param.hpp \
  /local/include/boost/mpl/aux_/template_arity_fwd.hpp \
+ /local/include/boost/mpl/aux_/arity.hpp \
+ /local/include/boost/mpl/aux_/config/dtp.hpp \
  /local/include/boost/mpl/aux_/preprocessor/params.hpp \
  /local/include/boost/mpl/aux_/config/preprocessor.hpp \
  /local/include/boost/preprocessor/comma_if.hpp \
@@ -180,59 +291,7 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
  /local/include/boost/preprocessor/detail/auto_rec.hpp \
  /local/include/boost/preprocessor/tuple/eat.hpp \
  /local/include/boost/preprocessor/inc.hpp \
- /local/include/boost/mpl/aux_/config/lambda.hpp \
- /local/include/boost/mpl/aux_/config/ttp.hpp \
- /local/include/boost/mpl/aux_/config/ctps.hpp \
- /local/include/boost/mpl/aux_/config/overload_resolution.hpp \
- /local/include/boost/type_traits/integral_constant.hpp \
- /local/include/boost/mpl/bool.hpp /local/include/boost/mpl/bool_fwd.hpp \
- /local/include/boost/mpl/integral_c.hpp \
- /local/include/boost/mpl/integral_c_fwd.hpp \
- /local/include/boost/mpl/aux_/lambda_support.hpp \
- /local/include/boost/type_traits/detail/bool_trait_undef.hpp \
- /local/include/boost/type_traits/is_reference.hpp \
- /local/include/boost/type_traits/is_lvalue_reference.hpp \
- /local/include/boost/type_traits/is_rvalue_reference.hpp \
- /local/include/boost/type_traits/ice.hpp \
- /local/include/boost/type_traits/detail/yes_no_type.hpp \
- /local/include/boost/type_traits/detail/ice_or.hpp \
- /local/include/boost/type_traits/detail/ice_and.hpp \
- /local/include/boost/type_traits/detail/ice_not.hpp \
- /local/include/boost/type_traits/detail/ice_eq.hpp \
- /local/include/boost/type_traits/is_volatile.hpp \
- /local/include/boost/type_traits/detail/cv_traits_impl.hpp \
- /local/include/boost/type_traits/is_pod.hpp \
- /local/include/boost/type_traits/is_void.hpp \
- /local/include/boost/type_traits/is_scalar.hpp \
- /local/include/boost/type_traits/is_arithmetic.hpp \
- /local/include/boost/type_traits/is_integral.hpp \
- /local/include/boost/type_traits/is_float.hpp \
- /local/include/boost/type_traits/is_enum.hpp \
- /local/include/boost/type_traits/is_pointer.hpp \
- /local/include/boost/type_traits/is_member_pointer.hpp \
- /local/include/boost/type_traits/is_member_function_pointer.hpp \
- /local/include/boost/type_traits/detail/is_mem_fun_pointer_impl.hpp \
- /local/include/boost/type_traits/remove_cv.hpp \
- /local/include/boost/type_traits/broken_compiler_spec.hpp \
- /local/include/boost/type_traits/detail/type_trait_def.hpp \
- /local/include/boost/type_traits/detail/type_trait_undef.hpp \
- /local/include/boost/type_traits/has_trivial_destructor.hpp \
- /local/include/boost/type_traits/is_const.hpp \
- /local/include/boost/type_traits/composite_traits.hpp \
- /local/include/boost/type_traits/is_array.hpp \
- /local/include/boost/type_traits/is_union.hpp \
- /local/include/boost/ref.hpp /local/include/boost/mpl/if.hpp \
- /local/include/boost/mpl/aux_/value_wknd.hpp \
- /local/include/boost/mpl/aux_/config/integral.hpp \
- /local/include/boost/mpl/aux_/config/eti.hpp \
- /local/include/boost/mpl/aux_/na_spec.hpp \
- /local/include/boost/mpl/lambda_fwd.hpp \
- /local/include/boost/mpl/void_fwd.hpp \
- /local/include/boost/mpl/aux_/na.hpp \
- /local/include/boost/mpl/aux_/na_fwd.hpp \
- /local/include/boost/mpl/aux_/lambda_arity_param.hpp \
- /local/include/boost/mpl/aux_/arity.hpp \
- /local/include/boost/mpl/aux_/config/dtp.hpp \
+ /local/include/boost/preprocessor/arithmetic/inc.hpp \
  /local/include/boost/mpl/aux_/preprocessor/enum.hpp \
  /local/include/boost/mpl/aux_/preprocessor/def_params_tail.hpp \
  /local/include/boost/mpl/limits/arity.hpp \
@@ -242,6 +301,7 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
  /local/include/boost/preprocessor/facilities/identity.hpp \
  /local/include/boost/preprocessor/empty.hpp \
  /local/include/boost/preprocessor/arithmetic/add.hpp \
+ /local/include/boost/preprocessor/arithmetic/dec.hpp \
  /local/include/boost/preprocessor/control/while.hpp \
  /local/include/boost/preprocessor/list/fold_left.hpp \
  /local/include/boost/preprocessor/list/detail/fold_left.hpp \
@@ -254,56 +314,40 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
  /local/include/boost/preprocessor/list/detail/fold_right.hpp \
  /local/include/boost/preprocessor/list/reverse.hpp \
  /local/include/boost/preprocessor/control/detail/while.hpp \
+ /local/include/boost/preprocessor/tuple/elem.hpp \
+ /local/include/boost/preprocessor/facilities/overload.hpp \
+ /local/include/boost/preprocessor/variadic/size.hpp \
+ /local/include/boost/preprocessor/tuple/rem.hpp \
+ /local/include/boost/preprocessor/variadic/elem.hpp \
  /local/include/boost/preprocessor/arithmetic/sub.hpp \
- /local/include/boost/type_traits/alignment_of.hpp \
- /local/include/boost/type_traits/detail/size_t_trait_def.hpp \
- /local/include/boost/mpl/size_t.hpp \
- /local/include/boost/mpl/size_t_fwd.hpp \
- /local/include/boost/type_traits/detail/size_t_trait_undef.hpp \
- /local/include/boost/utility/enable_if.hpp \
- /local/include/boost/function_equal.hpp \
- /local/include/boost/function/function_fwd.hpp \
- /local/include/boost/mem_fn.hpp /local/include/boost/bind/mem_fn.hpp \
- /local/include/boost/get_pointer.hpp \
- /local/include/boost/bind/mem_fn_template.hpp \
- /local/include/boost/bind/mem_fn_cc.hpp \
- /local/include/boost/preprocessor/enum.hpp \
- /local/include/boost/preprocessor/repetition/enum.hpp \
- /local/include/boost/preprocessor/enum_params.hpp \
- /local/include/boost/preprocessor/repetition/enum_params.hpp \
- /local/include/boost/preprocessor/iteration/detail/iter/forward1.hpp \
- /local/include/boost/preprocessor/iteration/detail/bounds/lower1.hpp \
- /local/include/boost/preprocessor/slot/detail/shared.hpp \
- /local/include/boost/preprocessor/iteration/detail/bounds/upper1.hpp \
- /local/include/boost/function/detail/function_iterate.hpp \
- /local/include/boost/function/detail/maybe_include.hpp \
- /local/include/boost/function/function_template.hpp \
- /local/include/boost/detail/no_exceptions_support.hpp \
- /local/caffe/include/caffe/solver_factory.hpp \
- /local/caffe/include/caffe/util/benchmark.hpp \
- /local/include/boost/date_time/posix_time/posix_time.hpp \
- /local/include/boost/date_time/compiler_config.hpp \
- /local/include/boost/date_time/locale_config.hpp \
- /local/include/boost/config/auto_link.hpp \
- /local/include/boost/date_time/posix_time/ptime.hpp \
- /local/include/boost/date_time/posix_time/posix_time_system.hpp \
- /local/include/boost/date_time/posix_time/posix_time_config.hpp \
- /local/include/boost/config/no_tr1/cmath.hpp \
- /local/include/boost/date_time/time_duration.hpp \
- /local/include/boost/operators.hpp /local/include/boost/iterator.hpp \
- /local/include/boost/date_time/time_defs.hpp \
- /local/include/boost/date_time/special_defs.hpp \
- /local/include/boost/date_time/time_resolution_traits.hpp \
- /local/include/boost/date_time/int_adapter.hpp \
- /local/include/boost/date_time/gregorian/gregorian_types.hpp \
- /local/include/boost/date_time/date.hpp \
- /local/include/boost/date_time/year_month_day.hpp \
- /local/include/boost/date_time/period.hpp \
- /local/include/boost/date_time/gregorian/greg_calendar.hpp \
- /local/include/boost/date_time/gregorian/greg_weekday.hpp \
- /local/include/boost/date_time/constrained_value.hpp \
+ /local/include/boost/mpl/aux_/config/overload_resolution.hpp \
+ /local/include/boost/mpl/aux_/lambda_support.hpp \
  /local/include/boost/type_traits/is_base_of.hpp \
  /local/include/boost/type_traits/is_base_and_derived.hpp \
+ /local/include/boost/type_traits/intrinsics.hpp \
+ /local/include/boost/type_traits/config.hpp \
+ /local/include/boost/type_traits/is_same.hpp \
+ /local/include/boost/type_traits/detail/bool_trait_def.hpp \
+ /local/include/boost/type_traits/detail/template_arity_spec.hpp \
+ /local/include/boost/type_traits/integral_constant.hpp \
+ /local/include/boost/mpl/integral_c.hpp \
+ /local/include/boost/mpl/integral_c_fwd.hpp \
+ /local/include/boost/type_traits/detail/bool_trait_undef.hpp \
+ /local/include/boost/type_traits/is_reference.hpp \
+ /local/include/boost/type_traits/is_lvalue_reference.hpp \
+ /local/include/boost/type_traits/is_rvalue_reference.hpp \
+ /local/include/boost/type_traits/ice.hpp \
+ /local/include/boost/type_traits/detail/yes_no_type.hpp \
+ /local/include/boost/type_traits/detail/ice_or.hpp \
+ /local/include/boost/type_traits/detail/ice_and.hpp \
+ /local/include/boost/type_traits/detail/ice_not.hpp \
+ /local/include/boost/type_traits/detail/ice_eq.hpp \
+ /local/include/boost/type_traits/is_volatile.hpp \
+ /local/include/boost/type_traits/detail/cv_traits_impl.hpp \
+ /local/include/boost/type_traits/remove_cv.hpp \
+ /local/include/boost/type_traits/broken_compiler_spec.hpp \
+ /local/include/boost/type_traits/detail/type_trait_def.hpp \
+ /local/include/boost/type_traits/detail/type_trait_undef.hpp \
  /local/include/boost/type_traits/is_class.hpp \
  /local/include/boost/date_time/date_defs.hpp \
  /local/include/boost/date_time/gregorian/greg_day_of_year.hpp \
@@ -355,6 +399,11 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
  /local/include/boost/preprocessor/stringize.hpp \
  /local/include/boost/mpl/aux_/preprocessed/gcc/or.hpp \
  /local/include/boost/type_traits/is_convertible.hpp \
+ /local/include/boost/type_traits/is_array.hpp \
+ /local/include/boost/type_traits/is_arithmetic.hpp \
+ /local/include/boost/type_traits/is_integral.hpp \
+ /local/include/boost/type_traits/is_float.hpp \
+ /local/include/boost/type_traits/is_void.hpp \
  /local/include/boost/type_traits/is_abstract.hpp \
  /local/include/boost/type_traits/add_lvalue_reference.hpp \
  /local/include/boost/type_traits/add_reference.hpp \
@@ -381,13 +430,21 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
  /local/include/boost/mpl/aux_/preprocessed/gcc/placeholders.hpp \
  /local/include/boost/mpl/and.hpp \
  /local/include/boost/mpl/aux_/preprocessed/gcc/and.hpp \
+ /local/include/boost/type_traits/is_const.hpp \
  /local/include/boost/detail/indirect_traits.hpp \
+ /local/include/boost/type_traits/is_pointer.hpp \
+ /local/include/boost/type_traits/is_member_pointer.hpp \
+ /local/include/boost/type_traits/is_member_function_pointer.hpp \
+ /local/include/boost/type_traits/detail/is_mem_fun_pointer_impl.hpp \
  /local/include/boost/type_traits/remove_reference.hpp \
  /local/include/boost/type_traits/remove_pointer.hpp \
  /local/include/boost/iterator/detail/enable_if.hpp \
  /local/include/boost/type_traits/add_const.hpp \
  /local/include/boost/type_traits/add_pointer.hpp \
  /local/include/boost/type_traits/remove_const.hpp \
+ /local/include/boost/type_traits/is_pod.hpp \
+ /local/include/boost/type_traits/is_scalar.hpp \
+ /local/include/boost/type_traits/is_enum.hpp \
  /local/include/boost/mpl/always.hpp /local/include/boost/mpl/apply.hpp \
  /local/include/boost/mpl/apply_fwd.hpp \
  /local/include/boost/mpl/aux_/preprocessed/gcc/apply_fwd.hpp \
@@ -397,6 +454,10 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
  /local/include/boost/mpl/aux_/type_wrapper.hpp \
  /local/include/boost/mpl/aux_/config/has_xxx.hpp \
  /local/include/boost/mpl/aux_/config/msvc_typename.hpp \
+ /local/include/boost/preprocessor/array/elem.hpp \
+ /local/include/boost/preprocessor/array/data.hpp \
+ /local/include/boost/preprocessor/array/size.hpp \
+ /local/include/boost/preprocessor/repetition/enum_params.hpp \
  /local/include/boost/preprocessor/repetition/enum_trailing_params.hpp \
  /local/include/boost/mpl/aux_/config/has_apply.hpp \
  /local/include/boost/mpl/aux_/msvc_never_true.hpp \
@@ -433,6 +494,7 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
  /local/include/boost/range/size.hpp \
  /local/include/boost/range/size_type.hpp \
  /local/include/boost/range/difference_type.hpp \
+ /local/include/boost/utility/enable_if.hpp \
  /local/include/boost/type_traits/make_unsigned.hpp \
  /local/include/boost/type_traits/is_signed.hpp \
  /local/include/boost/type_traits/is_unsigned.hpp \
@@ -493,8 +555,8 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
  /local/include/boost/date_time/string_parse_tree.hpp \
  /local/include/boost/lexical_cast.hpp \
  /local/include/boost/detail/lcast_precision.hpp \
- /local/include/boost/array.hpp /local/include/boost/swap.hpp \
- /local/include/boost/utility/swap.hpp \
+ /local/include/boost/integer_traits.hpp /local/include/boost/array.hpp \
+ /local/include/boost/swap.hpp /local/include/boost/utility/swap.hpp \
  /local/include/boost/functional/hash_fwd.hpp \
  /local/include/boost/functional/hash/hash_fwd.hpp \
  /local/include/boost/numeric/conversion/cast.hpp \
@@ -690,10 +752,17 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
  /local/include/boost/iterator/transform_iterator.hpp \
  /local/include/boost/type_traits/function_traits.hpp \
  /local/include/boost/utility/result_of.hpp \
+ /local/include/boost/preprocessor/iteration/iterate.hpp \
+ /local/include/boost/preprocessor/slot/slot.hpp \
+ /local/include/boost/preprocessor/slot/detail/def.hpp \
  /local/include/boost/preprocessor/repetition/enum_binary_params.hpp \
  /local/include/boost/preprocessor/repetition/enum_shifted_params.hpp \
  /local/include/boost/preprocessor/facilities/intercept.hpp \
  /local/include/boost/utility/declval.hpp \
+ /local/include/boost/preprocessor/iteration/detail/iter/forward1.hpp \
+ /local/include/boost/preprocessor/iteration/detail/bounds/lower1.hpp \
+ /local/include/boost/preprocessor/slot/detail/shared.hpp \
+ /local/include/boost/preprocessor/iteration/detail/bounds/upper1.hpp \
  /local/include/boost/utility/detail/result_of_iterate.hpp \
  /local/include/boost/algorithm/string/detail/case_conv.hpp \
  /local/include/boost/date_time/string_convert.hpp \
@@ -725,6 +794,39 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
  /local/include/boost/algorithm/string/erase.hpp \
  /local/include/boost/date_time/posix_time/conversion.hpp \
  /local/include/boost/date_time/posix_time/time_parsers.hpp \
+ /local/caffe/include/caffe/internal_thread.hpp \
+ /local/caffe/include/caffe/solver.hpp /local/include/boost/function.hpp \
+ /local/include/boost/preprocessor/iterate.hpp \
+ /local/include/boost/function/detail/prologue.hpp \
+ /local/include/boost/config/no_tr1/functional.hpp \
+ /local/include/boost/function/function_base.hpp \
+ /local/include/boost/integer.hpp /local/include/boost/integer_fwd.hpp \
+ /local/include/boost/type_traits/has_trivial_copy.hpp \
+ /local/include/boost/type_traits/has_trivial_destructor.hpp \
+ /local/include/boost/type_traits/composite_traits.hpp \
+ /local/include/boost/type_traits/is_union.hpp \
+ /local/include/boost/ref.hpp \
+ /local/include/boost/type_traits/alignment_of.hpp \
+ /local/include/boost/type_traits/detail/size_t_trait_def.hpp \
+ /local/include/boost/mpl/size_t.hpp \
+ /local/include/boost/mpl/size_t_fwd.hpp \
+ /local/include/boost/type_traits/detail/size_t_trait_undef.hpp \
+ /local/include/boost/function_equal.hpp \
+ /local/include/boost/function/function_fwd.hpp \
+ /local/include/boost/mem_fn.hpp /local/include/boost/bind/mem_fn.hpp \
+ /local/include/boost/get_pointer.hpp \
+ /local/include/boost/bind/mem_fn_template.hpp \
+ /local/include/boost/bind/mem_fn_cc.hpp \
+ /local/include/boost/preprocessor/enum.hpp \
+ /local/include/boost/preprocessor/repetition/enum.hpp \
+ /local/include/boost/preprocessor/enum_params.hpp \
+ /local/include/boost/function/detail/function_iterate.hpp \
+ /local/include/boost/function/detail/maybe_include.hpp \
+ /local/include/boost/function/function_template.hpp \
+ /local/include/boost/detail/no_exceptions_support.hpp \
+ /local/caffe/include/caffe/solver_factory.hpp \
+ /local/caffe/include/caffe/util/blocking_queue.hpp \
+ /local/caffe/include/caffe/util/benchmark.hpp \
  /local/caffe/include/caffe/util/io.hpp \
  /local/include/boost/filesystem.hpp \
  /local/include/boost/filesystem/config.hpp \
@@ -751,15 +853,17 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
 /local/include/opencv/opencv2/objdetect.hpp:
 /local/include/opencv/opencv2/core.hpp:
 /local/include/opencv/opencv2/core/cvdef.h:
-/local/include/opencv/opencv2/hal/defs.h:
+/local/include/opencv/opencv2/core/hal/interface.h:
 /local/include/opencv/opencv2/core/version.hpp:
 /local/include/opencv/opencv2/core/base.hpp:
+/local/include/opencv/opencv2/opencv_modules.hpp:
 /local/include/opencv/opencv2/core/cvstd.hpp:
 /local/include/opencv/opencv2/core/ptr.inl.hpp:
-/local/include/opencv/opencv2/hal.hpp:
-/local/include/opencv/opencv2/core/sse_utils.hpp:
+/local/include/opencv/opencv2/core/neon_utils.hpp:
 /local/include/opencv/opencv2/core/traits.hpp:
 /local/include/opencv/opencv2/core/matx.hpp:
+/local/include/opencv/opencv2/core/saturate.hpp:
+/local/include/opencv/opencv2/core/fast_math.hpp:
 /local/include/opencv/opencv2/core/types.hpp:
 /local/include/opencv/opencv2/core/mat.hpp:
 /local/include/opencv/opencv2/core/bufferpool.hpp:
@@ -771,6 +875,8 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
 /local/include/opencv/opencv2/core/core_c.h:
 /local/include/opencv/opencv2/core/types_c.h:
 /local/include/opencv/opencv2/core/optim.hpp:
+/local/include/opencv/opencv2/core/ovx.hpp:
+/local/include/opencv/opencv2/core/cvdef.h:
 /local/include/opencv/opencv2/objdetect/detection_based_tracker.hpp:
 /local/include/opencv/opencv2/objdetect/objdetect_c.h:
 /local/include/opencv/opencv2/highgui/highgui.hpp:
@@ -785,25 +891,110 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
 /local/include/opencv/opencv2/imgproc/imgproc.hpp:
 /local/include/opencv/opencv2/imgproc.hpp:
 /local/include/opencv/opencv2/opencv.hpp:
-/local/include/opencv/opencv2/photo.hpp:
-/local/include/opencv/opencv2/photo/photo_c.h:
-/local/include/opencv/opencv2/video.hpp:
-/local/include/opencv/opencv2/video/tracking.hpp:
-/local/include/opencv/opencv2/video/background_segm.hpp:
-/local/include/opencv/opencv2/video/tracking_c.h:
+/local/include/opencv/opencv2/calib3d.hpp:
 /local/include/opencv/opencv2/features2d.hpp:
 /local/include/opencv/opencv2/flann/miniflann.hpp:
 /local/include/opencv/opencv2/flann/defines.h:
 /local/include/opencv/opencv2/flann/config.h:
-/local/include/opencv/opencv2/calib3d.hpp:
 /local/include/opencv/opencv2/core/affine.hpp:
 /local/include/opencv/opencv2/calib3d/calib3d_c.h:
+/local/include/opencv/opencv2/flann.hpp:
+/local/include/opencv/opencv2/flann/flann_base.hpp:
+/local/include/opencv/opencv2/flann/general.h:
+/local/include/opencv/opencv2/flann/matrix.h:
+/local/include/opencv/opencv2/flann/params.h:
+/local/include/opencv/opencv2/flann/any.h:
+/local/include/opencv/opencv2/flann/defines.h:
+/local/include/opencv/opencv2/flann/saving.h:
+/local/include/opencv/opencv2/flann/nn_index.h:
+/local/include/opencv/opencv2/flann/result_set.h:
+/local/include/opencv/opencv2/flann/all_indices.h:
+/local/include/opencv/opencv2/flann/kdtree_index.h:
+/local/include/opencv/opencv2/flann/dynamic_bitset.h:
+/local/include/opencv/opencv2/flann/dist.h:
+/local/include/opencv/opencv2/flann/heap.h:
+/local/include/opencv/opencv2/flann/allocator.h:
+/local/include/opencv/opencv2/flann/random.h:
+/local/include/opencv/opencv2/flann/kdtree_single_index.h:
+/local/include/opencv/opencv2/flann/kmeans_index.h:
+/local/include/opencv/opencv2/flann/logger.h:
+/local/include/opencv/opencv2/flann/composite_index.h:
+/local/include/opencv/opencv2/flann/linear_index.h:
+/local/include/opencv/opencv2/flann/hierarchical_clustering_index.h:
+/local/include/opencv/opencv2/flann/lsh_index.h:
+/local/include/opencv/opencv2/flann/lsh_table.h:
+/local/include/opencv/opencv2/flann/autotuned_index.h:
+/local/include/opencv/opencv2/flann/ground_truth.h:
+/local/include/opencv/opencv2/flann/index_testing.h:
+/local/include/opencv/opencv2/flann/timer.h:
+/local/include/opencv/opencv2/flann/sampling.h:
 /local/include/opencv/opencv2/ml.hpp:
-/home/admin/.node-gyp/5.5.0/include/node/node.h:
-/home/admin/.node-gyp/5.5.0/include/node/v8.h:
-/home/admin/.node-gyp/5.5.0/include/node/v8-version.h:
-/home/admin/.node-gyp/5.5.0/include/node/v8config.h:
-/home/admin/.node-gyp/5.5.0/include/node/node_version.h:
+/local/include/opencv/opencv2/photo.hpp:
+/local/include/opencv/opencv2/photo/photo_c.h:
+/local/include/opencv/opencv2/shape.hpp:
+/local/include/opencv/opencv2/shape/emdL1.hpp:
+/local/include/opencv/opencv2/shape/shape_transformer.hpp:
+/local/include/opencv/opencv2/shape/hist_cost.hpp:
+/local/include/opencv/opencv2/shape/shape_distance.hpp:
+/local/include/opencv/opencv2/stitching.hpp:
+/local/include/opencv/opencv2/stitching/warpers.hpp:
+/local/include/opencv/opencv2/stitching/detail/warpers.hpp:
+/local/include/opencv/opencv2/core/cuda.hpp:
+/local/include/opencv/opencv2/core/cuda_types.hpp:
+/local/include/opencv/opencv2/core/cuda.inl.hpp:
+/local/include/opencv/opencv2/stitching/detail/warpers_inl.hpp:
+/local/include/opencv/opencv2/stitching/detail/warpers.hpp:
+/local/include/opencv/opencv2/stitching/detail/matchers.hpp:
+/local/include/opencv/opencv2/stitching/detail/motion_estimators.hpp:
+/local/include/opencv/opencv2/stitching/detail/matchers.hpp:
+/local/include/opencv/opencv2/stitching/detail/util.hpp:
+/local/include/opencv/opencv2/stitching/detail/util_inl.hpp:
+/local/include/opencv/opencv2/stitching/detail/camera.hpp:
+/local/include/opencv/opencv2/stitching/detail/exposure_compensate.hpp:
+/local/include/opencv/opencv2/stitching/detail/seam_finders.hpp:
+/local/include/opencv/opencv2/stitching/detail/blenders.hpp:
+/local/include/opencv/opencv2/stitching/detail/camera.hpp:
+/local/include/opencv/opencv2/superres.hpp:
+/local/include/opencv/opencv2/superres/optical_flow.hpp:
+/local/include/opencv/opencv2/video.hpp:
+/local/include/opencv/opencv2/video/tracking.hpp:
+/local/include/opencv/opencv2/video/background_segm.hpp:
+/local/include/opencv/opencv2/video/tracking_c.h:
+/local/include/opencv/opencv2/videostab.hpp:
+/local/include/opencv/opencv2/videostab/stabilizer.hpp:
+/local/include/opencv/opencv2/videostab/global_motion.hpp:
+/local/include/opencv/opencv2/videostab/optical_flow.hpp:
+/local/include/opencv/opencv2/cudaoptflow.hpp:
+/local/include/opencv/opencv2/videostab/motion_core.hpp:
+/local/include/opencv/opencv2/videostab/outlier_rejection.hpp:
+/local/include/opencv/opencv2/cudaimgproc.hpp:
+/local/include/opencv/opencv2/videostab/motion_stabilizing.hpp:
+/local/include/opencv/opencv2/videostab/frame_source.hpp:
+/local/include/opencv/opencv2/videostab/log.hpp:
+/local/include/opencv/opencv2/videostab/inpainting.hpp:
+/local/include/opencv/opencv2/videostab/fast_marching.hpp:
+/local/include/opencv/opencv2/videostab/fast_marching_inl.hpp:
+/local/include/opencv/opencv2/videostab/deblurring.hpp:
+/local/include/opencv/opencv2/videostab/wobble_suppression.hpp:
+/local/include/opencv/opencv2/videostab/ring_buffer.hpp:
+/local/include/opencv/opencv2/viz.hpp:
+/local/include/opencv/opencv2/viz/types.hpp:
+/local/include/opencv/opencv2/viz/widgets.hpp:
+/local/include/opencv/opencv2/viz/viz3d.hpp:
+/local/include/opencv/opencv2/viz/vizcore.hpp:
+/local/include/opencv/opencv2/cudaarithm.hpp:
+/local/include/opencv/opencv2/cudabgsegm.hpp:
+/local/include/opencv/opencv2/cudacodec.hpp:
+/local/include/opencv/opencv2/cudafeatures2d.hpp:
+/local/include/opencv/opencv2/cudafilters.hpp:
+/local/include/opencv/opencv2/cudaobjdetect.hpp:
+/local/include/opencv/opencv2/cudastereo.hpp:
+/local/include/opencv/opencv2/cudawarping.hpp:
+/home/jamesbd/.node-gyp/5.5.0/include/node/node.h:
+/home/jamesbd/.node-gyp/5.5.0/include/node/v8.h:
+/home/jamesbd/.node-gyp/5.5.0/include/node/v8-version.h:
+/home/jamesbd/.node-gyp/5.5.0/include/node/v8config.h:
+/home/jamesbd/.node-gyp/5.5.0/include/node/node_version.h:
 ../../mac/macIF.h:
 /local/caffe/include/caffe/caffe.hpp:
 /local/caffe/include/caffe/blob.hpp:
@@ -859,7 +1050,6 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
 /local/include/cuda/surface_types.h:
 /local/include/cuda/texture_types.h:
 /local/include/cuda/cuda_fp16.h:
-/local/include/cuda/library_types.h:
 /local/include/cuda/cuda.h:
 /local/include/cuda/cuda_runtime.h:
 /local/include/cuda/host_config.h:
@@ -872,6 +1062,17 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
 /local/include/cuda/curand.h:
 /local/include/cuda/driver_types.h:
 /local/caffe/build/src/caffe/proto/caffe.pb.h:
+/local/include/google/protobuf/stubs/common.h:
+/local/include/google/protobuf/generated_message_util.h:
+/local/include/google/protobuf/message.h:
+/local/include/google/protobuf/message_lite.h:
+/local/include/google/protobuf/descriptor.h:
+/local/include/google/protobuf/repeated_field.h:
+/local/include/google/protobuf/stubs/type_traits.h:
+/local/include/google/protobuf/stubs/template_util.h:
+/local/include/google/protobuf/extension_set.h:
+/local/include/google/protobuf/generated_enum_reflection.h:
+/local/include/google/protobuf/unknown_field_set.h:
 /local/caffe/include/caffe/syncedmem.hpp:
 /local/caffe/include/caffe/filler.hpp:
 /local/caffe/include/caffe/util/math_functions.hpp:
@@ -881,54 +1082,65 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
 /local/caffe/include/caffe/layer_factory.hpp:
 /local/caffe/include/caffe/net.hpp:
 /local/caffe/include/caffe/parallel.hpp:
-/local/caffe/include/caffe/solver.hpp:
-/local/include/boost/function.hpp:
-/local/include/boost/preprocessor/iterate.hpp:
-/local/include/boost/preprocessor/iteration/iterate.hpp:
-/local/include/boost/preprocessor/arithmetic/dec.hpp:
-/local/include/boost/preprocessor/config/config.hpp:
-/local/include/boost/preprocessor/arithmetic/inc.hpp:
-/local/include/boost/preprocessor/array/elem.hpp:
-/local/include/boost/preprocessor/array/data.hpp:
-/local/include/boost/preprocessor/tuple/elem.hpp:
-/local/include/boost/preprocessor/cat.hpp:
-/local/include/boost/preprocessor/facilities/overload.hpp:
-/local/include/boost/preprocessor/variadic/size.hpp:
-/local/include/boost/preprocessor/tuple/rem.hpp:
-/local/include/boost/preprocessor/variadic/elem.hpp:
-/local/include/boost/preprocessor/array/size.hpp:
-/local/include/boost/preprocessor/slot/slot.hpp:
-/local/include/boost/preprocessor/slot/detail/def.hpp:
-/local/include/boost/function/detail/prologue.hpp:
-/local/include/boost/config/no_tr1/functional.hpp:
-/local/include/boost/function/function_base.hpp:
-/local/include/boost/integer.hpp:
-/local/include/boost/integer_fwd.hpp:
-/local/include/boost/limits.hpp:
+/local/include/boost/date_time/posix_time/posix_time.hpp:
+/local/include/boost/date_time/compiler_config.hpp:
+/local/include/boost/date_time/locale_config.hpp:
 /local/include/boost/cstdint.hpp:
-/local/include/boost/integer_traits.hpp:
+/local/include/boost/config/auto_link.hpp:
+/local/include/boost/date_time/posix_time/ptime.hpp:
+/local/include/boost/date_time/posix_time/posix_time_system.hpp:
+/local/include/boost/date_time/posix_time/posix_time_config.hpp:
+/local/include/boost/limits.hpp:
+/local/include/boost/config/no_tr1/cmath.hpp:
+/local/include/boost/date_time/time_duration.hpp:
+/local/include/boost/operators.hpp:
+/local/include/boost/iterator.hpp:
 /local/include/boost/static_assert.hpp:
-/local/include/boost/type_traits/has_trivial_copy.hpp:
-/local/include/boost/type_traits/config.hpp:
-/local/include/boost/type_traits/intrinsics.hpp:
-/local/include/boost/type_traits/is_same.hpp:
-/local/include/boost/type_traits/detail/bool_trait_def.hpp:
-/local/include/boost/type_traits/detail/template_arity_spec.hpp:
-/local/include/boost/mpl/int.hpp:
-/local/include/boost/mpl/int_fwd.hpp:
+/local/include/boost/date_time/time_defs.hpp:
+/local/include/boost/date_time/special_defs.hpp:
+/local/include/boost/date_time/time_resolution_traits.hpp:
+/local/include/boost/date_time/int_adapter.hpp:
+/local/include/boost/date_time/gregorian/gregorian_types.hpp:
+/local/include/boost/date_time/date.hpp:
+/local/include/boost/date_time/year_month_day.hpp:
+/local/include/boost/date_time/period.hpp:
+/local/include/boost/date_time/gregorian/greg_calendar.hpp:
+/local/include/boost/date_time/gregorian/greg_weekday.hpp:
+/local/include/boost/date_time/constrained_value.hpp:
+/local/include/boost/mpl/if.hpp:
+/local/include/boost/mpl/aux_/value_wknd.hpp:
+/local/include/boost/mpl/aux_/static_cast.hpp:
+/local/include/boost/mpl/aux_/config/workaround.hpp:
+/local/include/boost/mpl/aux_/config/integral.hpp:
+/local/include/boost/mpl/aux_/config/msvc.hpp:
+/local/include/boost/mpl/aux_/config/eti.hpp:
+/local/include/boost/mpl/aux_/na_spec.hpp:
+/local/include/boost/mpl/lambda_fwd.hpp:
+/local/include/boost/mpl/void_fwd.hpp:
 /local/include/boost/mpl/aux_/adl_barrier.hpp:
 /local/include/boost/mpl/aux_/config/adl.hpp:
-/local/include/boost/mpl/aux_/config/msvc.hpp:
 /local/include/boost/mpl/aux_/config/intel.hpp:
 /local/include/boost/mpl/aux_/config/gcc.hpp:
-/local/include/boost/mpl/aux_/config/workaround.hpp:
+/local/include/boost/mpl/aux_/na.hpp:
+/local/include/boost/mpl/bool.hpp:
+/local/include/boost/mpl/bool_fwd.hpp:
+/local/include/boost/mpl/integral_c_tag.hpp:
+/local/include/boost/mpl/aux_/config/static_constant.hpp:
+/local/include/boost/mpl/aux_/na_fwd.hpp:
+/local/include/boost/mpl/aux_/config/ctps.hpp:
+/local/include/boost/mpl/aux_/config/lambda.hpp:
+/local/include/boost/mpl/aux_/config/ttp.hpp:
+/local/include/boost/mpl/int.hpp:
+/local/include/boost/mpl/int_fwd.hpp:
 /local/include/boost/mpl/aux_/nttp_decl.hpp:
 /local/include/boost/mpl/aux_/config/nttp.hpp:
 /local/include/boost/mpl/aux_/integral_wrapper.hpp:
-/local/include/boost/mpl/integral_c_tag.hpp:
-/local/include/boost/mpl/aux_/config/static_constant.hpp:
-/local/include/boost/mpl/aux_/static_cast.hpp:
+/local/include/boost/preprocessor/cat.hpp:
+/local/include/boost/preprocessor/config/config.hpp:
+/local/include/boost/mpl/aux_/lambda_arity_param.hpp:
 /local/include/boost/mpl/aux_/template_arity_fwd.hpp:
+/local/include/boost/mpl/aux_/arity.hpp:
+/local/include/boost/mpl/aux_/config/dtp.hpp:
 /local/include/boost/mpl/aux_/preprocessor/params.hpp:
 /local/include/boost/mpl/aux_/config/preprocessor.hpp:
 /local/include/boost/preprocessor/comma_if.hpp:
@@ -944,61 +1156,7 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
 /local/include/boost/preprocessor/detail/auto_rec.hpp:
 /local/include/boost/preprocessor/tuple/eat.hpp:
 /local/include/boost/preprocessor/inc.hpp:
-/local/include/boost/mpl/aux_/config/lambda.hpp:
-/local/include/boost/mpl/aux_/config/ttp.hpp:
-/local/include/boost/mpl/aux_/config/ctps.hpp:
-/local/include/boost/mpl/aux_/config/overload_resolution.hpp:
-/local/include/boost/type_traits/integral_constant.hpp:
-/local/include/boost/mpl/bool.hpp:
-/local/include/boost/mpl/bool_fwd.hpp:
-/local/include/boost/mpl/integral_c.hpp:
-/local/include/boost/mpl/integral_c_fwd.hpp:
-/local/include/boost/mpl/aux_/lambda_support.hpp:
-/local/include/boost/type_traits/detail/bool_trait_undef.hpp:
-/local/include/boost/type_traits/is_reference.hpp:
-/local/include/boost/type_traits/is_lvalue_reference.hpp:
-/local/include/boost/type_traits/is_rvalue_reference.hpp:
-/local/include/boost/type_traits/ice.hpp:
-/local/include/boost/type_traits/detail/yes_no_type.hpp:
-/local/include/boost/type_traits/detail/ice_or.hpp:
-/local/include/boost/type_traits/detail/ice_and.hpp:
-/local/include/boost/type_traits/detail/ice_not.hpp:
-/local/include/boost/type_traits/detail/ice_eq.hpp:
-/local/include/boost/type_traits/is_volatile.hpp:
-/local/include/boost/type_traits/detail/cv_traits_impl.hpp:
-/local/include/boost/type_traits/is_pod.hpp:
-/local/include/boost/type_traits/is_void.hpp:
-/local/include/boost/type_traits/is_scalar.hpp:
-/local/include/boost/type_traits/is_arithmetic.hpp:
-/local/include/boost/type_traits/is_integral.hpp:
-/local/include/boost/type_traits/is_float.hpp:
-/local/include/boost/type_traits/is_enum.hpp:
-/local/include/boost/type_traits/is_pointer.hpp:
-/local/include/boost/type_traits/is_member_pointer.hpp:
-/local/include/boost/type_traits/is_member_function_pointer.hpp:
-/local/include/boost/type_traits/detail/is_mem_fun_pointer_impl.hpp:
-/local/include/boost/type_traits/remove_cv.hpp:
-/local/include/boost/type_traits/broken_compiler_spec.hpp:
-/local/include/boost/type_traits/detail/type_trait_def.hpp:
-/local/include/boost/type_traits/detail/type_trait_undef.hpp:
-/local/include/boost/type_traits/has_trivial_destructor.hpp:
-/local/include/boost/type_traits/is_const.hpp:
-/local/include/boost/type_traits/composite_traits.hpp:
-/local/include/boost/type_traits/is_array.hpp:
-/local/include/boost/type_traits/is_union.hpp:
-/local/include/boost/ref.hpp:
-/local/include/boost/mpl/if.hpp:
-/local/include/boost/mpl/aux_/value_wknd.hpp:
-/local/include/boost/mpl/aux_/config/integral.hpp:
-/local/include/boost/mpl/aux_/config/eti.hpp:
-/local/include/boost/mpl/aux_/na_spec.hpp:
-/local/include/boost/mpl/lambda_fwd.hpp:
-/local/include/boost/mpl/void_fwd.hpp:
-/local/include/boost/mpl/aux_/na.hpp:
-/local/include/boost/mpl/aux_/na_fwd.hpp:
-/local/include/boost/mpl/aux_/lambda_arity_param.hpp:
-/local/include/boost/mpl/aux_/arity.hpp:
-/local/include/boost/mpl/aux_/config/dtp.hpp:
+/local/include/boost/preprocessor/arithmetic/inc.hpp:
 /local/include/boost/mpl/aux_/preprocessor/enum.hpp:
 /local/include/boost/mpl/aux_/preprocessor/def_params_tail.hpp:
 /local/include/boost/mpl/limits/arity.hpp:
@@ -1008,6 +1166,7 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
 /local/include/boost/preprocessor/facilities/identity.hpp:
 /local/include/boost/preprocessor/empty.hpp:
 /local/include/boost/preprocessor/arithmetic/add.hpp:
+/local/include/boost/preprocessor/arithmetic/dec.hpp:
 /local/include/boost/preprocessor/control/while.hpp:
 /local/include/boost/preprocessor/list/fold_left.hpp:
 /local/include/boost/preprocessor/list/detail/fold_left.hpp:
@@ -1020,58 +1179,40 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
 /local/include/boost/preprocessor/list/detail/fold_right.hpp:
 /local/include/boost/preprocessor/list/reverse.hpp:
 /local/include/boost/preprocessor/control/detail/while.hpp:
+/local/include/boost/preprocessor/tuple/elem.hpp:
+/local/include/boost/preprocessor/facilities/overload.hpp:
+/local/include/boost/preprocessor/variadic/size.hpp:
+/local/include/boost/preprocessor/tuple/rem.hpp:
+/local/include/boost/preprocessor/variadic/elem.hpp:
 /local/include/boost/preprocessor/arithmetic/sub.hpp:
-/local/include/boost/type_traits/alignment_of.hpp:
-/local/include/boost/type_traits/detail/size_t_trait_def.hpp:
-/local/include/boost/mpl/size_t.hpp:
-/local/include/boost/mpl/size_t_fwd.hpp:
-/local/include/boost/type_traits/detail/size_t_trait_undef.hpp:
-/local/include/boost/utility/enable_if.hpp:
-/local/include/boost/function_equal.hpp:
-/local/include/boost/function/function_fwd.hpp:
-/local/include/boost/mem_fn.hpp:
-/local/include/boost/bind/mem_fn.hpp:
-/local/include/boost/get_pointer.hpp:
-/local/include/boost/bind/mem_fn_template.hpp:
-/local/include/boost/bind/mem_fn_cc.hpp:
-/local/include/boost/preprocessor/enum.hpp:
-/local/include/boost/preprocessor/repetition/enum.hpp:
-/local/include/boost/preprocessor/enum_params.hpp:
-/local/include/boost/preprocessor/repetition/enum_params.hpp:
-/local/include/boost/preprocessor/iteration/detail/iter/forward1.hpp:
-/local/include/boost/preprocessor/iteration/detail/bounds/lower1.hpp:
-/local/include/boost/preprocessor/slot/detail/shared.hpp:
-/local/include/boost/preprocessor/iteration/detail/bounds/upper1.hpp:
-/local/include/boost/function/detail/function_iterate.hpp:
-/local/include/boost/function/detail/maybe_include.hpp:
-/local/include/boost/function/function_template.hpp:
-/local/include/boost/detail/no_exceptions_support.hpp:
-/local/caffe/include/caffe/solver_factory.hpp:
-/local/caffe/include/caffe/util/benchmark.hpp:
-/local/include/boost/date_time/posix_time/posix_time.hpp:
-/local/include/boost/date_time/compiler_config.hpp:
-/local/include/boost/date_time/locale_config.hpp:
-/local/include/boost/config/auto_link.hpp:
-/local/include/boost/date_time/posix_time/ptime.hpp:
-/local/include/boost/date_time/posix_time/posix_time_system.hpp:
-/local/include/boost/date_time/posix_time/posix_time_config.hpp:
-/local/include/boost/config/no_tr1/cmath.hpp:
-/local/include/boost/date_time/time_duration.hpp:
-/local/include/boost/operators.hpp:
-/local/include/boost/iterator.hpp:
-/local/include/boost/date_time/time_defs.hpp:
-/local/include/boost/date_time/special_defs.hpp:
-/local/include/boost/date_time/time_resolution_traits.hpp:
-/local/include/boost/date_time/int_adapter.hpp:
-/local/include/boost/date_time/gregorian/gregorian_types.hpp:
-/local/include/boost/date_time/date.hpp:
-/local/include/boost/date_time/year_month_day.hpp:
-/local/include/boost/date_time/period.hpp:
-/local/include/boost/date_time/gregorian/greg_calendar.hpp:
-/local/include/boost/date_time/gregorian/greg_weekday.hpp:
-/local/include/boost/date_time/constrained_value.hpp:
+/local/include/boost/mpl/aux_/config/overload_resolution.hpp:
+/local/include/boost/mpl/aux_/lambda_support.hpp:
 /local/include/boost/type_traits/is_base_of.hpp:
 /local/include/boost/type_traits/is_base_and_derived.hpp:
+/local/include/boost/type_traits/intrinsics.hpp:
+/local/include/boost/type_traits/config.hpp:
+/local/include/boost/type_traits/is_same.hpp:
+/local/include/boost/type_traits/detail/bool_trait_def.hpp:
+/local/include/boost/type_traits/detail/template_arity_spec.hpp:
+/local/include/boost/type_traits/integral_constant.hpp:
+/local/include/boost/mpl/integral_c.hpp:
+/local/include/boost/mpl/integral_c_fwd.hpp:
+/local/include/boost/type_traits/detail/bool_trait_undef.hpp:
+/local/include/boost/type_traits/is_reference.hpp:
+/local/include/boost/type_traits/is_lvalue_reference.hpp:
+/local/include/boost/type_traits/is_rvalue_reference.hpp:
+/local/include/boost/type_traits/ice.hpp:
+/local/include/boost/type_traits/detail/yes_no_type.hpp:
+/local/include/boost/type_traits/detail/ice_or.hpp:
+/local/include/boost/type_traits/detail/ice_and.hpp:
+/local/include/boost/type_traits/detail/ice_not.hpp:
+/local/include/boost/type_traits/detail/ice_eq.hpp:
+/local/include/boost/type_traits/is_volatile.hpp:
+/local/include/boost/type_traits/detail/cv_traits_impl.hpp:
+/local/include/boost/type_traits/remove_cv.hpp:
+/local/include/boost/type_traits/broken_compiler_spec.hpp:
+/local/include/boost/type_traits/detail/type_trait_def.hpp:
+/local/include/boost/type_traits/detail/type_trait_undef.hpp:
 /local/include/boost/type_traits/is_class.hpp:
 /local/include/boost/date_time/date_defs.hpp:
 /local/include/boost/date_time/gregorian/greg_day_of_year.hpp:
@@ -1124,6 +1265,11 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
 /local/include/boost/preprocessor/stringize.hpp:
 /local/include/boost/mpl/aux_/preprocessed/gcc/or.hpp:
 /local/include/boost/type_traits/is_convertible.hpp:
+/local/include/boost/type_traits/is_array.hpp:
+/local/include/boost/type_traits/is_arithmetic.hpp:
+/local/include/boost/type_traits/is_integral.hpp:
+/local/include/boost/type_traits/is_float.hpp:
+/local/include/boost/type_traits/is_void.hpp:
 /local/include/boost/type_traits/is_abstract.hpp:
 /local/include/boost/type_traits/add_lvalue_reference.hpp:
 /local/include/boost/type_traits/add_reference.hpp:
@@ -1152,13 +1298,21 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
 /local/include/boost/mpl/aux_/preprocessed/gcc/placeholders.hpp:
 /local/include/boost/mpl/and.hpp:
 /local/include/boost/mpl/aux_/preprocessed/gcc/and.hpp:
+/local/include/boost/type_traits/is_const.hpp:
 /local/include/boost/detail/indirect_traits.hpp:
+/local/include/boost/type_traits/is_pointer.hpp:
+/local/include/boost/type_traits/is_member_pointer.hpp:
+/local/include/boost/type_traits/is_member_function_pointer.hpp:
+/local/include/boost/type_traits/detail/is_mem_fun_pointer_impl.hpp:
 /local/include/boost/type_traits/remove_reference.hpp:
 /local/include/boost/type_traits/remove_pointer.hpp:
 /local/include/boost/iterator/detail/enable_if.hpp:
 /local/include/boost/type_traits/add_const.hpp:
 /local/include/boost/type_traits/add_pointer.hpp:
 /local/include/boost/type_traits/remove_const.hpp:
+/local/include/boost/type_traits/is_pod.hpp:
+/local/include/boost/type_traits/is_scalar.hpp:
+/local/include/boost/type_traits/is_enum.hpp:
 /local/include/boost/mpl/always.hpp:
 /local/include/boost/mpl/apply.hpp:
 /local/include/boost/mpl/apply_fwd.hpp:
@@ -1169,6 +1323,10 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
 /local/include/boost/mpl/aux_/type_wrapper.hpp:
 /local/include/boost/mpl/aux_/config/has_xxx.hpp:
 /local/include/boost/mpl/aux_/config/msvc_typename.hpp:
+/local/include/boost/preprocessor/array/elem.hpp:
+/local/include/boost/preprocessor/array/data.hpp:
+/local/include/boost/preprocessor/array/size.hpp:
+/local/include/boost/preprocessor/repetition/enum_params.hpp:
 /local/include/boost/preprocessor/repetition/enum_trailing_params.hpp:
 /local/include/boost/mpl/aux_/config/has_apply.hpp:
 /local/include/boost/mpl/aux_/msvc_never_true.hpp:
@@ -1207,6 +1365,7 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
 /local/include/boost/range/size.hpp:
 /local/include/boost/range/size_type.hpp:
 /local/include/boost/range/difference_type.hpp:
+/local/include/boost/utility/enable_if.hpp:
 /local/include/boost/type_traits/make_unsigned.hpp:
 /local/include/boost/type_traits/is_signed.hpp:
 /local/include/boost/type_traits/is_unsigned.hpp:
@@ -1267,6 +1426,7 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
 /local/include/boost/date_time/string_parse_tree.hpp:
 /local/include/boost/lexical_cast.hpp:
 /local/include/boost/detail/lcast_precision.hpp:
+/local/include/boost/integer_traits.hpp:
 /local/include/boost/array.hpp:
 /local/include/boost/swap.hpp:
 /local/include/boost/utility/swap.hpp:
@@ -1469,10 +1629,17 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
 /local/include/boost/iterator/transform_iterator.hpp:
 /local/include/boost/type_traits/function_traits.hpp:
 /local/include/boost/utility/result_of.hpp:
+/local/include/boost/preprocessor/iteration/iterate.hpp:
+/local/include/boost/preprocessor/slot/slot.hpp:
+/local/include/boost/preprocessor/slot/detail/def.hpp:
 /local/include/boost/preprocessor/repetition/enum_binary_params.hpp:
 /local/include/boost/preprocessor/repetition/enum_shifted_params.hpp:
 /local/include/boost/preprocessor/facilities/intercept.hpp:
 /local/include/boost/utility/declval.hpp:
+/local/include/boost/preprocessor/iteration/detail/iter/forward1.hpp:
+/local/include/boost/preprocessor/iteration/detail/bounds/lower1.hpp:
+/local/include/boost/preprocessor/slot/detail/shared.hpp:
+/local/include/boost/preprocessor/iteration/detail/bounds/upper1.hpp:
 /local/include/boost/utility/detail/result_of_iterate.hpp:
 /local/include/boost/algorithm/string/detail/case_conv.hpp:
 /local/include/boost/date_time/string_convert.hpp:
@@ -1504,6 +1671,42 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
 /local/include/boost/algorithm/string/erase.hpp:
 /local/include/boost/date_time/posix_time/conversion.hpp:
 /local/include/boost/date_time/posix_time/time_parsers.hpp:
+/local/caffe/include/caffe/internal_thread.hpp:
+/local/caffe/include/caffe/solver.hpp:
+/local/include/boost/function.hpp:
+/local/include/boost/preprocessor/iterate.hpp:
+/local/include/boost/function/detail/prologue.hpp:
+/local/include/boost/config/no_tr1/functional.hpp:
+/local/include/boost/function/function_base.hpp:
+/local/include/boost/integer.hpp:
+/local/include/boost/integer_fwd.hpp:
+/local/include/boost/type_traits/has_trivial_copy.hpp:
+/local/include/boost/type_traits/has_trivial_destructor.hpp:
+/local/include/boost/type_traits/composite_traits.hpp:
+/local/include/boost/type_traits/is_union.hpp:
+/local/include/boost/ref.hpp:
+/local/include/boost/type_traits/alignment_of.hpp:
+/local/include/boost/type_traits/detail/size_t_trait_def.hpp:
+/local/include/boost/mpl/size_t.hpp:
+/local/include/boost/mpl/size_t_fwd.hpp:
+/local/include/boost/type_traits/detail/size_t_trait_undef.hpp:
+/local/include/boost/function_equal.hpp:
+/local/include/boost/function/function_fwd.hpp:
+/local/include/boost/mem_fn.hpp:
+/local/include/boost/bind/mem_fn.hpp:
+/local/include/boost/get_pointer.hpp:
+/local/include/boost/bind/mem_fn_template.hpp:
+/local/include/boost/bind/mem_fn_cc.hpp:
+/local/include/boost/preprocessor/enum.hpp:
+/local/include/boost/preprocessor/repetition/enum.hpp:
+/local/include/boost/preprocessor/enum_params.hpp:
+/local/include/boost/function/detail/function_iterate.hpp:
+/local/include/boost/function/detail/maybe_include.hpp:
+/local/include/boost/function/function_template.hpp:
+/local/include/boost/detail/no_exceptions_support.hpp:
+/local/caffe/include/caffe/solver_factory.hpp:
+/local/caffe/include/caffe/util/blocking_queue.hpp:
+/local/caffe/include/caffe/util/benchmark.hpp:
 /local/caffe/include/caffe/util/io.hpp:
 /local/include/boost/filesystem.hpp:
 /local/include/boost/filesystem/config.hpp:

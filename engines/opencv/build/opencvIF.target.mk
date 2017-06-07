@@ -30,16 +30,15 @@ CFLAGS_C_Debug :=
 CFLAGS_CC_Debug := \
 	-D HASCAFFE=$(HASCAFFE) \
 	-D HASGPU=$(HASGPU) \
-	-fno-rtti \
 	-fno-exceptions \
 	-std=gnu++0x \
 	-fexceptions
 
 INCS_Debug := \
-	-I/home/admin/.node-gyp/5.5.0/include/node \
-	-I/home/admin/.node-gyp/5.5.0/src \
-	-I/home/admin/.node-gyp/5.5.0/deps/uv/include \
-	-I/home/admin/.node-gyp/5.5.0/deps/v8/include \
+	-I/home/jamesbd/.node-gyp/5.5.0/include/node \
+	-I/home/jamesbd/.node-gyp/5.5.0/src \
+	-I/home/jamesbd/.node-gyp/5.5.0/deps/uv/include \
+	-I/home/jamesbd/.node-gyp/5.5.0/deps/v8/include \
 	-I$(srcdir)/. \
 	-I$(srcdir)/../mac \
 	-I$(INCLUDE)/cuda \
@@ -77,16 +76,15 @@ CFLAGS_C_Release :=
 CFLAGS_CC_Release := \
 	-D HASCAFFE=$(HASCAFFE) \
 	-D HASGPU=$(HASGPU) \
-	-fno-rtti \
 	-fno-exceptions \
 	-std=gnu++0x \
 	-fexceptions
 
 INCS_Release := \
-	-I/home/admin/.node-gyp/5.5.0/include/node \
-	-I/home/admin/.node-gyp/5.5.0/src \
-	-I/home/admin/.node-gyp/5.5.0/deps/uv/include \
-	-I/home/admin/.node-gyp/5.5.0/deps/v8/include \
+	-I/home/jamesbd/.node-gyp/5.5.0/include/node \
+	-I/home/jamesbd/.node-gyp/5.5.0/src \
+	-I/home/jamesbd/.node-gyp/5.5.0/deps/uv/include \
+	-I/home/jamesbd/.node-gyp/5.5.0/deps/v8/include \
 	-I$(srcdir)/. \
 	-I$(srcdir)/../mac \
 	-I$(INCLUDE)/cuda \
