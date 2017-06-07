@@ -84,7 +84,8 @@ var
 						if (eng.core) { 		// process only tau messages (ignores sockets, etc)
 
 		Trace(">worker run");	
-							var args = eng.args,
+							var 
+								args = eng.args,
 								core = eng.core,
 								format = eng.format;
 
@@ -172,13 +173,13 @@ var
 		},
 
 		/**
-		* @method core
+		* @method allocate
 		* 
-		* Execute the supplied callback with the engine core assigned to the specifed Client.Engine.Instance
-		* thread defined by this request (in the req.body and req.log).  If a workflow Instance is 
+		* Execute the supplied callback with the engine core that is/was allocated to a Client.Engine.Instance
+		* thread as defined by this request (in the req.body and req.log).  If a workflow Instance is 
 		* provided, then the engine is assumed to be in a workflow (thus the returned core will remain
 		* on the same compile-step thread); otherwise, the engine is assumed to be standalone (thus forcing
-		* the engine to re-compile every time it is steped).
+		* the engine to re-compile each time it is stepped).
 		* 
 		* As used here (and elsewhere) the terms "process", "engine core", "safety core", and "worker" are 
 		* equivalent, and should not be confused with a physical "cpu core".  Because heavyweight 
@@ -202,7 +203,7 @@ var
 		* This method will callback cb(core) with the requested engine core; null if the core could not
 		* be located or allocated.
 		*/
-		core: function (req,args,cb) {	  // called by master to thread a stateful engine
+		allocate: function (req,args,cb) {	  // called by master to thread a stateful engine
 			var 
 				sql = req.sql,
 				name = `${req.client}.${req.table}.${req.body.thread || "0"}`;
@@ -411,7 +412,7 @@ var
 				action: "insert"
 			};
 
-			ENGINE.core(req,args,function (err,context) {
+			ENGINE.allocate(req,args,function (err,context) {
 console.log(">step "+err);
 				res(err || context.tau);
 			});
@@ -428,7 +429,7 @@ console.log(">step "+err);
 				action: "delete"
 			};
 			
-			ENGINE.core(req,args,function (err,context) {
+			ENGINE.allocate(req,args,function (err,context) {
 console.log([">kill ",err]);
 
 				if (err) 
@@ -469,7 +470,7 @@ console.log([">kill ",err]);
 			delete req.query[""];
 			if ( !isempty(req.query) ) args.query = req.query;
 
-			ENGINE.core(req,args,function (err,context) {
+			ENGINE.allocate(req,args,function (err,context) {
 				res( err || ENGINE.maptau(context) );
 			});
 		},
@@ -484,7 +485,7 @@ console.log([">kill ",err]);
 				action: "update"
 			};
 
-			ENGINE.core(req,args,function (err,context) {
+			ENGINE.allocate(req,args,function (err,context) {
 console.log([">init",err]);
 
 				res(err || "ok"); 
