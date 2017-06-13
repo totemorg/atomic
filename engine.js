@@ -136,6 +136,8 @@ var
 			LWIP: require('../graceful-lwip'),
 			DSP: require('digitalsignals'),
 			CRYPTO: require('crypto'),
+			RAN: require('randpr'),
+			GRP: require('groups'),
 			CON: console,
 			console: console,
 			JSON: JSON
@@ -175,7 +177,7 @@ var
 		/**
 		* @method allocate
 		* 
-		* Execute the supplied callback with the engine core that is/was allocated to a Client.Engine.Instance
+		* Execute the supplied callback with the engine core that is/was allocated to a Client.Engine.Type.Instance
 		* thread as defined by this request (in the req.body and req.log).  If a workflow Instance is 
 		* provided, then the engine is assumed to be in a workflow (thus the returned core will remain
 		* on the same compile-step thread); otherwise, the engine is assumed to be standalone (thus forcing
@@ -206,7 +208,7 @@ var
 		allocate: function (req,args,cb) {	  // called by master to thread a stateful engine
 			var 
 				sql = req.sql,
-				name = `${req.client}.${req.table}.${req.body.thread || "0"}`;
+				name = `${req.client}.${req.table}.${req.type}.${req.body.thread || "0"}`;
 
 			function execute(args,core,cb) {
 
@@ -267,8 +269,10 @@ var
 				
 				else // initialize core if an engine can be located 
 					sql.query(
-						"SELECT *,count(ID) AS found FROM engines WHERE least(?) LIMIT 0,1", 
-						{Name:req.table,Enabled:true
+						"SELECT *,count(ID) AS found FROM engines WHERE least(?) LIMIT 0,1", {
+							Name:req.table,
+							Engine:req.type,
+							Enabled:true
 					}).on("result", function (eng) { // progam its engine
 
 		//Trace(">new engine");
@@ -557,16 +561,18 @@ console.log([">init",err]);
 			var vars = context.vars, sql = context.sql;
 
 			/*
-			The sqls = {var:"sql", ...} are defined by the context.entry (to import vars into the context before an 
-			is run) or by the context.exit (export vars from context after engine is run).  If an sqls entry/exit 
-			exists, this will cause the context.vars = [var, ...] list to be built to synchronously import/export
-			the vars into/from the engine's context.
+			The context.sqls = {var:"query...", ...} || "query..." enumerates the engine's context.entry (to import 
+			vars into its context before the engine is run), and enumerates the engine's context.exit (to export 
+			vars from its context after the engine is run).  If an sqls entry/exit exists, this will cause the 
+			context.vars = [var, ...] list to be built to synchronously import/export the vars into/from the engine's 
+			context.
 			*/
 
-			if (vars) {    	
-				if ( vars.length ) { 						// more vars to import/export
-					var varn = vars[vars.length-1]; vars.length--; 	// var to import/export
-					var query = context.sqls[varn]; 					// sql to import/export
+			if (vars) {    	  // enumerate over each sqls var
+				if ( vars.length ) { 							// more vars to import/export
+					var 
+						varn = vars.pop(), 					// var to import/export
+						query = context.sqls[varn]; 	// sql query to import/export
 
 					if (typeof query != "string") {
 						query = query[0];
@@ -579,6 +585,7 @@ console.log([">init",err]);
 						var data = context[varn] = [];
 						var args = context.query;
 					}
+					
 					else { 									// exporting this var from the context
 						var data = context[varn] || [];
 						var args = [varn, {result:data}, context.query];
@@ -594,6 +601,7 @@ console.log([">init",err]);
 							context.err = err;
 							context[varn] = null;
 						}
+						
 						else 
 							if (context.sqls == context.entry)   // importing matrix
 								recs.each( function (n,rec) {
@@ -601,6 +609,7 @@ console.log([">init",err]);
 									data.push( vec );
 									for ( var x in rec ) vec.push( rec[x] );
 								});
+							
 							else { 								// exporting matrix
 							}					
 
@@ -622,9 +631,19 @@ console.log([">init",err]);
 			}
 			
 			else
-			if (context.entry) {  // build the context.vars from the context.entry sqls
+			if (context.entry) {  // build context.vars from the context.entry sqls
 				var sqls = context.sqls = context.entry;
-				var vars = context.vars = []; for (var n in sqls) vars.push(n);
+				
+				if (sqls.constructor == String)   // load entire context
+					sql.query(sqls)
+					.on("result", function (vars) {
+						cb( Copy(vars, context) );
+					});
+				
+				else {  // load specific context vars
+					var vars = context.vars = []; 
+					for (var n in sqls) vars.push(n);
+				}
 
 		//Trace("entry vars="+vars);
 				ENGINE.prime(context, cb);
@@ -652,6 +671,7 @@ console.log([">init",err]);
 				var context = ENGINE.context[core.name] = VM.createContext(Copy(ENGINE.plugin,Copy(args,vars)));
 				ENGINE.prime(context,cb);
 			}
+			
 			else {
 				var context = Copy( args, ENGINE.context[core.name] || VM.createContext({}) );
 				cb(context);
