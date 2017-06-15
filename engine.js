@@ -33,7 +33,7 @@ function Trace(msg,arg) {
 var
 	ENGINE = module.exports = Copy( 
 		 //< engineIF built by node-gyp
-		require("./engines/build/Release/engineIF"), {
+		require("./ifs/build/Release/engineIF"), {
 		
 		paths: {
 			jobs: "./jobs/"
