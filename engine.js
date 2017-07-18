@@ -25,11 +25,6 @@ var															// shortcuts
 	Copy = ENUM.copy,
 	Each = ENUM.each;
 	
-function Trace(msg,arg) {
-	console.log("E>"+msg);
-	if (arg) console.log(arg);
-};
-	
 var
 	ENGINE = module.exports = Copy( 
 		 //< engineIF built by node-gyp
@@ -49,84 +44,84 @@ var
 
 			if (opts) Copy(opts,ENGINE);
 
-			if (ENGINE.thread)
-			ENGINE.thread( function (sql) { // compile engines defined in engines DB
+			if (thread = ENGINE.thread)
+				thread( function (sql) { // compile engines defined in engines DB
 
-				function compileEngine(engine, name, code, res) {
-					try {
-						VM.runInContext( "FLEX."+engine+"."+name+"="+code, VM.createContext({FLEX:FLEX})  );
+					function compileEngine(engine, name, code, res) {
+						try {
+							VM.runInContext( "FLEX."+engine+"."+name+"="+code, VM.createContext({FLEX:FLEX})  );
 
-						if (res) res("ok");
-					}
-					catch (err) {
-						if (res) res(new Error(err+""));
-					}
-				}	
-
-				sql.query("DELETE FROM app1.simcores", function (err) {
-					Trace(err || "RESET ENGINE CORES");
-				});
-
-				ENGINE.nextcore = ENGINE.cores ? 1 : 0;
-
-				if (builtins = ENGINE.builtins)
-					for (var eng in  builtins) 
-						sql.query("INSERT INTO app1.engines SET ?", {
-							Name: eng,
-							Enabled: 0,
-							Engine: "js",
-							Code: builtins[eng]+""
-						});
-
-				if (CLUSTER.isWorker) 	
-					CLUSTER.worker.process.on("message", function (eng,socket) {
-
-						if (eng.core) { 		// process only tau messages (ignores sockets, etc)
-
-		Trace(">worker run");	
-							var 
-								args = eng.args,
-								core = eng.core,
-								format = eng.format;
-
-							ENGINE.thread(function (sql) {
-								args.sql = sql;
-
-								ENGINE.compute(core, args, function (context) {
-
-									if (engine = ENGINE[core.type] )
-										try {
-											var rtn = engine(core.name,args.port,context.tau,context,core.code);
-										}
-										catch (err) {
-											var rtn = 110; //err+"";
-										}
-									else
-										var rtn = 110;
-
-									var rtn = ENGINE.errors[rtn];
-
-		Trace(">engine="+rtn+" fmt="+format);
-
-									switch (format) {
-										case "db":
-											socket.end( JSON.stringify({ 
-												success: true,
-												msg: rtn,
-												count: 0,
-												data: 0 //ENGINE.maptau(context)
-											}) );
-											break;
-
-										default:
-											socket.end( JSON.stringify(context.tau) );
-									}
-
-								});
-							});
+							if (res) res("ok");
 						}
+						catch (err) {
+							if (res) res(new Error(err+""));
+						}
+					}	
+
+					sql.query("DELETE FROM app1.simcores", function (err) {
+						Trace(err || "RESET ENGINE CORES");
 					});
-			});
+
+					ENGINE.nextcore = ENGINE.cores ? 1 : 0;
+
+					if (builtins = ENGINE.builtins)
+						for (var eng in  builtins) 
+							sql.query("INSERT INTO app1.engines SET ?", {
+								Name: eng,
+								Enabled: 0,
+								Engine: "js",
+								Code: builtins[eng]+""
+							});
+
+					if (CLUSTER.isWorker) 	
+						CLUSTER.worker.process.on("message", function (eng,socket) {
+
+							if (eng.core) { 		// process only tau messages (ignores sockets, etc)
+
+			Trace(">worker run");	
+								var 
+									args = eng.args,
+									core = eng.core,
+									format = eng.format;
+
+								ENGINE.thread(function (sql) {
+									args.sql = sql;
+
+									ENGINE.execute(core, args, function (context) {
+
+										if (engine = ENGINE[core.type] )
+											try {
+												var rtn = engine(core.name,args.port,context.tau,context,core.code);
+											}
+											catch (err) {
+												var rtn = ENGINE.errors.badType; //err+"";
+											}
+										else
+											var rtn = ENGINE.errors.badType;
+
+										var rtn = ENGINE.errors[rtn];
+
+			Trace(">engine="+rtn+" fmt="+format);
+
+										switch (format) {
+											case "db":
+												socket.end( JSON.stringify({ 
+													success: true,
+													msg: rtn,
+													count: 0,
+													data: 0 //ENGINE.returns(context)
+												}) );
+												break;
+
+											default:
+												socket.end( JSON.stringify(context.tau) );
+										}
+
+									});
+								});
+							}
+						});
+				});
 
 			return ENGINE;
 		},
@@ -154,9 +149,10 @@ var
 			107: new Error("engine cant reach assigned worker at this port"),
 			108: new Error("engine has no context"),
 			109: new Error("engine could not handoff to worker"),
-			110: new Error("engine type not supported"),
-			111: new Error("engine does not exists or is not enabled"),
-			200: new Error("engine provided invalid port")	
+			badType: new Error("engine type not supported"),
+			noEngine: new Error("engine does not exists or is not enabled"),
+			badPort: new Error("engine provided invalid port"),
+			noChipper: new Error("engine found no data chipper")			
 		},
 			
 		context: {},
@@ -177,7 +173,7 @@ var
 		/**
 		* @method allocate
 		* 
-		* Execute the supplied callback with the engine core that is/was allocated to a Client.Engine.Type.Instance
+		* Allocate the supplied callback cb(core) with the engine core that is/was allocated to a Client.Engine.Type.Instance
 		* thread as defined by this request (in the req.body and req.log).  If a workflow Instance is 
 		* provided, then the engine is assumed to be in a workflow (thus the returned core will remain
 		* on the same compile-step thread); otherwise, the engine is assumed to be standalone (thus forcing
@@ -205,16 +201,48 @@ var
 		* This method will callback cb(core) with the requested engine core; null if the core could not
 		* be located or allocated.
 		*/
-		allocate: function (req,args,cb) {	  // called by master to thread a stateful engine
+		allocate: function (req,args,cb) {
 			var 
 				sql = req.sql,
 				name = `${req.client}.${req.table}.${req.type}.${req.body.thread || "0"}`;
 
-			function execute(args,core,cb) {
+			function run(args,core,cb) {  //< run engine
 
+				function call(core,context,cb) {  //< Call (compile and/or step) an engine with callback cb(context) in its context.
+
+					//Trace(">call");
+
+					Each(context.tau, function (n,tau) { 			// prefix jobs with mount point
+						tau.job = ENGINE.paths.jobs + tau.job;
+					});
+
+					if ( engine = ENGINE[core.type] )
+						try {  												// call the engine
+				//Trace(">context",context);
+							var rtn = engine(core.name,context.port,context.tau,context,core.code);
+
+							Each(context.tau, function (n,tau) { 			// remove mount point from jobs
+								if (tau.job) 
+									tau.job = tau.job.substr(ENGINE.paths.jobs.length);
+							}); 
+
+							cb(null,context);
+						}
+
+						catch (err) {
+							cb(err,context);
+						}
+
+					else
+						cb (new Error(`Bad engine type ${core.type}`));
+
+					//save(sql,context.otau,context.port,core.name,core.save);
+				}
+				
 				var my_wid = CLUSTER.isMaster ? 0 : CLUSTER.worker.id;
 
-		//Trace(">exec isMas="+CLUSTER.isMaster);
+
+				//Trace(">exec isMas="+CLUSTER.isMaster);
 
 				if (CLUSTER.isMaster) 		// only the master can send work to its workers (and itself)
 
@@ -230,18 +258,18 @@ var
 							cb( ENGINE.errors[107] ); 
 					}
 					
-					else  					// engine was assigned to the master
-						ENGINE.compute(core, args, function (context) {
-							ENGINE.call(core, context, cb);
+					else  					// execute engine that was assigned to the master
+						ENGINE.execute(core, args, function (context) {
+							call(core, context, cb);
 						});
 
 				else
-				if (core.wid == my_wid)   	// client on worker port, but got lucky - pass to this stateful worker
-					ENGINE.compute(core, args, function (context) {
-						ENGINE.call(core, context, cb);
+				if (core.wid == my_wid)   	// execute engine that was assigned to this stateful worker
+					ENGINE.execute(core, args, function (context) {
+						call(core, context, cb);
 					});
 
-				else 						// client on worker port and unlucky - should be using master port
+				else 						// client on worker port - should be using master port
 					cb( ENGINE.errors[107] );
 			}
 
@@ -256,15 +284,16 @@ var
 			
 			sql.query("SELECT *,count(ID) AS found FROM simcores WHERE ? LIMIT 0,1", { // look for core
 				name:name
-			}) .on("result", function (core) { 	// found core
+			})
+			.on("result", function (core) { 	// found core
 
-				if (core.found) {  // core already initialized so execute it
+				if (core.found) {  // core already allocated so run it
 					Trace("CORE"+core.wid+" SWITCHED TO "+name);
 
 					core.code = "";
 					core.vars = "";
 
-					execute(args,core,cb);
+					run(args,core,cb);
 				}
 				
 				else // initialize core if an engine can be located 
@@ -273,7 +302,8 @@ var
 							Name:req.table,
 							Engine:req.type,
 							Enabled:true
-					}).on("result", function (eng) { // progam its engine
+					})
+					.on("result", function (eng) { // progam its engine
 
 		//Trace(">new engine");
 
@@ -303,11 +333,11 @@ var
 								client:core.client
 							});
 
-							execute(args,core,cb);
+							run(args,core,cb);
 						}
 						
 						else
-							cb( ENGINE.errors[111] );
+							cb( ENGINE.errors.noEngine );
 
 					});			
 
@@ -317,9 +347,9 @@ var
 		/**
 		 * @method save
 		 * 
-		 * Save fully addressed tau job files.
+		 * Save tau job files.
 		*/
-		save: function (sql,taus,port,engine,saves) {	// called by cluster worker to log engine output ports
+		save: function (sql,taus,port,engine,saves) {
 			var t = new Date();
 
 			Each(taus, function (n,tau) {
@@ -360,41 +390,6 @@ var
 			});
 		},
 
-		/**
-		 * @method call
-		 * Compile and/or step an engine in its context.
-		 * */
-		call: function (core,context,cb) {
-
-			//Trace(">call");
-
-			Each(context.tau, function (n,tau) { 			// prefix jobs with mount point
-				tau.job = ENGINE.paths.jobs + tau.job;
-			});
-
-			if ( engine = ENGINE[core.type] )
-				try {  												// call the engine
-		//Trace(">context",context);
-					var rtn = engine(core.name,context.port,context.tau,context,core.code);
-
-					Each(context.tau, function (n,tau) { 			// remove mount point from jobs
-						if (tau.job) 
-							tau.job = tau.job.substr(ENGINE.paths.jobs.length);
-					}); 
-
-					cb(null,context);
-				}
-
-				catch (err) {
-					cb(err,context);
-				}
-
-			else
-				cb (new Error(`Bad engine type ${core.type}`));
-
-			//save(sql,context.otau,context.port,core.name,core.save);
-		},
-
 		// CRUD interface
 
 		/**
@@ -407,7 +402,7 @@ var
 		 * read and compile an engine (implmementeed via restfull insert/POST, update/PUT,
 		 * select/GET, and delete/DELETE).  
 		*/
-		insert: function (req,res) {	// called by worker to step a stateful engine
+		insert: function (req,res) {	// step a stateful engine
 			var args = {
 				tau: req.body.tau || [],
 				port: req.body.port || "",
@@ -422,7 +417,7 @@ console.log(">step "+err);
 			});
 		},
 			
-		delete: function (req,res) {	// called by worker to free a stateful engine
+		delete: function (req,res) {	// free a stateful engine
 			var 
 				sql = req.sql;
 	
@@ -446,18 +441,7 @@ console.log([">kill ",err]);
 			});
 		},
 			
-		select: function (req,res) {	// called by worker to read a stateless engine 
-			/*function guard(q) {
-				if (q != true) {
-					for (var n in q) 
-						try { q[n] = (q[n]||"").parse(0); } catch (err) { }
-
-					for (var n in q) return q;
-				}
-
-				return true;
-			}*/
-
+		select: function (req,res) {	// compile and run a stateless engine 
 			function isempty(h) {
 				for (var n in h) return false;
 				return true;
@@ -470,16 +454,27 @@ console.log([">kill ",err]);
 				action: "select"
 			};
 
-			// override the engines query if a request query was given
-			delete req.query[""];
-			if ( !isempty(req.query) ) args.query = req.query;
+			
+			var query = req.query;
+			
+			if (query.job) {
+				if (chipper = ENGINE.chipper)
+					chipper(query);
+				else
+					res( ENGINES.errors.noChipper );
+			}
+			else {
+				//delete query[""];
+				if ( !isempty(query) )   // override the engines context query if a request query was given
+					args.query = query;
 
-			ENGINE.allocate(req,args,function (err,context) {
-				res( err || ENGINE.maptau(context) );
-			});
+				ENGINE.allocate(req,args,function (err,context) {
+					res( err || ENGINE.returns(context) );
+				});
+			}
 		},
 			
-		update: function (req,res) {	// called by worker to initialize a stateful engine
+		update: function (req,res) {	// initialize a stateful engine
 	
 			var args = {
 				tau: [ENGINE.tau()],
@@ -496,12 +491,11 @@ console.log([">init",err]);
 			});
 		},
 			
-		// Execute interfaces
-
 		/**
-		 * @method maptau
+		 * @method returns
+		 * Return tau parameters in matrix format
 		 * */
-		maptau: function (context) {
+		returns: function (context) {
 			var tau = context.tau || [];
 
 			return tau;
@@ -554,7 +548,7 @@ console.log([">init",err]);
 		/**
 		 * @method prime
 		 * 
-		 * Run the engine at callback cb in its context primed with vars from its context.entry, then export its 
+		 * Callback engine cb(context) with its context primed with vars from its context.entry, then export its 
 		 * context vars specified by its context.exit.
 		 * */
 		prime: function (context,cb) {
@@ -654,11 +648,12 @@ console.log([">init",err]);
 		},
 			
 		/**
-		 * @method compute
+		 * @method execute
+		 * Execute engine cb(context) in its primed context.
 		 * */
-		compute: function (core,args,cb) {	
+		execute: function (core,args,cb) {	
 
-		//Trace(">compute",core);
+		//Trace(">execute",core);
 
 			if (core.code) {
 				try {
@@ -745,7 +740,7 @@ console.log([">init",err]);
 				if (engine = context[port]) 
 					var err = engine(tau, context.ports[port]);  		//context[port](context.tau,context.context[port]);
 				else
-					var err = 200;
+					var err = ENGINE.errors.badPort;
 
 			else {
 		//console.log(context.query);
@@ -823,4 +818,8 @@ console.log([">init",err]);
 
 	});
 
+function Trace(msg,arg) {
+	ENUM.trace("E>",msg,arg);
+}
+	
 // UNCLASSIFIED
