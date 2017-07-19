@@ -397,9 +397,7 @@ var
 		 * @method select(read)
 		 * @method update(init)
 		 * 
-		 * The step, kill, read, and init methods provide a means to advance, deallocate, 
-		 * read and compile an engine (implmementeed via restfull insert/POST, update/PUT,
-		 * select/GET, and delete/DELETE).  
+		 * Provide methods to step/insert/POST, compile/update/PUT, run/select/GET, and free/delete/DELETE and engine.
 		*/
 		insert: function (req,res) {	// step a stateful engine
 			var args = {
@@ -440,7 +438,7 @@ console.log([">kill ",err]);
 			});
 		},
 			
-		select: function (req,res) {	// compile and run a stateless engine 
+		select: function (req,res) {	// run a stateless engine 
 			function isempty(h) {
 				for (var n in h) return false;
 				return true;
@@ -458,26 +456,18 @@ console.log([">kill ",err]);
 			if (query.job) {
 				if (chipper = ENGINE.chipper) {
 					var det = {
-						itau: [ENGINE.tau()],
-						otau: [],
-						call: ENGINE.opencv,
+						itau: [ENGINE.tau()],  // input events to engine
+						otau: [],  // output events from engine
+						call: ENGINE.opencv,  // engine
 						name: req.table,  // detector name
 						channel: query.job, // channel name
-						qos: query.qos,
-						size: query.size,
-						pixels: query.pixels,
-						scale: query.scale,
-						step: query.step,
-						range: query.range,
-						detects: query.detects,
-						job: query.job
-						//qos: 0, // quality of service regulator [ms]
-						//size: 50, 	// feature size in [m]
-						//pixels: 512, 	// pixels across a chip
-						//scale: 8, 		// scale^2 is max number of feature sites in a chip
-						//step:0.01, 	// relative seach step size
-						//range: 0.1, // relative search size
-						//detects: 8	// hits required to declare a detect
+						size: query.size || 50,  // feature size in [m]
+						pixels: query.pixels || 512, 	// samples across a chip [pixels]
+						scale: query.scale || 8,  // scale^2 is max number of features in a chip
+						step: query.step || 0.01, 	// relative seach step size
+						range: query.range || 0.1, // relative search size
+						detects: query.detects || 8,	// hits required to declare a detect
+						job: query.job // job name
 					};
 					
 					for (var n in det) delete query[n];
@@ -499,7 +489,7 @@ console.log([">kill ",err]);
 			}
 		},
 			
-		update: function (req,res) {	// initialize a stateful engine
+		update: function (req,res) {	// compile a stateful engine
 	
 			var args = {
 				tau: [ENGINE.tau()],
