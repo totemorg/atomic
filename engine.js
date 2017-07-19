@@ -26,8 +26,7 @@ var															// shortcuts
 	Each = ENUM.each;
 	
 var
-	ENGINE = module.exports = Copy( 
-		 //< engineIF built by node-gyp
+	ENGINE = module.exports = Copy( //< extend the engineIF built by node-gyp
 		require("./ifs/build/Release/engineIF"), {
 		
 		paths: {
@@ -453,13 +452,39 @@ console.log([">kill ",err]);
 				sql: req.sql,
 				action: "select"
 			};
-
 			
 			var query = req.query;
 			
 			if (query.job) {
-				if (chipper = ENGINE.chipper)
-					chipper(query);
+				if (chipper = ENGINE.chipper) {
+					var det = {
+						itau: [ENGINE.tau()],
+						otau: [],
+						call: ENGINE.opencv,
+						name: req.table,  // detector name
+						channel: query.job, // channel name
+						qos: query.qos,
+						size: query.size,
+						pixels: query.pixels,
+						scale: query.scale,
+						step: query.step,
+						range: query.range,
+						detects: query.detects,
+						job: query.job
+						//qos: 0, // quality of service regulator [ms]
+						//size: 50, 	// feature size in [m]
+						//pixels: 512, 	// pixels across a chip
+						//scale: 8, 		// scale^2 is max number of feature sites in a chip
+						//step:0.01, 	// relative seach step size
+						//range: 0.1, // relative search size
+						//detects: 8	// hits required to declare a detect
+					};
+					
+					for (var n in det) delete query[n];
+					
+					chipper(req, det);
+				}
+				
 				else
 					res( ENGINES.errors.noChipper );
 			}

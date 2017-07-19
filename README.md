@@ -59,11 +59,6 @@ Download the latest version with
 
 	git clone https://git.geointapps.org/acmesds/flex
 	
-Typically, you will want to redirect the following to your project:
-
-	ln -s ../myproject/test.js test.js 					# unit testing
-	ln -s ../myproject/maint.sh maint.sh 			# test startup and maint scripts
-	
 ## Examples
 
 Below samples are from engine/test.js unit tester.
