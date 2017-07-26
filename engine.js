@@ -150,8 +150,7 @@ var
 			109: new Error("engine could not handoff to worker"),
 			badType: new Error("engine type not supported"),
 			noEngine: new Error("engine does not exists or is not enabled"),
-			badPort: new Error("engine provided invalid port"),
-			noChipper: new Error("engine found no data chipper")			
+			badPort: new Error("engine provided invalid port")
 		},
 			
 		context: {},
@@ -453,40 +452,13 @@ console.log([">kill ",err]);
 			
 			var query = req.query;
 			
-			if (query.job) {
-				if (chipper = ENGINE.chipper) {
-					var det = {
-						itau: [ENGINE.tau()],  // input events to engine
-						otau: [],  // output events from engine
-						call: ENGINE.opencv,  // engine
-						name: req.table,  // detector name
-						channel: query.job, // channel name
-						size: query.size || 50,  // feature size in [m]
-						pixels: query.pixels || 512, 	// samples across a chip [pixels]
-						scale: query.scale || 8,  // scale^2 is max number of features in a chip
-						step: query.step || 0.01, 	// relative seach step size
-						range: query.range || 0.1, // relative search size
-						detects: query.detects || 8,	// hits required to declare a detect
-						job: query.job // job name
-					};
-					
-					for (var n in det) delete query[n];
-					
-					chipper(req, det);
-				}
-				
-				else
-					res( ENGINES.errors.noChipper );
-			}
-			else {
-				//delete query[""];
-				if ( !isempty(query) )   // override the engines context query if a request query was given
-					args.query = query;
+			//delete query[""];
+			if ( !isempty(query) )   // override the engines context query if a request query was given
+				args.query = query;
 
-				ENGINE.allocate(req,args,function (err,context) {
-					res( err || ENGINE.returns(context) );
-				});
-			}
+			ENGINE.allocate(req,args,function (err,context) {
+				res( err || ENGINE.returns(context) );
+			});
 		},
 			
 		update: function (req,res) {	// compile a stateful engine
