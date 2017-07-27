@@ -127,11 +127,14 @@ var
 			
 		plugin: {  // plugin libs available to all engines
 			MATH: require('mathjs'),
-			LWIP: require('../graceful-lwip'),
+			LWIP: require('graceful-lwip'),
 			DSP: require('digitalsignals'),
 			CRYPTO: require('crypto'),
-			RAN: require('randpr'),
-			GRP: require('groups'),
+			RAP: require('randpr'),
+			LIE: require('liegroup'),
+			INV: require("invar"),
+			TXP: require("transport"),
+			
 			CON: console,
 			console: console,
 			JSON: JSON
