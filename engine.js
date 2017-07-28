@@ -57,7 +57,7 @@ var
 						}
 					}	
 
-					sql.query("DELETE FROM app1.simcores", function (err) {
+					sql.query("DELETE FROM app.simcores", function (err) {
 						Trace(err || "RESET ENGINE CORES");
 					});
 
@@ -65,7 +65,7 @@ var
 
 					if (builtins = ENGINE.builtins)
 						for (var eng in  builtins) 
-							sql.query("INSERT INTO app1.engines SET ?", {
+							sql.query("INSERT INTO app.engines SET ?", {
 								Name: eng,
 								Enabled: 0,
 								Engine: "js",
@@ -283,7 +283,7 @@ var
 			to recompile itself.
 			*/
 			
-			sql.query("SELECT *,count(ID) AS found FROM simcores WHERE ? LIMIT 0,1", { // look for core
+			sql.query("SELECT *,count(ID) AS found FROM app.simcores WHERE ? LIMIT 0,1", { // look for core
 				name:name
 			})
 			.on("result", function (core) { 	// found core
@@ -299,9 +299,9 @@ var
 				
 				else // initialize core if an engine can be located 
 					sql.query(
-						"SELECT *,count(ID) AS found FROM engines WHERE least(?) LIMIT 0,1", {
+						"SELECT *,count(ID) AS found FROM app.engines WHERE least(?) LIMIT 0,1", {
 							Name:req.table,
-							Engine:req.type,
+							//Engine:req.type,
 							Enabled:true
 					})
 					.on("result", function (eng) { // progam its engine
