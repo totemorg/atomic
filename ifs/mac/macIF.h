@@ -70,9 +70,9 @@ typedef void V8MACHINE(const V8STACK& args);
 // Machine argument getters, entry and exit 
 
 #define NAMEARG(X,B) (X[0]->IsString() ? V8TOSTR(X[0],B) : V8NULLSTR)
-#define PORTARG(X,B) (X[1]->IsString() ? V8TOSTR(X[1],B) : V8NULLSTR)
+#define CODEARG(X,B) (X[1]->IsString() ? V8TOSTR(X[1],B) : V8NULLSTR)
 #define TAUARG(X)  (X[2]->IsArray()  ? V8TOARRAY(X[2])  : V8NULLARR)
-#define PARMARG(X) (X[2]->IsObject() ? V8TOOBJECT(X[2]) : V8NULLOBJ)
+#define CTXARG(X) (X[2]->IsObject() ? V8TOOBJECT(X[2]) : V8NULLOBJ)
 
 // Error codes
 
@@ -101,7 +101,7 @@ class MACHINE {
 	public:
 		MACHINE(void) {
 			steps = depth = drops = err = 0; 
-			name = port = NULL;
+			name = code = NULL;
 			scope = NULL; 
 			init = false;
 		}
@@ -112,14 +112,14 @@ class MACHINE {
 	
 		// monitor machine parms for debugging
 		int monitor(void) {
-			V8ARRAY keys = parm->GetOwnPropertyNames();
+			V8ARRAY keys = ctx->GetOwnPropertyNames();
 			char buf[MAXSTR];
 			
 			printf(TRACE "%s keys=%d\n",name,keys->Length());
 			
 			for (int n=0,N=keys->Length(); n<N; n++) {
 				str key = V8TOSTR(keys->Get(n), buf);
-				V8VALUE val = V8INDEX(parm,key);
+				V8VALUE val = V8INDEX(ctx,key);
 				printf(TRACE "key=%s isobj=%d\n",key,val->IsObject());
 			}
 			
@@ -135,10 +135,10 @@ class MACHINE {
 			if ( !args[1]->IsString() ) return badArgs;
 			if ( !args[2]->IsObject() ) return badArgs;
 				
-			port = PORTARG(args, portbuf);
-			parm = PARMARG(args);
+			code = CODEARG(args, codebuf);
+			ctx = CTXARG(args);
 
-//printf(TRACE "setup name=%s port=%s args=%d init=%d\n",name,port,args.Length(),(int) init);
+//printf(TRACE "setup name=%s code=%s args=%d init=%d\n",name,code,args.Length(),(int) init);
 
 			return 0;
 		}
@@ -198,14 +198,14 @@ class MACHINE {
 
 		int steps,depth,drops,err;	// number of steps, current call depth, dropped events, return code
 		bool init;	 	// machine flags
-		str name, port; 		// engine name, port name being latched, engine code file path, engine code
-		char portbuf[MAXSTR];
-		V8OBJECT parm;		// parameters
+		str name, code; 		// engine name, port name being latched, engine code file path, engine code
+		char codebuf[MAXSTR];
+		V8OBJECT ctx;		// parameters
 		Isolate *scope; 		// v8 garbage collection thread
 };
 
 // Reserves a pool MAC_machine[0,1,...] of machines.  Each MAC_machine accepts either
-// a [name, port, tau] list to execute a machine, or a [name, parm, code] list to program 
+// a [name, port, tau] list to execute a machine, or a [name, ctx, code] list to program 
 // a machine.  If the named machine does not exists in the pool, it is added to the pool.
 
 #define V8POOL(MAC,MAX,CLS) \

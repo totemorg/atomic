@@ -86,7 +86,7 @@ using namespace v8;
 #define STREMPTY(X) (X.length() ? false : true)
 #define STREQ(X,Y) (strcmp(X,Y) ? false : true) 
 
-// Test for special keys in oPortt parms
+// Test for special keys in oPort parms
 
 #define ISSQL(X) (strcmp(X,"sql")==0)
 #define ISQUERY(X) (strcmp(X,"query")==0)
@@ -517,7 +517,7 @@ printf(TRACE "CNN model=%s train=%s mean=%s label=%s\n",deploy_file.data(),param
 			else
 				CNN_classify = NULL;
 
-//printf(TRACE "oPortt initialized\n");
+//printf(TRACE "out port initialized\n");
 		};
 		
 		// HAAR classifier parameters
@@ -699,12 +699,12 @@ class CVMACHINE : public MACHINE {  	// HAAR machine via the MACHINE class
 	public:
 		// inherit base machine
 		CVMACHINE(void) : MACHINE() {
-			oPortt = NULL;
+			oPort = NULL;
 			iPort = NULL;
 		};
 	
 		~CVMACHINE(void) {
-			if (oPortt) delete oPortt;
+			if (oPort) delete oPort;
 			if (iPort) delete iPort;
 		};
 	
@@ -822,10 +822,10 @@ printf(TRACE "detects=%d\n",detects.features);
 		 * */
 	
 		int stepStateless(void) {
-			err = latch(*iPort, V8INDEX(parm,"frame")->ToObject() );
+			err = latch(*iPort, V8INDEX(ctx,"frame")->ToObject() );
 			if (err) return err;
 			
-			err = latch(V8INDEX(parm,"detector")->ToObject() ,*oPortt);
+			err = latch(V8INDEX(ctx,"detector")->ToObject() ,*oPort);
 			return err; 
 		}
 		
@@ -837,14 +837,14 @@ printf(TRACE "detects=%d\n",detects.features);
 			str Key = "detector";
 
 			//printf(TRACE "pgm port %s\n",Key);
-			if (oPortt) delete oPortt;  
-			oPortt = new OPORT(scope, Key, V8INDEX(parm,Key)->ToObject());
+			if (oPort) delete oPort;  
+			oPort = new OPORT(scope, Key, V8INDEX(ctx,Key)->ToObject());
 
 			Key = "frame";
 
 			//printf(TRACE "pgm port %s\n",Key);
 			if (iPort) delete iPort;  
-			iPort = new IPORT(scope, Key, V8INDEX(parm,Key)->ToObject());
+			iPort = new IPORT(scope, Key, V8INDEX(ctx,Key)->ToObject());
 
 			init = true;
 			return 0;
@@ -866,7 +866,7 @@ printf(TRACE "detects=%d\n",detects.features);
 			
 		}
 	
-		OPORT *oPortt;
+		OPORT *oPort;
 		IPORT *iPort;
 };
 

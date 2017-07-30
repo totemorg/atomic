@@ -155,7 +155,8 @@ var
 			noEngine: new Error("engine does not exists or is not enabled"),
 			badPort: new Error("engine provided invalid port"),
 			badCode: new Error("engine returned invalid code"),
-			lostContext: new Error("engine context lost")
+			lostContext: new Error("engine context lost"),
+			noStepper: new Error("engine has no stepper")
 		},
 			
 		context: {},
@@ -244,7 +245,6 @@ var
 				
 				var my_wid = CLUSTER.isMaster ? 0 : CLUSTER.worker.id;
 
-
 				//Trace(">exec isMas="+CLUSTER.isMaster);
 
 				if (CLUSTER.isMaster) 		// only the master can send work to its workers (and itself)
@@ -284,7 +284,6 @@ var
 			specified (e.g. when engine called outside a workflow), then the engine will be forced
 			to recompile itself.
 			*/
-			
 			sql.query("SELECT *,count(ID) AS found FROM app.simcores WHERE ? LIMIT 0,1", { // look for core
 				name:name
 			})
@@ -299,18 +298,12 @@ var
 					run(args,core,cb);
 				}
 				
-				else // initialize core if an engine can be located 
-					sql.query(
-						"SELECT *,count(ID) AS found FROM app.engines WHERE least(?) LIMIT 0,1", {
-							Name:req.table,
-							//Engine:req.type,
-							Enabled:true
-					})
-					.on("result", function (eng) { // progam its engine
-
-		//Trace(">new engine");
-
-						if (eng.found) {
+				else  // initialize core if an engine can be located 
+					ENGINE.find({name: name, sql:sql}, function (err,eng) {
+						if (err)
+							cb( ENGINE.errors.noEngine );
+						
+						else {
 							if (CLUSTER.isMaster)
 								var wid = ENGINE.cores 			// provide stateful worker
 										? ENGINE.nextcore = (ENGINE.nextcore % ENGINE.cores) + 1 
@@ -320,7 +313,7 @@ var
 
 							var core = { 								// provide an engine core
 								name: name,
-								type: eng.Engine.toLowerCase(),
+								type: eng.Engine,
 								wid: wid,
 								client: req.client,
 								code: eng.Code,
@@ -338,12 +331,7 @@ var
 
 							run(args,core,cb);
 						}
-						
-						else
-							cb( ENGINE.errors.noEngine );
-
-					});			
-
+					});	
 			});
 		},
 
@@ -392,97 +380,7 @@ var
 				}
 			});
 		},
-
-		// DUIS interface
-
-		/**
-		 * @method insert(step)
-		 * @method delete(kill)
-		 * @method select(read)
-		 * @method update(init)
-		 * 
-		 * Provide methods to step/insert/POST, compile/update/PUT, run/select/GET, and free/delete/DELETE and engine.
-		*/
-		insert: function (req,res) {	// step a stateful engine
-			var args = {
-				tau: req.body.tau || [],
-				port: req.body.port || "",
-				sql: req.sql,
-				query: false,
-				action: "insert"
-			};
-
-			ENGINE.allocate(req,args,function (err,context) {
-console.log(">step "+err);
-				res(err || context.tau);
-			});
-		},
-			
-		delete: function (req,res) {	// free a stateful engine
-			var 
-				sql = req.sql;
-	
-			var args = {
-				tau: [],
-				port: "",
-				sql: req.sql,
-				action: "delete"
-			};
-			
-			ENGINE.allocate(req,args,function (err,context) {
-console.log([">kill ",err]);
-
-				if (err) 
-					res(err);
-				
-				else {
-					sql.query("DELETE FROM simcores WHERE ?", {client:req.client});
-					res( "ok" ); 
-				}
-			});
-		},
-			
-		select: function (req,res) {	// run a stateless engine 
-			function isempty(h) {
-				for (var n in h) return false;
-				return true;
-			}
-
-			var args = {
-				tau: [ENGINE.tau()],
-				port: req.query.port || "",
-				sql: req.sql,
-				action: "select"
-			};
-			
-			var query = req.query;
-			
-			//delete query[""];
-			if ( !isempty(query) )   // override the engines context query if a request query was given
-				args.query = query;
-
-			ENGINE.allocate(req,args,function (err,context) {
-				res( err || ENGINE.returns(context) );
-			});
-		},
-			
-		update: function (req,res) {	// compile a stateful engine
-	
-			var args = {
-				tau: [ENGINE.tau()],
-				port: "",
-				sql: req.sql,
-				query: false,
-				action: "update"
-			};
-
-			ENGINE.allocate(req,args,function (err,context) {
-console.log([">init",err]);
-
-				res(err || "ok"); 
-			});
-		},
-			
+		
 		/**
 		 * @method returns
 		 * Return tau parameters in matrix format
@@ -537,6 +435,261 @@ console.log([">init",err]);
 			* */
 		},
 			
+		//============= DUIS interface between multiple client workflows
+			
+		sq: function (name,port,tau,context,code) {  // SQL engines
+
+			if (port) 
+				return context[port](context.tau,context.ports[port]);
+
+			if (code) { 
+				context.SQL = {};
+				context.ports = context.ports || {};
+
+				VM.runInContext(code,context);
+
+				ENGINE.app.select[name] = function (req,cb) { context.SQL.select(req.sql,[],function (recs) {cb(recs);}); }
+				ENGINE.app.insert[name] = function (req,cb) { context.SQL.insert(req.sql,[],function (recs) {cb(recs);}); }
+				ENGINE.app.delete[name] = function (req,cb) { context.SQL.delete(req.sql,[],function (recs) {cb(recs);}); }
+				ENGINE.app.update[name] = function (req,cb) { context.SQL.update(req.sql,[],function (recs) {cb(recs);}); }
+			}
+			
+			else  // in cluster mode, so no req,cb exists to call ENGINE.app[action], so call custom version
+				context.SQL[context.action](context.sql,[],function (recs) {
+					context.tau = [1,2,3];  // cant work as no cb exists
+				});
+
+			return 0;	
+		},
+
+		ma: function (name,port,tau,context,code) {  // MATLAB-like engines
+	
+			if (port)
+				return context[port](context.tau,context.context[port]);
+
+			if (code) {
+				context.code = code;
+				if (context.require) 
+					ENGINE.plugin.MATH.import( context.require );
+			}
+
+			ENGINE.plugin.MATH.eval(context.code,context);
+
+			Trace({R:context.R, A:context.A, X:context.X});
+			return 0;
+		},
+			
+		js: function (name,port,tau,context,code) {  // Javascript engines
+
+		//Trace([name,port,tau,code]);
+
+			if (tau.constructor == Object) {
+				context = ENGINE.context[name] = VM.createContext(Copy(ENGINE.plugin,tau));
+				context.code = port;
+				port = "";
+			}
+			
+			else	
+			if (!context) 
+				context = ENGINE.context[name];
+			
+			else
+			if (code)
+				context.code = code;
+
+			if (port) 
+				if (engine = context[port]) 
+					var err = engine(tau, context.ports[port]);  		//context[port](context.tau,context.context[port]);
+				else
+					var err = ENGINE.errors.badPort;
+
+			else {
+		//console.log(context.query);
+		//console.log(context.code);
+				VM.runInContext(context.code,context);
+		console.log(context.tau);		
+				var err = 0;
+			}
+
+			return ENGINE.errors[err];
+		},
+
+		py: function (name,port,tau,context,code) {  // Python engines
+
+		//Trace(">py run",[name,port,code]);
+			
+			if (code) {
+				delete context.sql;
+				context.ports = context.ports || {};  	// engine requires valid ports hash
+				//context.tau = tau || []; 				// engine requires valid event list
+
+				/*
+				delete context.sql;				// remove stuff that would confuse engine
+
+				for (var n in ENGINE.plugin) 	
+					delete context[n];
+				*/
+				
+				var err = ENGINE.python(name,code,context);
+
+				if (ctxtau = context.tau)
+					for (var n=0,N=ctxtau.length; n<N; n++) tau[n] = ctxtau[n];
+			}
+			
+			else
+				var rtn = ENGINE.python(name,port,context);
+
+			return ENGINE.errors[err];
+		},
+			
+		cv: function (name,port,tau,context,code) {  // OPENCV engines
+
+		//Trace(">cv run",[name,port,code]);
+
+			if (code) {
+				context.ports = context.ports || {};  	// engine requires valid ports hash
+				context.tau = tau || []; 				// engine requires valid event list
+
+				/*
+				delete context.sql;				// remove stuff that would confuse engine
+
+				for (var n in ENGINE.plugin) 	
+					delete context[n];
+				*/
+				
+				var err = ENGINE.opencv(name,code,context);
+
+				for (var n=0,N=context.tau.length; n<N; n++) 
+					tau[n] = context.tau[n];
+			}
+			
+			else
+				var err = ENGINE.opencv(name,port,tau);
+
+			return ENGINE.errors[err];
+		},
+		
+		sh: function (name,port,tau,context,code) {  // Linux shell engines
+			if (code) context.code = code;
+
+			CP.exec(context.code, function (err,stdout,stderr) {
+				Trace(err || stdout);
+			});
+
+			return null;
+		},
+
+		/**
+		 * @method insert(step)
+		 * @method delete(kill)
+		 * @method select(read)
+		 * @method update(init)
+		 * 
+		 * Provide methods to step/insert/POST, compile/update/PUT, run/select/GET, and free/delete/DELETE and engine.
+		*/
+		insert: function (req,res) {	// step a stateful engine
+			var args = {
+				tau: req.body.tau || [],
+				port: req.body.port || "",
+				sql: req.sql,
+				query: false,
+				action: "insert"
+			};
+
+			ENGINE.allocate(req,args,function (err,context) {
+console.log(">step "+err);
+				res(err || context.tau);
+			});
+		},
+			
+		delete: function (req,res) {	// free a stateful engine
+			var 
+				sql = req.sql;
+	
+			var args = {
+				tau: [],
+				port: "",
+				sql: req.sql,
+				action: "delete"
+			};
+			
+			ENGINE.allocate(req,args,function (err,context) {
+console.log([">kill ",err]);
+
+				if (err) 
+					res(err);
+				
+				else {
+					sql.query("DELETE FROM simcores WHERE ?", {client:req.client});
+					res( "ok" ); 
+				}
+			});
+		},
+			
+		select: function (req,res) {	// run a stateless engine 
+			var ctx = {
+				sql: req.sql,
+				name: req.table,
+				tau: [ENGINE.tau()],
+				port: req.query.port || "",
+				query: req.query
+				//action: "select"
+			};
+			
+			ENGINE.run( ctx, function (step) {
+				if ( step ) 
+					res( ( err = step() ) ? err : ctx.tau );
+
+				else
+					res( ENGINE.errors.noStepper );
+			});
+		},
+			
+		update: function (req,res) {	// compile a stateful engine
+	
+			var args = {
+				tau: [ENGINE.tau()],
+				port: "",
+				sql: req.sql,
+				query: false,
+				action: "update"
+			};
+
+			ENGINE.allocate(req,args,function (err,context) {
+console.log([">init",err]);
+
+				res(err || "ok"); 
+			});
+		},
+			
+		/**
+		 * @method execute
+		 * Execute engine cb(context) in its primed context.
+		 * */
+		execute: function (core,args,cb) {	// add args and plugins to engine context then callback cb(context)
+
+		//Trace(">execute",core);			
+			if (core.code) {  // define new context and prime
+				try {  // get context vars for this engine
+					eval("var vars = "+ (core.vars || "{}"));
+				}
+				
+				catch (err) {
+					var vars = {};
+				}
+
+				var context = ENGINE.context[core.name] = VM.createContext(Copy(ENGINE.plugin,Copy(args,vars)));
+				ENGINE.prime(context,cb);
+			}
+			
+			else {  // use existing context
+				var context = Copy( args, ENGINE.context[core.name] || VM.createContext({}) );
+				cb(context);
+			}
+		},
+			
+		//============= Interface for private (e.g. chipper) workflows
+		
 		/**
 		 * @method prime
 		 * 
@@ -639,25 +792,35 @@ console.log([">init",err]);
 				cb(context);
 		},
 
-		run: function (ctx,cb) {
-			ENGINE.thread( function (sql) {
-				ctx.sql = sql;
-				
-				sql.query(
-					"SELECT *,count(ID) AS found FROM app.engines WHERE least(?) LIMIT 0,1", {
-						Name: ctx.name,
-						Enabled: true
-				})
+		find: function (ctx, cb) { //< callback cb(eng) with engine defined by its context
+			ctx.sql.query(
+				"SELECT *,count(ID) AS found FROM app.engines WHERE least(?) LIMIT 0,1", {
+					Name: ctx.name,
+					Enabled: true
+			})
 
-				.on("result", function (eng) { // progam its engine
+			.on("result", function (eng) { // progam its engine
+				cb(eng.found ? null : ENGINE.errors.noEngine, eng);
+			})
 
-					//console.log(eng);
+			.on("error", function (err) {
+				cb( err, null );
+			});
+		},
+			
+		run: function (ctx,cb) { //< callback cb(step) with its stepper
+			ENGINE.find(ctx, function (err,eng) {
+				if (err)
+					cb(null);
+
+				else { // progam and prime it
 					var 
 						id = eng.Name + "." + (ctx.thread || ""),
 						type = eng.Engine;
-					
+
 					if (eng.found) 
 						if ( engine = ENGINE.init[type] ) {
+
 							try {  // prime its vars
 								eval( "var vars = " + (eng.Vars || "{}") );
 								Copy(vars, ctx );
@@ -667,126 +830,46 @@ console.log([">init",err]);
 							}
 
 							ENGINE.prime(ctx, function () {  // prime its vars via sql
-							
+
 								engine(id, eng.Code || "", ctx, function (err, ctx) {
-									
+
 									if ( err )
 										cb( null );
 
 									else 
 										if ( engine = ENGINE.step[type] ) 
 											cb( function step() {  // Callback with its stepper
-												try {  	// call the engine
+												try {  	// step the engine
 													return engine(id, eng.Code, ctx);
 												}
 
 												catch (err) {
-													return err;
+													Trace( err );
 												}
 											});
-									
+
 										else
-											return ENGINE.errors.badType;
+											cb( null );
 								});
-							
+
 							});
 						}
-					
+
 						else
-							cb ( ENGINE.errors.badType );
-
-					else
-						cb( ENGINE.errors.noEngine );
-				})
-
-				.on("error", function (err) {
-					cb( err );
-				});
-			});			
-		},
-			
-		/**
-		 * @method execute
-		 * Execute engine cb(context) in its primed context.
-		 * */
-		execute: function (core,args,cb) {	// add args and plugins to engine context then callback cb(context)
-
-		//Trace(">execute",core);			
-			if (core.code) {  // define new context and prime
-				try {  // get context vars for this engine
-					eval("var vars = "+ (core.vars || "{}"));
+							cb( null );
 				}
-				catch (err) {
-					var vars = {};
-				}
-
-				var context = ENGINE.context[core.name] = VM.createContext(Copy(ENGINE.plugin,Copy(args,vars)));
-				ENGINE.prime(context,cb);
-			}
-			
-			else {  // use existing context
-				var context = Copy( args, ENGINE.context[core.name] || VM.createContext({}) );
-				cb(context);
-			}
+			});
 		},
 			
-		// SQL engines
-		sql: function (name,port,tau,context,code) {
-
-			if (port) 
-				return context[port](context.tau,context.ports[port]);
-
-			if (code) { 
-				context.SQL = {};
-				context.ports = context.ports || {};
-
-				VM.runInContext(code,context);
-
-				ENGINE.app.select[name] = function (req,cb) { context.SQL.select(req.sql,[],function (recs) {cb(recs);}); }
-				ENGINE.app.insert[name] = function (req,cb) { context.SQL.insert(req.sql,[],function (recs) {cb(recs);}); }
-				ENGINE.app.delete[name] = function (req,cb) { context.SQL.delete(req.sql,[],function (recs) {cb(recs);}); }
-				ENGINE.app.update[name] = function (req,cb) { context.SQL.update(req.sql,[],function (recs) {cb(recs);}); }
-			}
-			
-			else  // in cluster mode, so no req,cb exists to call ENGINE.app[action], so call custom version
-				context.SQL[context.action](context.sql,[],function (recs) {
-					context.tau = [1,2,3];  // cant work as no cb exists
-				});
-
-			return 0;	
-		},
-
-		// MATLAB-like engines
-		mat: function (name,port,tau,context,code) {
-	
-			if (port)
-				return context[port](context.tau,context.context[port]);
-
-			if (code) {
-				context.code = code;
-				if (context.require) 
-					ENGINE.plugin.MATH.import( context.require );
-			}
-
-			ENGINE.plugin.MATH.eval(context.code,context);
-
-			Trace({R:context.R, A:context.A, X:context.X});
-			return 0;
-		},
-			
-		init: {
+		init: {  // program engines
 			py: function pyInit(name,code,ctx,cb)  {
 				delete ctx.sql;
+				if ( !ctx.ports ) ctx.ports = {};
 				cb( ENGINE.python(name,code,ctx), ctx );
 			},
 			
 			cv: function cvInit(name,code,ctx,cb)  {
 				delete ctx.sql;
-				console.log({
-					cvctx: ctx,
-					code: code
-				});
-				
 				cb( ENGINE.opencv(name,code,ctx), ctx );
 			},
 			
@@ -801,148 +884,90 @@ console.log([">init",err]);
 				VM.runInContext(code,vmctx);
 
 				cb( null, vmctx );
+			},
+			
+			ma: function maInit(name,code,ctx,cb) {
+
+				ctx.code = code;
+				Copy(ENGINE.plugin,ctx);
+				
+				if (ctx.require) 
+					ENGINE.plugin.MATH.import( ctx.require );
+
+				ENGINE.plugin.MATH.eval(ctx.code,ctx);
+
+				//Trace({ma: ctx});
+				cb( null, ctx );
+			},
+			
+			sq:  function sqInit(name,code,ctx,cb) {
+				ctx.SQL[ctx.action](ctx.sql, [], function (recs) {
+					ctx.tau = [1,2,3];  // cant work as no cb exists
+				});
+
+				return null;	
 			}
 		},
 			
-		step: {
-			py: function (name,port,tau) {
-				return ( err = ENGINE.python(name,port,tau) )
+		step: {  // step engines
+			py: function pyStep(name,code,ctx) {
+				return ( err = ENGINE.python(name,code,ctx) )
 					? ENGINE.errors[err] || ENGINE.errors.badCode
 					: null;
 			},
 			
-			cv: function (name,port,tau) {
-				return ( err = ENGINE.opencv(name,port,tau) )
+			cv: function cvStep(name,code,ctx) {
+				return ( err = ENGINE.opencv(name,code,ctx) )
 					? ENGINE.errors[err] || ENGINE.errors.badCode
 					: null;
 			},
 			
-			js: function (name,port,tau) {
-				console.log(`step ${name} port ${port} taus=${tau.length}`);
+			js: function jsStep(name,code,ctx) {
+				console.log({
+					step: name,
+					code: code
+				});
 				
 				var vmctx = ENGINE.context[name];
 
 				if ( vmctx )
-					if (port) 
-						var err = ( port = vmctx[port] ) 
-							? port(tau, vmctx.ports[port])
+					if (vmctx.port) 
+						return ( port = vmctx[vmctx.port] ) 
+							? port(ctx.tau, vmctx.ports[port])
 							: ENGINE.errors.badPort;
 
 					else {
 						VM.runInContext(vmctx.code,vmctx);
-						var err = 0;
+						return null;
 					}
 
 				else
 					return ENGINE.errors.lostContext;
-				
-				return ENGINE.errors[err];
-			}
-		},
+			},
 			
-		// Javascript engines
-		js: function (name,port,tau,context,code) {
+			ma: function maStep(name,code,ctx) {
+				ENGINE.plugin.MATH.eval(ctx.code,ctx);
 
-		//Trace([name,port,tau,code]);
-
-			if (tau.constructor == Object) {
-				context = ENGINE.context[name] = VM.createContext(Copy(ENGINE.plugin,tau));
-				context.code = port;
-				port = "";
-			}
+				//Trace({R:ctx.R, A:ctx.A, X:ctx.X});
+				return null;
+			},
 			
-			else	
-			if (!context) 
-				context = ENGINE.context[name];
-			
-			else
-			if (code)
-				context.code = code;
+			sq: function sqStep(name,code,ctx) {
 
-			if (port) 
-				if (engine = context[port]) 
-					var err = engine(tau, context.ports[port]);  		//context[port](context.tau,context.context[port]);
-				else
-					var err = ENGINE.errors.badPort;
+				ctx.SQL = {};
+				ctx.ports = ctx.ports || {};
 
-			else {
-		//console.log(context.query);
-		//console.log(context.code);
-				VM.runInContext(context.code,context);
-		console.log(context.tau);		
-				var err = 0;
-			}
+				VM.runInContext(code,ctx);
 
-			return ENGINE.errors[err];
-		},
+				ENGINE.app.select[name] = function (req,cb) { ctx.SQL.select(req.sql,[],function (recs) {cb(recs);}); }
+				ENGINE.app.insert[name] = function (req,cb) { ctx.SQL.insert(req.sql,[],function (recs) {cb(recs);}); }
+				ENGINE.app.delete[name] = function (req,cb) { ctx.SQL.delete(req.sql,[],function (recs) {cb(recs);}); }
+				ENGINE.app.update[name] = function (req,cb) { ctx.SQL.update(req.sql,[],function (recs) {cb(recs);}); }
 
-		// Python engines
-		py: function (name,port,tau,context,code) {
-
-		//Trace(">py run",[name,port,code]);
-
-			if (code) {
-				context.ports = context.ports || {};  	// engine requires valid ports hash
-				context.tau = tau || []; 				// engine requires valid event list
-
-				/*
-				delete context.sql;				// remove stuff that would confuse engine
-
-				for (var n in ENGINE.plugin) 	
-					delete context[n];
-				*/
-				
-				var err = ENGINE.python(name,code,context);
-
-				for (var n=0,N=context.tau.length; n<N; n++) 
-					tau[n] = context.tau[n];
-			}
-			
-			else
-				var rtn = ENGINE.python(name,port,tau);
-
-			return ENGINE.errors[err];
-		},
-			
-		// OPENCV engines
-		cv: function (name,port,tau,context,code) {
-
-		//Trace(">cv run",[name,port,code]);
-
-			if (code) {
-				context.ports = context.ports || {};  	// engine requires valid ports hash
-				context.tau = tau || []; 				// engine requires valid event list
-
-				/*
-				delete context.sql;				// remove stuff that would confuse engine
-
-				for (var n in ENGINE.plugin) 	
-					delete context[n];
-				*/
-				
-				var err = ENGINE.opencv(name,code,context);
-
-				for (var n=0,N=context.tau.length; n<N; n++) 
-					tau[n] = context.tau[n];
-			}
-			
-			else
-				var err = ENGINE.opencv(name,port,tau);
-
-			return ENGINE.errors[err];
-		},
-
-		// Linux shell engines
-		sh: function (name,port,tau,context,code) {
-			if (code) context.code = code;
-
-			CP.exec(context.code, function (err,stdout,stderr) {
-				Trace(err || stdout);
-			});
-
-			return null;
+				return null;	
+			}			
 		}
-
+			
 	});
 
 function Trace(msg,arg) {

@@ -41,18 +41,18 @@ using namespace v8;
 #include <string.h>
 using namespace std;
 
-// tau machine interface
+// machine interface
 #include <macIF.h>
 
 // Machine specs
 
 #define TRACE "py>"
-#define TAUIDX(X) "TAU['" X "']"
+#define CTXINDEX(X) "ctx['" X "']"
 #define LOCAL(X) PyDict_GetItemString(pLocals,X)
 
-// TAU hash members to pass to standalone machine
+// hash members to pass to standalone machine
 
-#define PYTAU "tau"		// py var for list of event tokens
+#define PYCONTEXT "ctx"		// py redudant context if needed
 #define PYPORT "port"		// py string for function (aka port) to call stateful machine, or empty to call stateless machine.
 #define PYERR "err"			// py number to return erro code
 #define PYPARM "parm" 		// py hash reserved to return hash from external modules
@@ -60,9 +60,9 @@ using namespace std;
 
 // Parameters used to wrap python code to provide sql connector and debugging
 
-#define WRAP_ADDTRACE false
+#define WRAP_ADDTRACE trace
 #define WRAP_ADDCATCH false
-#define WRAP_ADDCONNECT true
+#define WRAP_ADDSQLCON true
 #define WRAP_DBPASS getenv("DB_PASS")
 #define WRAP_DBNAME getenv("DB_NAME")
 #define WRAP_DBUSER getenv("DB_USER")
@@ -90,7 +90,7 @@ str indent(str code) {
 str wrap(str code,str port,V8OBJECT parm,str idx,str args) {  // wrap user python code in machine interface
 	str rtn = mac_strclone(strlen(code)+1000,"");
 	
-	if (strlen(args)) { // add tau front and back end if python args specified
+	if (strlen(args)) { // add context front and back end if python args specified
 
 #if WRAP_ADDTRACE
 		strcat(rtn, 
@@ -124,7 +124,7 @@ str wrap(str code,str port,V8OBJECT parm,str idx,str args) {  // wrap user pytho
 		);
 #endif
 
-#if WRAP_ADDCONNECT
+#if WRAP_ADDSQLCON
 
 		// install the python2.7 connector (rpm -Uvh mysql-conector-python-2.x.rpm)
 		// into /usr/local/lib/python2.7/site-packages/mysql, then copy
@@ -195,7 +195,7 @@ str wrap(str code,str port,V8OBJECT parm,str idx,str args) {  // wrap user pytho
 					"\t" PYERR " = 0\n",
 			rtn,idx,idx,args);
 			
-#if WRAP_ADDCONNECT
+#if WRAP_ADDSQLCON
 		strcat(rtn,  // close sql connection
 			"\n#exit code\n"
 			"SQL.commit()\n"
@@ -210,6 +210,7 @@ str wrap(str code,str port,V8OBJECT parm,str idx,str args) {  // wrap user pytho
 		);
 #endif
 	}
+	
 	else 		// use user code as-is
 		strcat(rtn,code);
 	
@@ -223,6 +224,8 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 		PYMACHINE(void) : MACHINE() { 
 			pModule = NULL;
 			pCode = NULL;
+			port = "";
+			path = "";
 		};
 
 		~PYMACHINE(void) {
@@ -328,7 +331,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 				return err;
 			
 			else
-			if ( init ) { 					// Program module
+			if ( !init ) { 					// Program module
 				/* 
 				 * All attempts to redirect Initialize to the anaconda install fail (SetProgramName, SetPythonName, redefine PYTHONHOME,
 				 * virtualized, etc, etc).  If PYTHONORIGIN = /usr is the default python install base, we must alias /usr/lib/python2.7 
@@ -345,11 +348,15 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 				Py_Initialize(); 
 				
 				path = strstr(port,"\n") ? NULL : port;
+				init = true;
+
+//printf(TRACE "compile path=%s port=%s\n",path,port);
 				
-				if ( path ) { 				// load external module
+				if ( strlen(path) ) { 				// load external module
 					pModule = PyImport_Import(PyString_FromString(path));
 					if ( !pModule ) return badModule;
 				}
+				
 				else {
 					if (pCode) { 			// free old stuff
 						Py_XDECREF(pCode);
@@ -361,11 +368,11 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 					pModule = PyModule_New(name);
 					if ( !pModule ) return badModule;
 
-					// Prime local dictionary with context parm hash
+					// Prime local dictionary with context hash
 					pLocals = PyModule_GetDict(pModule);
 //printf(TRACE "locals=%p/\n",pLocals);
 					
-					PyDict_Merge(pLocals, clone(parm), true);
+					PyDict_Merge(pLocals, clone(ctx), true);
 					
 					PyDict_SetItemString(pLocals, PYERR, PyInt_FromLong(0));
 					
@@ -376,37 +383,38 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 					pMain = PyImport_AddModule("__main__");
 					pGlobals = PyModule_GetDict(pMain);	
 //printf(TRACE "globals=%p\n",pGlobals);
-
-					// Compile code with empty port
-					code = port;
-					port = "";
 					
-					str comp = wrap(
+					str comp = wrap(  // generate code to compile
 						code,
 						port,
-						V8INDEX(parm,PYPORTS)->ToObject(),
+						V8INDEX(ctx,PYPORTS)->ToObject(),
 						PYPORT,
-						PYTAU "," PYPORTS "[" PYPORT "]"
+						PYCONTEXT "," PYPORTS "[" PYPORT "]"
 					);
 
-//printf(TRACE "pgm compile=\n%s pfi=%d\n",comp,Py_file_input);
+//printf(TRACE "pgm compile=\n%s infile=%d\n",comp,Py_file_input);
 
 					// For some reason cant recompile already compiled code.  
 					pCodeTest = (PyCodeObject*) Py_CompileString(comp, "py>traceback", Py_file_input);
 
 					if (pCodeTest) pCode = pCodeTest;
+					
 					else
 						printf(TRACE "reprogram ignored!!\n");
+
+//printf(TRACE "pcode %s\n", (pCode ? "generated" : "missing"));
 					
 					//Py_Finalize(); // dont do this - will cause segment fault
 				}
 			}
 			
+//printf(TRACE "pcode %s\n", (pCode ? "generated" : "missing"));
+			
 			if (!pCode) 
 				err = badInit;
 			
 			else		
-			if (path) {			// Step external module
+			if ( strlen(path) ) {			// Step external module
 //printf(TRACE "find port=%s\n",port);
 				pFunc = PyObject_GetAttrString(pModule, port);
 				//err = PyInt_AsLong( PyRun_String(port, Py_file_input, pGlobals, pLocals) );
@@ -414,7 +422,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 					
 				if ( PyCallable_Check(pFunc) ) {
 //printf(TRACE "module step\n");
-					PyTuple_SetItem(pArgs, 0, clone(tau));
+					PyTuple_SetItem(pArgs, 0, clone(ctx));
 					PyTuple_SetItem(pArgs, 1, LOCAL(PYPARM));
 
 					err = PyInt_AsLong( PyObject_CallObject(pFunc, pArgs) );
@@ -422,37 +430,39 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 //printf(TRACE "module err: %ld\n", err);
 					Py_XDECREF(pFunc);
 
-					set(tau,clone( PyTuple_GetItem(pArgs,0) ));
-//monitor("py set tau[0]",tau->ToObject()->Get(0)->ToObject());
+					//set(ctx,clone( PyTuple_GetItem(pArgs,0) )->ToObject() );
+//monitor("py set ctx[0]",ctx->ToObject()->Get(0)->ToObject());
 				}
 				else 									// Bad call
 					err = badInit; 
 			}
 			
 			else 
-			if (strlen(port)) {		// Stateful step
-//printf(TRACE "port call=%s\n",port);
+			if ( strlen(port) ) {		// Stateful step
+printf(TRACE "Stateful call port=%s\n",port);
 				PyDict_SetItemString(pLocals, PYPORT, PyString_FromString(port) );
-				PyDict_SetItemString(pLocals, PYTAU, clone(tau) );
+				//PyDict_SetItemString(pLocals, PYCONTEXT, clone(ctx) );
 
 				PyEval_EvalCode(pCode,pGlobals,pLocals);
 				err = PyInt_AsLong( LOCAL(PYERR) );
 				
-				set(tau, clone( LOCAL(PYTAU) ));
+				//set(ctx, clone( LOCAL(PYCONTEXT) ));  // update context with local context
+				set(ctx, clone( pLocals )->ToObject() );				
 			}
 			
 			else {					// Stateless step
-//printf(TRACE "portless call\n");
+//printf(TRACE "Stateless call\n");
 
 				pLocals = PyModule_GetDict(pModule);
 				pGlobals = PyModule_GetDict(pMain);	
 
-				PyDict_SetItemString(pLocals, PYPORT, PyString_FromString("") );
-				PyDict_SetItemString(pLocals, PYTAU, clone( tau ));
+				PyDict_SetItemString(pLocals, PYPORT, PyString_FromString( port ) );
+				//PyDict_SetItemString(pLocals, PYCONTEXT, clone( ctx ));
 
 				PyEval_EvalCode(pCode,pGlobals,pLocals);
 
-				set(tau, V8TOARRAY(clone( LOCAL(PYTAU) )));
+				//set(ctx, clone( LOCAL(PYCONTEXT) )->ToObject() );
+				set(ctx, clone( pLocals )->ToObject() );
 				
 				err = PyInt_AsLong( LOCAL(PYERR) );						
 			}
@@ -467,13 +477,13 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 		PyCodeObject *pCode, *pCodeTest;
 		PyObject *pArgs, *pValue;
 		PyObject *pGlobals, *pLocals, *pMain, *pParm;
-		str path, code;
+		str path, port;
 };
 
 /*
  * Generates MAXMACHINES number of PYMACHINE-class machines of type PYTHON.
- * An engine accepts a V8 argument list args = [name string, port string, tau array hash,
- * tau array hash, parm hash, and code string) and returns a V8 error scope handle.  Engine names
+ * An engine accepts a V8 argument list args = [name string, port string, ctx array hash,
+ * ctx array hash, context hash, and code string) and returns a V8 error scope handle.  Engine names
  * are of the form Client.Engine.Instance to uniquely identify a workflow engine, or of the form
  * Engine to uniquely identify standalone engines.  New engines threads can be freely added to the 
  * thread pool until the pool is exhausted.
