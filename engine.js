@@ -153,13 +153,15 @@ var
 			109: new Error("engine could not handoff to worker"),
 			badType: new Error("engine type not supported"),
 			noEngine: new Error("engine does not exists or is not enabled"),
-			badPort: new Error("engine provided invalid port")
+			badPort: new Error("engine provided invalid port"),
+			badCode: new Error("engine returned invalid code"),
+			lostContext: new Error("engine context lost")
 		},
 			
 		context: {},
 			
 		tau: function (job) { // default event token sent to and produced by engines in workflows
-			return {
+			return new Object({
 				job: job || "", // Current job thread N.N... 
 				work: 0, 		// Anticipated/delivered data volume (dims, bits, etc)
 				disem: "", 		// Disemination channel for this event
@@ -168,7 +170,7 @@ var
 				policy: "", 	// Data retention policy (time+place to hold, method to remove, outside disem rules)
 				status: 0, 		// Status code (health, purpose, etc)
 				value: 0		// Flow calculation
-			 };
+			 });
 		},
 
 		/**
@@ -391,7 +393,7 @@ var
 			});
 		},
 
-		// CRUD interface
+		// DUIS interface
 
 		/**
 		 * @method insert(step)
@@ -636,17 +638,82 @@ console.log([">init",err]);
 			else
 				cb(context);
 		},
+
+		run: function (ctx,cb) {
+			ENGINE.thread( function (sql) {
+				ctx.sql = sql;
+				
+				sql.query(
+					"SELECT *,count(ID) AS found FROM app.engines WHERE least(?) LIMIT 0,1", {
+						Name: ctx.name,
+						Enabled: true
+				})
+
+				.on("result", function (eng) { // progam its engine
+
+					//console.log(eng);
+					var 
+						id = eng.Name + "." + (ctx.thread || ""),
+						type = eng.Engine;
+					
+					if (eng.found) 
+						if ( engine = ENGINE.init[type] ) {
+							try {  // prime its vars
+								eval( "var vars = " + (eng.Vars || "{}") );
+								Copy(vars, ctx );
+							}
+
+							catch (err) {
+							}
+
+							ENGINE.prime(ctx, function () {  // prime its vars via sql
+							
+								engine(id, eng.Code || "", ctx, function (err, ctx) {
+									
+									if ( err )
+										cb( null );
+
+									else 
+										if ( engine = ENGINE.step[type] ) 
+											cb( function step() {  // Callback with its stepper
+												try {  	// call the engine
+													return engine(id, eng.Code, ctx);
+												}
+
+												catch (err) {
+													return err;
+												}
+											});
+									
+										else
+											return ENGINE.errors.badType;
+								});
+							
+							});
+						}
+					
+						else
+							cb ( ENGINE.errors.badType );
+
+					else
+						cb( ENGINE.errors.noEngine );
+				})
+
+				.on("error", function (err) {
+					cb( err );
+				});
+			});			
+		},
 			
 		/**
 		 * @method execute
 		 * Execute engine cb(context) in its primed context.
 		 * */
-		execute: function (core,args,cb) {	
+		execute: function (core,args,cb) {	// add args and plugins to engine context then callback cb(context)
 
-		//Trace(">execute",core);
-
-			if (core.code) {
-				try {
+		//Trace(">execute",core);			
+			if (core.code) {  // define new context and prime
+				try {  // get context vars for this engine
 					eval("var vars = "+ (core.vars || "{}"));
 				}
 				catch (err) {
@@ -657,7 +724,7 @@ console.log([">init",err]);
 				ENGINE.prime(context,cb);
 			}
 			
-			else {
+			else {  // use existing context
 				var context = Copy( args, ENGINE.context[core.name] || VM.createContext({}) );
 				cb(context);
 			}
@@ -707,6 +774,72 @@ console.log([">init",err]);
 			return 0;
 		},
 			
+		init: {
+			py: function pyInit(name,code,ctx,cb)  {
+				delete ctx.sql;
+				cb( ENGINE.python(name,code,ctx), ctx );
+			},
+			
+			cv: function cvInit(name,code,ctx,cb)  {
+				delete ctx.sql;
+				console.log({
+					cvctx: ctx,
+					code: code
+				});
+				
+				cb( ENGINE.opencv(name,code,ctx), ctx );
+			},
+			
+			js: function jsInit(name,code,ctx,cb)  {
+				var vmctx = ENGINE.context[name];
+
+				if ( !vmctx )
+					var vmctx = ENGINE.context[name] = VM.createContext( Copy(ENGINE.plugin,ctx) );
+				
+				vmctx.code = code;
+				
+				VM.runInContext(code,vmctx);
+
+				cb( null, vmctx );
+			}
+		},
+			
+		step: {
+			py: function (name,port,tau) {
+				return ( err = ENGINE.python(name,port,tau) )
+					? ENGINE.errors[err] || ENGINE.errors.badCode
+					: null;
+			},
+			
+			cv: function (name,port,tau) {
+				return ( err = ENGINE.opencv(name,port,tau) )
+					? ENGINE.errors[err] || ENGINE.errors.badCode
+					: null;
+			},
+			
+			js: function (name,port,tau) {
+				console.log(`step ${name} port ${port} taus=${tau.length}`);
+				
+				var vmctx = ENGINE.context[name];
+
+				if ( vmctx )
+					if (port) 
+						var err = ( port = vmctx[port] ) 
+							? port(tau, vmctx.ports[port])
+							: ENGINE.errors.badPort;
+
+					else {
+						VM.runInContext(vmctx.code,vmctx);
+						var err = 0;
+					}
+
+				else
+					return ENGINE.errors.lostContext;
+				
+				return ENGINE.errors[err];
+			}
+		},
+			
 		// Javascript engines
 		js: function (name,port,tau,context,code) {
 
@@ -752,11 +885,13 @@ console.log([">init",err]);
 				context.ports = context.ports || {};  	// engine requires valid ports hash
 				context.tau = tau || []; 				// engine requires valid event list
 
+				/*
 				delete context.sql;				// remove stuff that would confuse engine
 
 				for (var n in ENGINE.plugin) 	
 					delete context[n];
-
+				*/
+				
 				var err = ENGINE.python(name,code,context);
 
 				for (var n=0,N=context.tau.length; n<N; n++) 
@@ -778,11 +913,13 @@ console.log([">init",err]);
 				context.ports = context.ports || {};  	// engine requires valid ports hash
 				context.tau = tau || []; 				// engine requires valid event list
 
+				/*
 				delete context.sql;				// remove stuff that would confuse engine
 
 				for (var n in ENGINE.plugin) 	
 					delete context[n];
-
+				*/
+				
 				var err = ENGINE.opencv(name,code,context);
 
 				for (var n=0,N=context.tau.length; n<N; n++) 

@@ -3,25 +3,22 @@
 /*
 Reserves a pool of V8 python machines:
  
- 		err = python.call([ name string, port string, event list ])
- 		err = python.call([ name string, code string, parm hash ])
+ 		error = python.call( [ id string, code string, context hash ] )
  
-where err is an integer error code.
+and returns an interger error code.
 
-A machine name (typically "Client.Engine.Instance") uniquely identifies the machine's compute thread.  Compute threads
-can be freely added to the pool until the pool becomes full.  
+A machine id (typically "Name.Client.Instance") uniquely identifies the machine's compute thread.  Compute
+threads can be freely added to the pool until the pool becomes full.  
  
-When stepping a machine, port specifies either the name of the input port on which arriving events [ tau, tau, ... ] list are latched, 
-or the name of the output port on which departing events [ tau, tau, ... ] are latched; thus stepping
+When stepping a machine, code specifies either the name of the input port on which the arriving context 
+is latched, or the name of the output port on which the departing context is latched; thus stepping
 the machine in a stateful way (to maximize data restfulness).  Given, however, an empty port will, the machine is 
 stepped in a stateless way: by latching events to all input ports, then latching all output ports to events.
- 
-When programming a machine, parm = { ports: {name1: {...}, name2: {...}, ...}, ...} defines parameters to input-output ports, and 
-port = "python program\n" (or "module name"  to import under $PYTHONPATH).  Empty code will monitor current 
-machine parameters.
 
-Machines DO NOT check validity of input arguments ... so pass 'em correctly!
- 
+When programming a machine with code, the context = { ports: {name1: {...}, name2: {...}, ...}, ...} defines 
+parameters to input-output ports, and port = "python program\n" (or "module name"  to import 
+under $PYTHONPATH).  Empty code will monitor current machine parameters.
+
 See the tauIF.cpp for usage examples.  This interface is created using node-gyp with the binding.gyp provided.
 */
 

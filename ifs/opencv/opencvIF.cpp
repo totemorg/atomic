@@ -3,41 +3,39 @@
 /*
 Reserves a pool of V8 opencv (haar locator, dnn classifier) machines:
  
- 		err = opencv.call([ name string, port string, event list ])
- 		err = opencv.call([ name string, code string, port hash ])
+ 		error = opencv.call( [ id string, code string, context hash ] )
  
-where err is an integer error code.
+and returns an interger error code.
 
-A machine name (typically "Client.Engine.Instance") uniquely identifies the machine's compute thread.  Compute threads
-can be freely added to the pool until the pool becomes full.  
+A machine id (typically "Name.Client.Instance") uniquely identifies the machine's compute thread.  Compute
+threads can be freely added to the pool until the pool becomes full.  
  
-When stepping a machine, port specifies either the name of the input port on which arriving events [ tau, tau, ... ] list 
-are latched, or the name of the output port on which departing events [ tau, tau, ... ] are latched; thus stepping
+When stepping a machine, code specifies either the name of the input port on which the arriving context 
+is latched, or the name of the output port on which the departing context is latched; thus stepping
 the machine in a stateful way (to maximize data restfulness).  Given, however, an empty port will, the machine is 
 stepped in a stateless way: by latching events to all input ports, then latching all output ports to events.
- 
-When programming a machine with code (contents ignored), parm = { ports: {name1: {...}, name2: {...}, ...}, 
-tau: [tau,tau,...], ... } defines parameters to machine i/o ports and i/o events.  Empty code will monitor current 
-machine parameters.
 
-The opencv machine implemented here is a HAAR cascade feature detector with the following output port 
-parameters:
+When programming a machine with code, the context = { frame: {job:path}, detector: {key:value}, ... } defines 
+parameters to machine i/o ports and i/o events.  Empty code will monitor current machine parameters.
 
-	scale = 0:1 specifies how much the image size is reduced at each image scale step, and thus defines a 
+The opencv machine implemented here is a HAAR cascade feature detector with the key-parameters:
+
+	scale = 0:1 
+		specifies how much the image size is reduced at each image scale step, and thus defines a 
 		scale pyramid during the detection process.  E.g. 0.05 means reduce size by 5% when going to next image 
 		scale step.  Smaller step sizes will thus increase the chance of detecting the features at diffrent scales. 
-	delta = 0:1 so features of dim*(1-delta) : dim*(1+delta) pixels are detected
-	dim = integer defines nominal feature size in pixels
-	hits = integer specifies number is required neighboring detects to declare a single detect.  A higher value
+	delta = 0:1 
+		features of dim*(1-delta) : dim*(1+delta) pixels are detected
+	dim = integer 
+		defines nominal feature size in pixels
+	hits = integer 
+		specifies number is required neighboring detects to declare a single detect.  A higher value
 		results in less detections of higher quality. 3~6 is a good value.
-	cascade = [ "path to xml file", ... ] list of trained cascades
-	net = "path to prototxt file" trained caffe cnn
+	cascade = [ "path to xml file", ... ] 
+		list of trained cascades
+	net = string
+		path to prototxt file used to train caffe cnn
 	
-Multiple output ports can be defined to detect using, for example, cascades trained for different feature sets
-or the same feature in different symmetries.
-
-Machines DO NOT check validity of input arguments ... so pass 'em correctly!
-
 See the tauIF.cpp for usage examples.  This interface is created using node-gyp with the binding.gyp provided
 and expects the following compile directives:
 
@@ -88,7 +86,7 @@ using namespace v8;
 #define STREMPTY(X) (X.length() ? false : true)
 #define STREQ(X,Y) (strcmp(X,Y) ? false : true) 
 
-// Test for special keys in ports parms
+// Test for special keys in oPortt parms
 
 #define ISSQL(X) (strcmp(X,"sql")==0)
 #define ISQUERY(X) (strcmp(X,"query")==0)
@@ -413,10 +411,39 @@ int main(int argc, char** argv) {
 //================================================================
 // HAAR feature detection machine for an opencvIF machine.
 
-class PORT {							 		// HAAR i/o port
+
+class IPORT {							 		// HAAR i/o port
 	public:
-		PORT(void) {
-			isinput = isoutput = false;
+		IPORT(void) {
+		};
+		
+		~IPORT(void) {
+		};
+	
+		IPORT(Isolate* scope, str Name, V8OBJECT Parm) {
+			name = mac_strclone(Name);
+				
+			/*
+			printf(TRACE "inport %s CAFFE %s GPU %s\n", 
+				name,
+				HASCAFFE ? "enabled" : "disabled",
+				HASGPU ? "enabled" : "disabled");
+			*/
+			
+			//<< cv bug. frame init required to prevent a "pure virtual method called" error when stepped
+			frame = cv::imread( "prime.jpg" , 1 );  
+			if ( frame.empty() ) 
+				printf(TRACE "need a prime.jpg to avoid an opencv bug\n");			
+		}
+	
+		// HAAR input frame parameters
+		Mat frame;
+		str name;
+};
+
+class OPORT {							 		// HAAR i/o port
+	public:
+		OPORT(void) {
 			cascades = 0;
 			name = NULL;
 			CNN_classify = NULL;
@@ -424,7 +451,7 @@ class PORT {							 		// HAAR i/o port
 				if (HAAR_cascade[n]) HAAR_cascade[n] = NULL;
 		};
 		
-		~PORT(void) {
+		~OPORT(void) {
 			if (CNN_classify) delete CNN_classify;
 			if (name) free(name);
 			
@@ -432,83 +459,71 @@ class PORT {							 		// HAAR i/o port
 				if (HAAR_cascade[n]) delete HAAR_cascade[n];
 		};
 	
-		PORT(Isolate* scope, str Name, V8OBJECT Parm) {
-			// port type
-			isinput = ISNAN(V8GETVALUE(Parm,"scale"));
-			isoutput = ! isinput;
-			
-			// port name
+		OPORT(Isolate* scope, str Name, V8OBJECT Parm) {
 			name = mac_strclone(Name);
+
+			/*
+			printf(TRACE "out port %s CAFFE %s GPU %s\n", 
+				name, 
+				HASCAFFE ? "enabled" : "disabled",
+				HASGPU ? "enabled" : "disabled");
+			*/
+			
+			// Initialize HAAR locator 
+
+			scale = V8GETVALUE(Parm,"scale");
+			dim = V8GETVALUE(Parm,"dim");
+			delta = V8GETVALUE(Parm,"delta");
+			hits = V8GETVALUE(Parm,"hits");
+
+			min = Size(dim*(1-delta),dim*(1-delta));
+			max = Size(dim*(1+delta),dim*(1+delta));
+
+			V8ARRAY Cascade = V8GETARRAY(Parm,"cascade");
+			cascades = Cascade->Length();
+
+			for (int n=0; n<cascades; n++) 
+				HAAR_cascade[n] = V8TOSTRING(Cascade->Get(n));
+
+			printf(TRACE "detector cascades=%d scale=%g dim=%g delta=%g hits=%d depth=%d min=%d,%d max=%d,%d\n",
+					cascades,scale,dim,delta,hits,cascades,min.width,min.height,max.width,max.height);
+
+			for (int n=0; n<cascades; n++) {
+				str fparts[] = {"","","",0,".xml",0};
+				str fname = mac_strcat(fparts,3,HAAR_cascade[n]);
+
+				if( !HAAR_classify[n].load(fname) ) 
+					printf(TRACE "detector ignoring %s\n",fname); 
 				
-printf(TRACE "port %s in=%d out=%d CAFFE %s GPU %s\n", 
-	name, (int) isinput, (int) isoutput,
-	HASCAFFE ? "enabled" : "disabled",
-	HASGPU ? "enabled" : "disabled");
+				else
+					printf(TRACE "detector using %s\n",fname);
+			}
 
-			// port parameters
+			// Initialize CNN Classifier 
 
-			if ( isoutput ) { 					// define output port 
+			std::string net = V8GETSTRING(Parm,"net"); // trained caffe cnn 
 
-				// Initialize HAAR locator 
-				
-				scale = V8GETVALUE(Parm,"scale");
-				dim = V8GETVALUE(Parm,"dim");
-				delta = V8GETVALUE(Parm,"delta");
-				hits = V8GETVALUE(Parm,"hits");
-				
-				min = Size(dim*(1-delta),dim*(1-delta));
-				max = Size(dim*(1+delta),dim*(1+delta));
-				
-				V8ARRAY Cascade = V8GETARRAY(Parm,"cascade");
-				cascades = Cascade->Length();
+			if ( STRDEFINED(net) && HASCAFFE) {
+				std::string deploy_file = net + "deploy.prototxt"; 	
+				std::string param_file = net + "params.dat"; 	
+				std::string mean_file  = ""; //net + "means.dat";
+				std::string label_file = net + "labels.names";
 
-				for (int n=0; n<cascades; n++) 
-					HAAR_cascade[n] = V8TOSTRING(Cascade->Get(n));
-
-printf(TRACE "cascades=%d scale=%g dim=%g delta=%g hits=%d depth=%d min=%d,%d max=%d,%d\n",
-	cascades,scale,dim,delta,hits,cascades,min.width,min.height,max.width,max.height);
-
-				for (int n=0; n<cascades; n++) {
-					str fparts[] = {"","","",0,".xml",0};
-					str fname = mac_strcat(fparts,3,HAAR_cascade[n]);
-
-					if( !HAAR_classify[n].load(fname) ) {
-						printf(TRACE "bad cascade %s\n",fname); 
-						isoutput = false;
-					}
-					else
-						printf(TRACE "loaded cascade %s\n",fname);
-				}
-
-				// Initialize CNN Classifier 
-
-				std::string net = V8GETSTRING(Parm,"net"); // trained caffe cnn 
-
-				if ( STRDEFINED(net) && HASCAFFE) {
-					std::string deploy_file = net + "deploy.prototxt"; 	
-					std::string param_file = net + "params.dat"; 	
-					std::string mean_file  = ""; //net + "means.dat";
-					std::string label_file = net + "labels.names";
-				
 printf(TRACE "CNN model=%s train=%s mean=%s label=%s\n",deploy_file.data(),param_file.data(),mean_file.data(),label_file.data());
 
-					CNN_classify = new Classifier (deploy_file, param_file, mean_file, label_file);
-				}
-				else
-					CNN_classify = NULL;
-
-			}
-			else { // input port parameters - reserved
+				CNN_classify = new Classifier (deploy_file, param_file, mean_file, label_file);
 			}
 			
-//printf(TRACE "ports initialized\n");
+			else
+				CNN_classify = NULL;
+
+//printf(TRACE "oPortt initialized\n");
 		};
 		
-		// HAAR locator parameters
+		// HAAR classifier parameters
 
-		bool isinput,isoutput;
+		str name;
 		int cascades;
-		str name,job;
 		float scale,dim,delta;
 		Size min,max;
 		int hits;
@@ -516,7 +531,7 @@ printf(TRACE "CNN model=%s train=%s mean=%s label=%s\n",deploy_file.data(),param
 		str HAAR_cascade[MAXCASCADES];
 		CascadeClassifier HAAR_classify[MAXCASCADES]; 
 	
-		// CNN Classifier parameters
+		// CNN classifier parameters
 
 		Classifier *CNN_classify;
 };
@@ -536,7 +551,7 @@ class FEATURE { 								// Machine output
 	
 		// Classify features in Frame over specified AOI bounding-box.
 
-		FEATURE(int Depth,Rect AOI,str Name,Mat Frame,PORT &Port,Classifier *CNN) {
+		FEATURE(int Depth,Rect AOI,str Name,Mat Frame,OPORT &Port,Classifier *CNN) {
 			
 			name = mac_strclone(Name);
 
@@ -641,17 +656,18 @@ printf(TRACE "feature=%s depth=%d frameWH=%d,%d scale=%g hits=%d detects=%d\n",
 
 				}
 			}
+			
 			else 
 				features = 0;
 		  
-			// At end of cascade so mark this aoi bounding-box and classify this frame
+			// At end of cascade so mark this aoi bounding-box 
 			
 			cols = (float) AOI.width;
 			rows = (float) AOI.height;
 			col = (float) AOI.x;
 			row = (float) AOI.y;
 
-			if (CNN) { 
+			if (CNN) {   // refine classification of this frame 
 				std::vector<Prediction> predictions = CNN->Classify( Frame );
 
 				if (true) 	// Print the top N predictions.
@@ -683,17 +699,13 @@ class CVMACHINE : public MACHINE {  	// HAAR machine via the MACHINE class
 	public:
 		// inherit base machine
 		CVMACHINE(void) : MACHINE() {
-			for (int n=0;n<MAXPORTS;n++) ports[n] = NULL;
-			
-			//<< cv bug. frame init required to prevent a "pure virtual method called" error when stepped
-			frame = cv::imread( "prime.jpg" , 1 );  
-			if ( frame.empty() ) 
-				printf(TRACE "need a prime.jpg to avoid an opencv bug\n");
+			oPortt = NULL;
+			iPort = NULL;
 		};
 	
 		~CVMACHINE(void) {
-			for (int n=0; n<MAXPORTS; n++)
-				if (ports[n]) delete ports[n];
+			if (oPortt) delete oPortt;
+			if (iPort) delete iPort;
 		};
 	
 		// provide V8-C convertors
@@ -743,39 +755,40 @@ class CVMACHINE : public MACHINE {  	// HAAR machine via the MACHINE class
 		 * returns a V8 error handle.  
 		 * */
 		
-		int latch(V8ARRAY tau, PORT &port) { 	// Latch output port to event
-			steps++;
+		int latch(V8OBJECT tau, OPORT &port) { 	// Latch output port to output context tau
+			
+			if ( iPort->frame.empty() ) return badStep;
+			
+			if (false) {
+				FEATURE detects( 0, Rect(0,0,0,0), port.name, iPort->frame, port, port.CNN_classify);
 
-			if ( frame.empty() ) return badStep;
-
-			FEATURE detects(0,Rect(0,0,0,0),port.name,frame,port,port.CNN_classify);
-
-			set(tau,detects);
+				set( V8GETARRAY(tau,"dets"), detects);
+			}
 			return 0;
 		}
 	
-		int latch(PORT &port, V8ARRAY tau) { 	// Latch event to input port
-			str job = V8TOSTRING( V8INDEX(tau->Get(0)->ToObject(),"job") );
+		int latch(IPORT &port, V8OBJECT tau) { 	// Latch input context tau to input port
+			str job = V8TOSTRING( V8INDEX(tau,"job") );
 
 //printf(TRACE "job=%s\n",job);
-			frame = cv::imread( job , 1 );
+			port.frame = cv::imread( job , 1 );
 			free(job);
-//printf(TRACE "empty=%d\n",frame.empty());
+printf(TRACE "frame %s\n", port.frame.empty() ? "failed" : "loaded" );
 
 			//cvtColor(frame,frame,CV_RGB2GRAY);
 
 			if (false) {
 				namedWindow( "Display window", WINDOW_NORMAL );
-				imshow( "Display window", frame);
+				imshow( "Display window", iPort->frame);
 				waitKey(0);
 			}
 
-			return frame.empty() ? badStep : 0;
+			return port.frame.empty() ? badStep : 0;
 		}
 
 		/*
 		// legacy
-		int latch(PORT &port, V8ARRAY tau) { 	// Latch tau input to HARR input port
+		int latch(OPORT &port, V8ARRAY tau) { 	// Latch tau input to HARR input port
 			str job = port.isquery ? port.job : V8TOSTRING( V8INDEX(tau->Get(0)->ToObject(),"job") );
 
 			frame = imread( job , 1 );
@@ -784,7 +797,7 @@ printf(TRACE "load=%s empty=%d\n",job,frame.empty());
 			return frame.empty();
 		}
 		
-		int latch(V8ARRAY tau, PORT &port) { 	// Latch HAAR output port to tau output
+		int latch(V8ARRAY tau, OPORT &port) { 	// Latch HAAR output port to tau output
 			steps++;
 			
 			if ( frame.empty() ) return 101;
@@ -809,76 +822,52 @@ printf(TRACE "detects=%d\n",detects.features);
 		 * */
 	
 		int stepStateless(void) {
-			err = 0;
-			for (int n=0; n<MAXPORTS && ports[n]; n++) 
-				if ( ports[n]->isinput ) 
-					err = err || latch(*ports[n],tau);
-
-			for (int n=0; n<MAXPORTS && ports[n]; n++) 
-				if ( ports[n]->isoutput ) 
-					err = err || latch(tau,*ports[n]);
-				
+			err = latch(*iPort, V8INDEX(parm,"frame")->ToObject() );
+			if (err) return err;
+			
+			err = latch(V8INDEX(parm,"detector")->ToObject() ,*oPortt);
 			return err; 
 		}
 		
 		int stepStateful(void) {
-			for (int n=0; n<MAXPORTS && ports[n]; n++) {
-				if ( strcmp(port,ports[n]->name) == 0 )
-					if ( ports[n]->isinput )
-						return latch(*ports[n],tau);
-					else
-					if ( ports[n]->isoutput )		
-						return latch(tau,*ports[n]);
-			}
-			
 			return badStep;  
 		}
 
 		int program (void) { 
-			V8VALUE _Ports = V8INDEX(parm,"ports");
-			V8OBJECT Ports = _Ports->IsObject() ? _Ports->ToObject() : V8NULLOBJ;
-			V8ARRAY Keys = Ports->GetOwnPropertyNames();  
-			char buf[MAXSTR];
-			
-//printf(TRACE "pgm ports=%d\n",Keys->Length());
+			str Key = "detector";
 
-			for (int n=0,m=0,N=Keys->Length(); n<N; n++) {
-				str Key = V8TOSTR(Keys->Get(n), buf);
+			//printf(TRACE "pgm port %s\n",Key);
+			if (oPortt) delete oPortt;  
+			oPortt = new OPORT(scope, Key, V8INDEX(parm,Key)->ToObject());
 
-				if ( ISSQL(Key) || ISQUERY(Key) ) {
-				}
-				else {  // (re)program port
-//printf(TRACE "pgm port[%d]\n",m);
-					if (ports[m]) delete ports[m];   // deallocate if it already exists
-					ports[m++] = new PORT(scope, Key, V8INDEX(Ports,Key)->ToObject());
-				}
-			}
+			Key = "frame";
 
-			return err;
+			//printf(TRACE "pgm port %s\n",Key);
+			if (iPort) delete iPort;  
+			iPort = new IPORT(scope, Key, V8INDEX(parm,Key)->ToObject());
+
+			init = true;
+			return 0;
 		}
 
 		int call(const V8STACK& args) {
+			
+			//printf(TRACE "init=%d\n", init);
 			
 			if ( setup(args) ) 
 				return err;
 
 			else
-			if ( init )
-				if ( strlen(port) )
-					return program();
-				else
-					return monitor();
-
-			else
-			if ( strlen(port) )
-				return stepStateful();
-				
-			else
+			if ( init ) 
 				return stepStateless();
+				
+			else 
+				return program();
+			
 		}
 	
-		Mat frame;
-		PORT *ports[MAXPORTS];
+		OPORT *oPortt;
+		IPORT *iPort;
 };
 
 //==========================================================================================

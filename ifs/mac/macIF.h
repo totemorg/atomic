@@ -130,31 +130,17 @@ class MACHINE {
 		int setup(const V8STACK& args) {
 			scope = V8ENTRY(args);
 			
-			if (args.Length() != 3)
-				err = badArgs;
-
-			else {
-				err = 0;
-				port = PORTARG(args, portbuf);
-
-				if (args[2]->IsArray()) {
-					init = false;
-					tau  = TAUARG(args);				
-				}
-				else
-				if (args[2]->IsObject()) {
-					init = true;
-					parm = PARMARG(args);
-					tau  = V8GETARRAY(parm,"tau");
-				}
-				else
-					err = badArgs;
+			if ( args.Length() != 3 ) return badArgs;
+			if ( !args[0]->IsString() ) return badArgs;
+			if ( !args[1]->IsString() ) return badArgs;
+			if ( !args[2]->IsObject() ) return badArgs;
+				
+			port = PORTARG(args, portbuf);
+			parm = PARMARG(args);
 
 //printf(TRACE "setup name=%s port=%s args=%d init=%d\n",name,port,args.Length(),(int) init);
 
-			}
-
-			return err;
+			return 0;
 		}
 	
 		// machine output argument setters
@@ -214,7 +200,6 @@ class MACHINE {
 		bool init;	 	// machine flags
 		str name, port; 		// engine name, port name being latched, engine code file path, engine code
 		char portbuf[MAXSTR];
-		V8ARRAY tau; 		// input/output events
 		V8OBJECT parm;		// parameters
 		Isolate *scope; 		// v8 garbage collection thread
 };
