@@ -15,8 +15,8 @@ is latched, or the name of the output port on which the departing context is lat
 the machine in a stateful way (to maximize data restfulness).  Given, however, an empty port will, the machine is 
 stepped in a stateless way: by latching events to all input ports, then latching all output ports to events.
 
-When programming a machine with code, the context = { frame: {job:path}, detector: {key:value}, ... } defines 
-parameters to machine i/o ports and i/o events.  Empty code will monitor current machine parameters.
+When programming a machine with a code string, the context = { frame: {job:path}, detector: {key:value}, ... } 
+defines parameters to machine i/o ports and i/o events.  Empty code will monitor current machine parameters.
 
 The opencv machine implemented here is a HAAR cascade feature detector with the key-parameters:
 
