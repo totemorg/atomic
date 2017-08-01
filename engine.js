@@ -507,7 +507,7 @@ var
 		//console.log(context.query);
 		//console.log(context.code);
 				VM.runInContext(context.code,context);
-		console.log(context.tau);		
+		//console.log(context.tau);		
 				var err = 0;
 			}
 
@@ -630,6 +630,7 @@ console.log([">kill ",err]);
 			var ctx = {
 				sql: req.sql,
 				name: req.table,
+				thread: req.client.replace(/\./g,"") + "." + req.table,
 				tau: [ENGINE.tau()],
 				port: req.query.port || "",
 				query: req.query
@@ -815,7 +816,7 @@ console.log([">init",err]);
 
 				else { // progam and prime it
 					var 
-						id = eng.Name + "." + (ctx.thread || ""),
+						thread = ctx.thread, //eng.Name + "." + (ctx.thread || ""),
 						type = eng.Engine;
 
 					if (eng.found) 
@@ -831,16 +832,16 @@ console.log([">init",err]);
 
 							ENGINE.prime(ctx, function () {  // prime its vars via sql
 
-								engine(id, eng.Code || "", ctx, function (err, ctx) {
+								engine(thread, eng.Code || "", ctx, function (err, ctx) {
 
 									if ( err )
 										cb( null );
 
 									else 
 										if ( engine = ENGINE.step[type] ) 
-											cb( function step() {  // Callback with its stepper
+											cb( function step() {  // Callback with its stepper												
 												try {  	// step the engine
-													return engine(id, eng.Code, ctx);
+													return engine(thread, eng.Code, ctx);
 												}
 
 												catch (err) {
@@ -923,11 +924,6 @@ console.log([">init",err]);
 			},
 			
 			js: function jsStep(name,code,ctx) {
-				console.log({
-					step: name,
-					code: code
-				});
-				
 				var vmctx = ENGINE.context[name];
 
 				if ( vmctx )
