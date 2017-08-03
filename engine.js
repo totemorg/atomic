@@ -124,17 +124,14 @@ var
 
 			return ENGINE;
 		},
+
+		flex: null,
 			
-		plugin: {  // plugin libs available to all engines
+		plugins: {  // plugins libs available to all engines
 			MATH: require('mathjs'),
 			LWIP: require('graceful-lwip'),
 			DSP: require('digitalsignals'),
 			CRYPTO: require('crypto'),
-			RAP: require('randpr'),
-			LIE: require('liegroup'),
-			INV: require("invar"),
-			TXP: require("transport"),
-			
 			CON: console,
 			console: console,
 			JSON: JSON
@@ -470,10 +467,10 @@ var
 			if (code) {
 				context.code = code;
 				if (context.require) 
-					ENGINE.plugin.MATH.import( context.require );
+					ENGINE.plugins.MATH.import( context.require );
 			}
 
-			ENGINE.plugin.MATH.eval(context.code,context);
+			ENGINE.plugins.MATH.eval(context.code,context);
 
 			Trace({R:context.R, A:context.A, X:context.X});
 			return 0;
@@ -484,7 +481,7 @@ var
 		//Trace([name,port,tau,code]);
 
 			if (tau.constructor == Object) {
-				context = ENGINE.context[name] = VM.createContext(Copy(ENGINE.plugin,tau));
+				context = ENGINE.context[name] = VM.createContext(Copy(ENGINE.plugins,tau));
 				context.code = port;
 				port = "";
 			}
@@ -526,7 +523,7 @@ var
 				/*
 				delete context.sql;				// remove stuff that would confuse engine
 
-				for (var n in ENGINE.plugin) 	
+				for (var n in ENGINE.plugins) 	
 					delete context[n];
 				*/
 				
@@ -553,7 +550,7 @@ var
 				/*
 				delete context.sql;				// remove stuff that would confuse engine
 
-				for (var n in ENGINE.plugin) 	
+				for (var n in ENGINE.plugins) 	
 					delete context[n];
 				*/
 				
@@ -679,7 +676,7 @@ console.log([">init",err]);
 					var vars = {};
 				}
 
-				var context = ENGINE.context[core.name] = VM.createContext(Copy(ENGINE.plugin,Copy(args,vars)));
+				var context = ENGINE.context[core.name] = VM.createContext(Copy(ENGINE.plugins,Copy(args,vars)));
 				ENGINE.prime(context,cb);
 			}
 			
@@ -828,18 +825,19 @@ console.log([">init",err]);
 							}
 
 							catch (err) {
+								Trace(err);
 							}
 
 							ENGINE.prime(ctx, function () {  // prime its vars via sql
 
 								engine(thread, eng.Code || "", ctx, function (err, ctx) {
 
-									if ( err )
+									if ( err ) 
 										cb( null );
 
 									else 
 										if ( engine = ENGINE.step[type] ) 
-											cb( function step() {  // Callback with its stepper												
+											cb( function step() {  // Callback with its stepper	
 												try {  	// step the engine
 													return engine(thread, eng.Code, ctx);
 												}
@@ -849,7 +847,7 @@ console.log([">init",err]);
 												}
 											});
 
-										else
+										else 
 											cb( null );
 								});
 
@@ -878,7 +876,7 @@ console.log([">init",err]);
 				var vmctx = ENGINE.context[name];
 
 				if ( !vmctx )
-					var vmctx = ENGINE.context[name] = VM.createContext( Copy(ENGINE.plugin,ctx) );
+					var vmctx = ENGINE.context[name] = VM.createContext( Copy(ENGINE.plugins,ctx) );
 				
 				vmctx.code = code;
 				
@@ -890,12 +888,12 @@ console.log([">init",err]);
 			ma: function maInit(name,code,ctx,cb) {
 
 				ctx.code = code;
-				Copy(ENGINE.plugin,ctx);
+				Copy(ENGINE.plugins,ctx);
 				
 				if (ctx.require) 
-					ENGINE.plugin.MATH.import( ctx.require );
+					ENGINE.plugins.MATH.import( ctx.require );
 
-				ENGINE.plugin.MATH.eval(ctx.code,ctx);
+				ENGINE.plugins.MATH.eval(ctx.code,ctx);
 
 				//Trace({ma: ctx});
 				cb( null, ctx );
@@ -942,7 +940,7 @@ console.log([">init",err]);
 			},
 			
 			ma: function maStep(name,code,ctx) {
-				ENGINE.plugin.MATH.eval(ctx.code,ctx);
+				ENGINE.plugins.MATH.eval(ctx.code,ctx);
 
 				//Trace({R:ctx.R, A:ctx.A, X:ctx.X});
 				return null;
