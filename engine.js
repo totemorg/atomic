@@ -65,11 +65,11 @@ var
 
 					if (builtins = ENGINE.builtins)
 						for (var eng in  builtins) 
-							sql.query("INSERT INTO app.engines SET ?", {
+							sql.query("REPLACE INTO app.engines SET ?", {
 								Name: eng,
-								Enabled: 0,
+								Enabled: 1,
 								Engine: "js",
-								Code: builtins[eng]+""
+								Code: builtins[eng]+`;tau=0;${eng}(query, function (rtn) {tau=rtn;});`
 							});
 
 					if (CLUSTER.isWorker) 	
@@ -153,7 +153,8 @@ var
 			badPort: new Error("engine provided invalid port"),
 			badCode: new Error("engine returned invalid code"),
 			lostContext: new Error("engine context lost"),
-			noStepper: new Error("engine has no stepper")
+			noStepper: new Error("engine has no stepper"),
+			badStep: new Error("engine step faulted")
 		},
 			
 		context: {},
@@ -624,20 +625,19 @@ console.log([">kill ",err]);
 		},
 			
 		select: function (req,res) {	// run a stateless engine 
-			var ctx = {
+			var ctx = Copy(req.query, {
 				sql: req.sql,
 				name: req.table,
 				thread: req.client.replace(/\./g,"") + "." + req.table,
-				tau: [ENGINE.tau()],
-				port: req.query.port || "",
-				query: req.query
+				//tau: [ENGINE.tau()],
+				port: req.query.port || ""
 				//action: "select"
-			};
+			});
 			
 			ENGINE.run( ctx, function (step) {
 				if ( step ) 
-					res( ( err = step() ) ? err : ctx.tau );
-
+					res( step() );
+				
 				else
 					res( ENGINE.errors.noStepper );
 			});
@@ -813,15 +813,14 @@ console.log([">init",err]);
 
 				else { // progam and prime it
 					var 
-						thread = ctx.thread, //eng.Name + "." + (ctx.thread || ""),
+						thread = ctx.thread,
 						type = eng.Engine;
 
 					if (eng.found) 
 						if ( engine = ENGINE.init[type] ) {
 
 							try {  // prime its vars
-								eval( "var vars = " + (eng.Vars || "{}") );
-								Copy(vars, ctx );
+								Copy(JSON.parse(eng.Vars), ctx );
 							}
 
 							catch (err) {
@@ -839,7 +838,8 @@ console.log([">init",err]);
 										if ( engine = ENGINE.step[type] ) 
 											cb( function step() {  // Callback with its stepper	
 												try {  	// step the engine
-													return engine(thread, eng.Code, ctx);
+													var err =  engine(thread, eng.Code, ctx);
+													return err || ctx.tau;
 												}
 
 												catch (err) {
@@ -934,7 +934,7 @@ console.log([">init",err]);
 						VM.runInContext(vmctx.code,vmctx);
 						return null;
 					}
-
+				
 				else
 					return ENGINE.errors.lostContext;
 			},
