@@ -132,6 +132,7 @@ var
 			LWIP: require('graceful-lwip'),
 			DSP: require('digitalsignals'),
 			CRYPTO: require('crypto'),
+			RAN: require("randpr"),
 			CON: console,
 			console: console,
 			JSON: JSON
@@ -628,9 +629,9 @@ console.log([">kill ",err]);
 			var ctx = Copy(req.query, {
 				sql: req.sql,
 				name: req.table,
-				thread: req.client.replace(/\./g,"") + "." + req.table,
+				thread: req.client.replace(/\./g,"") + "." + req.table
 				//tau: [ENGINE.tau()],
-				port: req.query.port || ""
+				//port: req.query.port || ""
 				//action: "select"
 			});
 			
@@ -792,13 +793,13 @@ console.log([">init",err]);
 
 		find: function (ctx, cb) { //< callback cb(eng) with engine defined by its context
 			ctx.sql.query(
-				"SELECT *,count(ID) AS found FROM app.engines WHERE least(?) LIMIT 0,1", {
+				"SELECT *,count(ID) AS Count FROM app.engines WHERE least(?) LIMIT 0,1", {
 					Name: ctx.name,
 					Enabled: true
 			})
 
 			.on("result", function (eng) { // progam its engine
-				cb(eng.found ? null : ENGINE.errors.noEngine, eng);
+				cb(eng.Count ? null : ENGINE.errors.noEngine, eng);
 			})
 
 			.on("error", function (err) {
@@ -808,6 +809,8 @@ console.log([">init",err]);
 			
 		run: function (ctx,cb) { //< callback cb(step) with its stepper
 			ENGINE.find(ctx, function (err,eng) {
+				//console.log([err,eng]);
+				
 				if (err)
 					cb(null);
 
@@ -816,7 +819,7 @@ console.log([">init",err]);
 						thread = ctx.thread,
 						type = eng.Engine;
 
-					if (eng.found) 
+					if (eng.Count) 
 						if ( engine = ENGINE.init[type] ) {
 
 							try {  // prime its vars
@@ -829,6 +832,8 @@ console.log([">init",err]);
 
 							ENGINE.prime(ctx, function () {  // prime its vars via sql
 
+								console.log({ported:ctx.port});
+								
 								engine(thread, eng.Code || "", ctx, function (err, ctx) {
 
 									if ( err ) 
@@ -881,7 +886,6 @@ console.log([">init",err]);
 				vmctx.code = code;
 				
 				VM.runInContext(code,vmctx);
-
 				cb( null, vmctx );
 			},
 			
@@ -925,11 +929,17 @@ console.log([">init",err]);
 				var vmctx = ENGINE.context[name];
 
 				if ( vmctx )
-					if (vmctx.port) 
-						return ( port = vmctx[vmctx.port] ) 
-							? port(ctx.tau, vmctx.ports[port])
-							: ENGINE.errors.badPort;
-
+					if (vmctx.port) {
+						if ( port = vmctx[vmctx.port] ) {
+							port( ctx, function (rtn) {
+								vmctx.tau = rtn;
+							});
+							return null;
+						}
+						
+						else 
+							return ENGINE.errors.badPort;
+					}
 					else {
 						VM.runInContext(vmctx.code,vmctx);
 						return null;
