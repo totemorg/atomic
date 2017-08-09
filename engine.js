@@ -630,9 +630,6 @@ console.log([">kill ",err]);
 				sql: req.sql,
 				name: req.table,
 				thread: req.client.replace(/\./g,"") + "." + req.table
-				//tau: [ENGINE.tau()],
-				//port: req.query.port || ""
-				//action: "select"
 			});
 			
 			ENGINE.run( ctx, function (step) {
