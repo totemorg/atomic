@@ -806,7 +806,6 @@ console.log([">init",err]);
 			
 		run: function (ctx,cb) { //< callback cb(step) with its stepper
 			ENGINE.find(ctx, function (err,eng) {
-				//console.log([err,eng]);
 				
 				if (err)
 					cb(null);
@@ -814,10 +813,12 @@ console.log([">init",err]);
 				else { // progam and prime it
 					var 
 						thread = ctx.thread,
-						type = eng.Engine;
+						type = eng.Engine,
+						initEngine = ENGINE.init[type],
+						stepEngine = ENGINE.step[type];
 
 					if (eng.Count) 
-						if ( engine = ENGINE.init[type] ) {
+						if ( initEngine && stepEngine ) {
 
 							try {  // prime its vars
 								Copy(JSON.parse(eng.Vars), ctx );
@@ -829,28 +830,23 @@ console.log([">init",err]);
 
 							ENGINE.prime(ctx, function () {  // prime its vars via sql
 
-								console.log({ported:ctx.port});
-								
-								engine(thread, eng.Code || "", ctx, function (err, ctx) {
+								initEngine(ctx.thread, eng.Code || "", ctx, function (err, ctx) {
 
 									if ( err ) 
 										cb( null );
 
-									else 
-										if ( engine = ENGINE.step[type] ) 
-											cb( function step() {  // Callback with its stepper	
-												try {  	// step the engine
-													var err =  engine(thread, eng.Code, ctx);
-													return err || ctx.tau;
-												}
+									else
+										cb( function EngineStepper() {  // Callback with this stepper	
+											try {  	// step the engine
+												var err =  stepEngine(ctx.thread, eng.Code, ctx);
+												return err || ctx.tau;
+											}
 
-												catch (err) {
-													Trace( err );
-												}
-											});
+											catch (err) {
+												return( err );
+											}
+										});
 
-										else 
-											cb( null );
 								});
 
 							});
@@ -862,7 +858,7 @@ console.log([">init",err]);
 			});
 		},
 			
-		init: {  // program engines
+		init: {  // program engines on thread name
 			py: function pyInit(name,code,ctx,cb)  {
 				delete ctx.sql;
 				if ( !ctx.ports ) ctx.ports = {};
@@ -909,40 +905,42 @@ console.log([">init",err]);
 			}
 		},
 			
-		step: {  // step engines
+		step: {  // step engines on thread name
 			py: function pyStep(name,code,ctx) {
-				return ( err = ENGINE.python(name,code,ctx) )
-					? ENGINE.errors[err] || ENGINE.errors.badCode
-					: null;
+				if ( err = ENGINE.python(name,code,ctx) )
+					return ENGINE.errors[err] || ENGINE.errors.badCode;
+				else
+					return null;
 			},
 			
 			cv: function cvStep(name,code,ctx) {
-				return ( err = ENGINE.opencv(name,code,ctx) )
-					? ENGINE.errors[err] || ENGINE.errors.badCode
-					: null;
+				if ( err = ENGINE.opencv(name,code,ctx) )
+					return ENGINE.errors[err] || ENGINE.errors.badCode;
+				else 
+					return null;
 			},
 			
 			js: function jsStep(name,code,ctx) {
 				var vmctx = ENGINE.context[name];
 
 				if ( vmctx )
-					if (vmctx.port) {
+					if (vmctx.port) 
 						if ( port = vmctx[vmctx.port] ) {
 							port( ctx, function (rtn) {
 								vmctx.tau = rtn;
 							});
 							return null;
 						}
-						
+				
 						else 
 							return ENGINE.errors.badPort;
-					}
+					
 					else {
 						VM.runInContext(vmctx.code,vmctx);
 						return null;
 					}
 				
-				else
+				else 
 					return ENGINE.errors.lostContext;
 			},
 			

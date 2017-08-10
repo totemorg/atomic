@@ -46,6 +46,7 @@ and expects the following compile directives:
 #define MAXPORTS 32
 #define MAXCASCADES 10
 #define MAXMACHINES 64
+#define CVBUGJPG "prime.jpg"
 
 //==============================================================
 // OpenCV interface
@@ -431,9 +432,9 @@ class IPORT {							 		// HAAR i/o port
 			*/
 			
 			//<< cv bug. frame init required to prevent a "pure virtual method called" error when stepped
-			frame = cv::imread( "prime.jpg" , 1 );  
+			frame = cv::imread( CVBUGJPG , 1 );  
 			if ( frame.empty() ) 
-				printf(TRACE "need a prime.jpg to avoid an opencv bug\n");			
+				printf(TRACE "need a " CVBUGJPG " to avoid an opencv bug\n");			
 		}
 	
 		// HAAR input frame parameters
@@ -485,7 +486,7 @@ class OPORT {							 		// HAAR i/o port
 			for (int n=0; n<cascades; n++) 
 				HAAR_cascade[n] = V8TOSTRING(Cascade->Get(n));
 
-			printf(TRACE "detector cascades=%d scale=%g dim=%g delta=%g hits=%d depth=%d min=%d,%d max=%d,%d\n",
+			printf(TRACE "HAAR cascades=%d scale=%g dim=%g delta=%g hits=%d depth=%d min=%d,%d max=%d,%d\n",
 					cascades,scale,dim,delta,hits,cascades,min.width,min.height,max.width,max.height);
 
 			for (int n=0; n<cascades; n++) {
@@ -493,10 +494,10 @@ class OPORT {							 		// HAAR i/o port
 				str fname = mac_strcat(fparts,3,HAAR_cascade[n]);
 
 				if( !HAAR_classify[n].load(fname) ) 
-					printf(TRACE "detector ignoring %s\n",fname); 
+					printf(TRACE "HAAR ignored %s\n",fname); 
 				
 				else
-					printf(TRACE "detector using %s\n",fname);
+					printf(TRACE "HAAR loaded %s\n",fname);
 			}
 
 			// Initialize CNN Classifier 
@@ -545,8 +546,10 @@ class FEATURE { 								// Machine output
 		};
 		
 		~FEATURE(void) {
-			if (feature) delete[] feature;
+//printf(TRACE "[free features\n");
+			//if (feature) delete[] feature;  //<dont force this
 			if (name) free(name);
+//printf(TRACE "]free features\n");
 		}
 	
 		// Classify features in Frame over specified AOI bounding-box.
@@ -555,7 +558,7 @@ class FEATURE { 								// Machine output
 			
 			name = mac_strclone(Name);
 
-printf(TRACE "detect depth=%d,%d CNN=%p\n",Depth,Port.cascades,CNN);
+printf(TRACE "HAAR path=%d,%d CNN=%p\n",Depth,Port.cascades,CNN);
 
 			if ( Depth < Port.cascades ) {
 
@@ -704,19 +707,23 @@ class CVMACHINE : public MACHINE {  	// HAAR machine via the MACHINE class
 		};
 	
 		~CVMACHINE(void) {
+printf(TRACE "[free ports\n");
 			if (oPort) delete oPort;
 			if (iPort) delete iPort;
+printf(TRACE "]free ports\n");
 		};
 	
 		// provide V8-C convertors
 		void set(V8ARRAY tar, FEATURE &src) { 	// Set array of HAAR features
 			int n,N=tar->Length();
+//printf(TRACE "set features=%d into tau length=%d\n", src.features, N);
 			for (n=0; n<N && n<src.features; n++) {
 //printf(TRACE "set n=%d\n",n);
 				set( tar->Get(n)->ToObject(), src.feature[n] );
 			}
 			
-			delete[] src.feature;
+//printf(TRACE "set ending\n"); 
+			//if (src.feature) delete[] src.feature;  //< dont force this 
 			// for ( ; n<N; n++) set( tar->Get(n)->ToObject() );  // for debugging
 		}
 
@@ -757,14 +764,23 @@ class CVMACHINE : public MACHINE {  	// HAAR machine via the MACHINE class
 		
 		int latch(V8OBJECT tau, OPORT &port) { 	// Latch output port to output context tau
 			
-			if ( iPort->frame.empty() ) return badStep;
+			if ( iPort->frame.empty() ) 
+				return badStep;
 			
-			if (false) {
-				FEATURE detects( 0, Rect(0,0,0,0), port.name, iPort->frame, port, port.CNN_classify);
-
+			else
+			if (true) {  // debugging
+				FEATURE detects( 1, Rect(0,0,0,0), port.name, iPort->frame, port, port.CNN_classify);
+//printf(TRACE "save detections to tau context\n");
 				set( V8GETARRAY(tau,"dets"), detects);
+//printf(TRACE "save completed\n");
+				return 0;
 			}
-			return 0;
+			
+			else {
+				FEATURE detects( 0, Rect(0,0,0,0), port.name, iPort->frame, port, port.CNN_classify);
+				set( V8GETARRAY(tau,"dets"), detects);
+				return 0;
+			}
 		}
 	
 		int latch(IPORT &port, V8OBJECT tau) { 	// Latch input context tau to input port
