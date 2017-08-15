@@ -33,7 +33,6 @@ var
 			jobs: "./jobs/"
 		},
 		thread: null,
-		builtins: null,
 		cores: 0,
 		nextcore: 0,
 			
@@ -62,15 +61,6 @@ var
 					});
 
 					ENGINE.nextcore = ENGINE.cores ? 1 : 0;
-
-					if (builtins = ENGINE.builtins)
-						for (var eng in  builtins) 
-							sql.query("REPLACE INTO app.engines SET ?", {
-								Name: eng,
-								Enabled: 1,
-								Engine: "js",
-								Code: builtins[eng]+`;tau=0;${eng}(query, function (rtn) {tau=rtn;});`
-							});
 
 					if (CLUSTER.isWorker) 	
 						CLUSTER.worker.process.on("message", function (eng,socket) {

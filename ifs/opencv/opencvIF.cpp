@@ -707,10 +707,10 @@ class CVMACHINE : public MACHINE {  	// HAAR machine via the MACHINE class
 		};
 	
 		~CVMACHINE(void) {
-printf(TRACE "[free ports\n");
+//printf(TRACE "[free ports\n");
 			if (oPort) delete oPort;
 			if (iPort) delete iPort;
-printf(TRACE "]free ports\n");
+//printf(TRACE "]free ports\n");
 		};
 	
 		// provide V8-C convertors
