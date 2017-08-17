@@ -144,7 +144,7 @@ var
 			badPort: new Error("engine provided invalid port"),
 			badCode: new Error("engine returned invalid code"),
 			lostContext: new Error("engine context lost"),
-			noStepper: new Error("engine has no stepper"),
+			noStepper: new Error("engine does not exists, is not enabled, or has no stepper"),
 			badStep: new Error("engine step faulted")
 		},
 			
@@ -288,7 +288,7 @@ var
 				}
 				
 				else  // initialize core if an engine can be located 
-					ENGINE.find({name: name, sql:sql}, function (err,eng) {
+					ENGINE.find( sql, {name: name}, function (err,eng) {
 						if (err)
 							cb( ENGINE.errors.noEngine );
 						
@@ -444,10 +444,12 @@ var
 			}
 			
 			else  // in cluster mode, so no req,cb exists to call ENGINE.app[action], so call custom version
-				context.SQL[context.action](context.sql,[],function (recs) {
-					context.tau = [1,2,3];  // cant work as no cb exists
+				ENGINE.thread( function (sql) {
+					context.SQL[context.action](sql,[],function (recs) {
+						context.tau = [1,2,3];  // cant work as no cb exists
+					});
 				});
-
+			
 			return 0;	
 		},
 
@@ -508,7 +510,6 @@ var
 		//Trace(">py run",[name,port,code]);
 			
 			if (code) {
-				delete context.sql;
 				context.ports = context.ports || {};  	// engine requires valid ports hash
 				//context.tau = tau || []; 				// engine requires valid event list
 
@@ -616,13 +617,14 @@ console.log([">kill ",err]);
 		},
 			
 		select: function (req,res) {	// run a stateless engine 
-			var ctx = Copy(req.query, {
-				sql: req.sql,
-				name: req.table,
-				thread: req.client.replace(/\./g,"") + "." + req.table
-			});
+			var 
+				sql = req.sql,
+				ctx = Copy(req.query, {
+					name: req.table,
+					thread: req.client.replace(/\./g,"") + "." + req.table
+				});
 			
-			ENGINE.run( ctx, function (step) {
+			ENGINE.run( sql, ctx, function (step) {
 				if ( step ) 
 					res( step() );
 				
@@ -648,11 +650,11 @@ console.log([">init",err]);
 			});
 		},
 			
+		execute: function (core,args,cb) {	// add args and plugins to engine context then callback cb(context)
 		/**
 		 * @method execute
 		 * Execute engine cb(context) in its primed context.
 		 * */
-		execute: function (core,args,cb) {	// add args and plugins to engine context then callback cb(context)
 
 		//Trace(">execute",core);			
 			if (core.code) {  // define new context and prime
@@ -665,7 +667,7 @@ console.log([">init",err]);
 				}
 
 				var context = ENGINE.context[core.name] = VM.createContext(Copy(ENGINE.plugins,Copy(args,vars)));
-				ENGINE.prime(context,cb);
+				ENGINE.prime(core.sql, context,cb);  // core.sql ??
 			}
 			
 			else {  // use existing context
@@ -674,30 +676,25 @@ console.log([">init",err]);
 			}
 		},
 			
-		//============= Interface for private (e.g. chipper) workflows
-		
-		/**
-		 * @method prime
-		 * 
-		 * Callback engine cb(context) with its context primed with vars from its context.entry, then export its 
-		 * context vars specified by its context.exit.
-		 * */
-		prime: function (context,cb) {
-			var vars = context.vars, sql = context.sql;
-
-			/*
-			The context.sqls = {var:"query...", ...} || "query..." enumerates the engine's context.entry (to import 
-			vars into its context before the engine is run), and enumerates the engine's context.exit (to export 
-			vars from its context after the engine is run).  If an sqls entry/exit exists, this will cause the 
-			context.vars = [var, ...] list to be built to synchronously import/export the vars into/from the engine's 
-			context.
-			*/
+		prime: function (sql,ctx,cb) {
+			/**
+			@method prime
+			 
+			Callback engine cb(ctx) with its ctx primed with vars from its ctx.entry, then export its 
+			ctx vars specified by its ctx.exit.
+			The ctx.sqls = {var:"query...", ...} || "query..." enumerates the engine's ctx.entry (to import 
+			vars into its ctx before the engine is run), and enumerates the engine's ctx.exit (to export 
+			vars from its ctx after the engine is run).  If an sqls entry/exit exists, this will cause the 
+			ctx.vars = [var, ...] list to be built to synchronously import/export the vars into/from the 
+			engine's context.
+			 * */
+			var vars = ctx.vars;
 
 			if (vars) {    	  // enumerate over each sqls var
 				if ( vars.length ) { 							// more vars to import/export
 					var 
 						varn = vars.pop(), 					// var to import/export
-						query = context.sqls[varn]; 	// sql query to import/export
+						query = ctx.sqls[varn]; 	// sql query to import/export
 
 					if (typeof query != "string") {
 						query = query[0];
@@ -706,29 +703,29 @@ console.log([">init",err]);
 
 		//Trace([varn,query]);
 
-					if (context.sqls == context.entry) {  	// importing this var into the context
-						var data = context[varn] = [];
-						var args = context.query;
+					if (ctx.sqls == ctx.entry) {  	// importing this var into the ctx
+						var data = ctx[varn] = [];
+						var args = ctx.query;
 					}
 					
-					else { 									// exporting this var from the context
-						var data = context[varn] || [];
-						var args = [varn, {result:data}, context.query];
+					else { 									// exporting this var from the ctx
+						var data = ctx[varn] || [];
+						var args = [varn, {result:data}, ctx.query];
 					}
 
 		//Trace(JSON.stringify(args));
 
-					var q = sql.query(query, args, function (err, recs) { 	// import/export this var
+					sql.query(query, args, function (err, recs) { 	// import/export this var
 
 		//Trace([varn,err,q.sql]);
 
 						if (err) {
-							context.err = err;
-							context[varn] = null;
+							ctx.err = err;
+							ctx[varn] = null;
 						}
 						
 						else 
-							if (context.sqls == context.entry)   // importing matrix
+							if (ctx.sqls == ctx.entry)   // importing matrix
 								recs.each( function (n,rec) {
 									var vec = [];
 									data.push( vec );
@@ -738,48 +735,48 @@ console.log([">init",err]);
 							else { 								// exporting matrix
 							}					
 
-						ENGINE.prime(context,cb);
+						ENGINE.prime(sql,ctx,cb);
 					});
 				}
 				
 				else 					// no more vars to load
-				if (cb) {				// run engine in its context
-					cb(context);
+				if (cb) {				// run engine in its ctx
+					cb(ctx);
 
-					if (context.exit) {	// save selected engine context vars
-						var sqls = context.sqls = context.exit;
-						var vars = context.vars = []; for (var n in sqls) vars.push(n);
+					if (ctx.exit) {	// save selected engine ctx vars
+						var sqls = ctx.sqls = ctx.exit;
+						var vars = ctx.vars = []; for (var n in sqls) vars.push(n);
 
-						ENGINE.prime(context);
+						ENGINE.prime(sql,ctx);
 					}
 				}
 			}
 			
 			else
-			if (context.entry) {  // build context.vars from the context.entry sqls
-				var sqls = context.sqls = context.entry;
+			if (ctx.entry) {  // build ctx.vars from the ctx.entry sqls
+				var sqls = ctx.sqls = ctx.entry;
 				
-				if (sqls.constructor == String)   // load entire context
+				if (sqls.constructor == String)   // load entire ctx
 					sql.query(sqls)
 					.on("result", function (vars) {
-						cb( Copy(vars, context) );
+						cb( Copy(vars, ctx) );
 					});
 				
-				else {  // load specific context vars
-					var vars = context.vars = []; 
+				else {  // load specific ctx vars
+					var vars = ctx.vars = []; 
 					for (var n in sqls) vars.push(n);
 				}
 
 		//Trace("entry vars="+vars);
-				ENGINE.prime(context, cb);
+				ENGINE.prime(sql,ctx, cb);
 			}
 			
 			else
-				cb(context);
+				cb(ctx);
 		},
 
-		find: function (ctx, cb) { //< callback cb(eng) with engine defined by its context
-			ctx.sql.query(
+		find: function (sql, ctx, cb) { //< callback cb(eng) with engine defined by its context
+			sql.query(
 				"SELECT *,count(ID) AS Count FROM app.engines WHERE least(?) LIMIT 0,1", {
 					Name: ctx.name,
 					Enabled: true
@@ -794,8 +791,8 @@ console.log([">init",err]);
 			});
 		},
 			
-		run: function (ctx,cb) { //< callback cb(step) with its stepper
-			ENGINE.find(ctx, function (err,eng) {
+		run: function (sql, ctx, cb) { //< callback cb(step) with its stepper
+			ENGINE.find(sql, ctx, function (err,eng) {
 				
 				if (err)
 					cb(null);
@@ -818,7 +815,7 @@ console.log([">init",err]);
 								Trace(err);
 							}
 
-							ENGINE.prime(ctx, function () {  // prime its vars via sql
+							ENGINE.prime(sql, ctx, function () {  // prime its vars via sql
 
 								initEngine(ctx.thread, eng.Code || "", ctx, function (err, ctx) {
 
@@ -850,13 +847,11 @@ console.log([">init",err]);
 			
 		init: {  // program engines on thread name
 			py: function pyInit(name,code,ctx,cb)  {
-				delete ctx.sql;
 				if ( !ctx.ports ) ctx.ports = {};
 				cb( ENGINE.python(name,code,ctx), ctx );
 			},
 			
 			cv: function cvInit(name,code,ctx,cb)  {
-				delete ctx.sql;
 				cb( ENGINE.opencv(name,code,ctx), ctx );
 			},
 			
@@ -887,10 +882,12 @@ console.log([">init",err]);
 			},
 			
 			sq:  function sqInit(name,code,ctx,cb) {
-				ctx.SQL[ctx.action](ctx.sql, [], function (recs) {
-					ctx.tau = [1,2,3];  // cant work as no cb exists
+				ENGINE.thread( function (sql) {
+					ctx.SQL[ctx.action](sql, [], function (recs) {
+						ctx.tau = [1,2,3];  // cant work as no cb exists
+					});
 				});
-
+				
 				return null;	
 			}
 		},
