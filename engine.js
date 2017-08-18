@@ -123,6 +123,7 @@ var
 			DSP: require('digitalsignals'),
 			CRYPTO: require('crypto'),
 			RAN: require("randpr"),
+			SVD: require("node-svd"),
 			CON: console,
 			console: console,
 			JSON: JSON
