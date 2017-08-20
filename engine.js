@@ -1,7 +1,7 @@
 // UNCLASSIFIED
 
 /**
- * @class engine
+ * @class ENGINE
  * @requires engineIF
  * @requires child_process
  * @requires fs
@@ -29,13 +29,45 @@ var
 	ENGINE = module.exports = Copy( //< extend the engineIF built by node-gyp
 		require("./ifs/build/Release/engineIF"), {
 		
+		/**
+		@cfg {Object}
+		@private
+		@member ENGINE
+		Paths to various things.
+		*/
 		paths: {
 			jobs: "./jobs/"
 		},
+		
+		/**
+		@cfg {Function}
+		@private
+		@member ENGINE
+		@method thread
+		Start a sql thread
+		*/
 		thread: null,
+		
+		/**
+		@cfg {Number}
+		@member ENGINE
+		Number of worker cores (aka threads) to provide in the cluster.  0 cores provides only the master.
+		*/
 		cores: 0,
-		nextcore: 0,
 			
+		/**
+		@cfg {Number}
+		@private
+		Next available core
+		*/
+		nextcore: 0,
+		
+		/**
+		@cfg {Object}
+		@method config
+		@member ENGINE
+		Configure are start the engine interface, estblish worker core connections
+		*/
 		config: function (opts) {  // configure with options
 	
 			Trace(`Engines configured`);
@@ -116,7 +148,12 @@ var
 		},
 
 		flex: null,
-			
+		
+		/**
+		@cfg {Object}
+		@member ENGINE
+		Modules to share accross all js-engines
+		*/
 		plugins: {  // plugins libs available to all engines
 			MATH: require('mathjs'),
 			LWIP: require('graceful-lwip'),
@@ -129,6 +166,12 @@ var
 			JSON: JSON
 		},
 			
+		/**
+		@cfg {Object}
+		@private
+		@member ENGINE
+		Error messages
+		*/
 		errors: {  // error messages
 			0: null,
 			101: new Error("engine could not be loaded"),
@@ -166,6 +209,7 @@ var
 
 		/**
 		* @method allocate
+		* @member ENGINE
 		* 
 		* Allocate the supplied callback cb(core) with the engine core that is/was allocated to a Client.Engine.Type.Instance
 		* thread as defined by this request (in the req.body and req.log).  If a workflow Instance is 
@@ -327,6 +371,7 @@ var
 
 		/**
 		 * @method save
+		 * @member ENGINE
 		 * 
 		 * Save tau job files.
 		*/
@@ -678,17 +723,17 @@ console.log([">init",err]);
 		},
 			
 		prime: function (sql,ctx,cb) {
-			/**
-			@method prime
-			 
-			Callback engine cb(ctx) with its ctx primed with vars from its ctx.entry, then export its 
-			ctx vars specified by its ctx.exit.
-			The ctx.sqls = {var:"query...", ...} || "query..." enumerates the engine's ctx.entry (to import 
-			vars into its ctx before the engine is run), and enumerates the engine's ctx.exit (to export 
-			vars from its ctx after the engine is run).  If an sqls entry/exit exists, this will cause the 
-			ctx.vars = [var, ...] list to be built to synchronously import/export the vars into/from the 
-			engine's context.
-			 * */
+		/**
+		@method prime
+
+		Callback engine cb(ctx) with its ctx primed with vars from its ctx.entry, then export its 
+		ctx vars specified by its ctx.exit.
+		The ctx.sqls = {var:"query...", ...} || "query..." enumerates the engine's ctx.entry (to import 
+		vars into its ctx before the engine is run), and enumerates the engine's ctx.exit (to export 
+		vars from its ctx after the engine is run).  If an sqls entry/exit exists, this will cause the 
+		ctx.vars = [var, ...] list to be built to synchronously import/export the vars into/from the 
+		engine's context.
+		 * */
 			var vars = ctx.vars;
 
 			if (vars) {    	  // enumerate over each sqls var

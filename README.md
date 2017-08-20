@@ -1,20 +1,24 @@
 /**
-@class engine [![Forked from SourceForge](https://sourceforge.net)]
+@class ENGINE 	
+	[SourceForge](https://sourceforge.net) 
+	[github](https://github.com/acmesds/engine.git) 
+	[geointapps](https://git.geointapps.org/acmesds/engine)
+	[gitlab](https://gitlab.weat.nga.ic.gov/acmesds/engine.git)
+
 # ENGINE
 
-ENGINE provides a foundation for hyperthreaded workflows to (both stateless and stateful) engines of type
+ENGINE implements hyperthreaded workflows to both [stateless and stateful engines](/api.view) of TYPE
 
-	X = py | js | sh | opencv | mat | csh | r | octave
+	py | js | sh | opencv | mat | csh | r | octave
 
-at ENGINE[X].  Engines are controlled via the following methods (restful http endpoints):
+at ENGINE[TYPE].  Engines are controlled via the following methods (restful http endpoints):
 
-	step (POST,insert) to advance a stateful engine
-	init (PUT,update) to compile a stateful engine
-	kill (DELETE,delete) to deallocate a stateful engine
-	read (GET,select) to execute a stateless engines
+	POST advance/setp/insert a stateful engine
+	PUT	compile/init/update a stateful engine
+	DELETE deallocate/kill/delete a stateful engine
+	GET execute/read/select a stateless engines
 
-Stateful engines are supported by the step, init and kill methods, 
-and are passed TAU event tokens:
+Stateful engines are supported by the step, init and kill methods, and are passed TAU event tokens:
 
 	TAU.i = [{tau}, ...] = events arriving to engine's input port
 	TAU.o = [{tau}, ...] = events departing from engine's output port
@@ -55,13 +59,27 @@ the config parameters:
 
 ## Installation
 
-Download the latest version with
-
-	git clone https://git.geointapps.org/acmesds/flex
+Clone from one of the repos.  
 	
-## Examples
+## Use
+ENGINE is configured and started like this:
 
-Below samples are from engine/test.js unit tester.
+	var TOTEM = require("../dsvar").config({
+			key: value, 						// set key
+			"key.key": value, 					// indexed set
+			"key.key.": value,					// indexed append
+			OBJECT: [ function (){}, ... ], 	// add OBJECT prototypes 
+			Function: function () {} 			// add chained initializer callback
+			:
+			:
+		}, function (err) {
+		console.log( err ? "something evil happended" : "Im running");
+	});
+
+where its configuration keys follow the [ENUM copy()](https://github.com/acmesds/enum) conventions and
+are described in its [PRM](/shares/prm/engine/index.html).
+
+The examples below are provided in TOTEM's test.js unit tester.
 
 ### E1 - Totem and Engine interfaces
 
@@ -91,7 +109,7 @@ Below samples are from engine/test.js unit tester.
 ### E3 - Totem service with a chipper engine endpoint and a database
 
 	var TOTEM = require("../totem").config({
-		"reader.": {
+		"byType.": {
 			chipper: function Chipper(req,res) {				
 				res( 123 );
 			}
@@ -112,7 +130,7 @@ Below samples are from engine/test.js unit tester.
 ### E4 - Totem with a complete engine test endpoint
 
 		var TOTEM = require("../totem").config({
-			"reader.": {
+			"byType.": {
 				test: function Chipper(req,res) {
 					
 					var itau = [ENGINE.tau()];
