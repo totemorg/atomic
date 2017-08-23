@@ -188,8 +188,9 @@ var
 			badPort: new Error("engine provided invalid port"),
 			badCode: new Error("engine returned invalid code"),
 			lostContext: new Error("engine context lost"),
-			noStepper: new Error("engine does not exists, is not enabled, or has no stepper"),
-			badStep: new Error("engine step faulted")
+			noStepper: new Error("engine has no stepper or an invalid context"),
+			badStep: new Error("engine step faulted"),
+			badContext: new Error("engine context bad")
 		},
 			
 		context: {},
@@ -669,12 +670,12 @@ console.log([">kill ",err]);
 					name: req.table,
 					thread: req.client.replace(/\./g,"") + "." + req.table
 				});
-			
+
 			ENGINE.run( sql, ctx, function (step) {
 				if ( step ) 
 					res( step() );
 				
-				else
+				else 
 					res( ENGINE.errors.noStepper );
 			});
 		},
@@ -822,19 +823,26 @@ console.log([">init",err]);
 		},
 
 		find: function (sql, ctx, cb) { //< callback cb(eng) with engine defined by its context
+			
 			sql.query(
-				"SELECT *,count(ID) AS Count FROM app.engines WHERE least(?) LIMIT 0,1", {
+				"SELECT * FROM app.engines WHERE least(?) LIMIT 0,1", {
 					Name: ctx.name,
 					Enabled: true
+			}, function (err, engs) {
+				
+				if (err) 
+					cb(err, null);
+				
+				else {
+					var isEmpty = engs.each( function (n, eng, isLast) {
+						if (isLast) cb( null, Copy(eng,ctx));
+					});
+					
+					if (isEmpty) 
+						cb( ENGINE.errors.noEngine, null );
+				}
 			})
 
-			.on("result", function (eng) { // progam its engine
-				cb(eng.Count ? null : ENGINE.errors.noEngine, eng);
-			})
-
-			.on("error", function (err) {
-				cb( err, null );
-			});
 		},
 			
 		run: function (sql, ctx, cb) { //< callback cb(step) with its stepper
@@ -850,43 +858,48 @@ console.log([">init",err]);
 						initEngine = ENGINE.init[type],
 						stepEngine = ENGINE.step[type];
 
-					if (eng.Count) 
-						if ( initEngine && stepEngine ) {
+					//console.log([initEngine, stepEngine]);
+					
+					if ( initEngine && stepEngine ) {
 
-							try {  // prime its vars
-								Copy(JSON.parse(eng.Vars), ctx );
-							}
-
-							catch (err) {
-								Trace(err);
-							}
-
-							ENGINE.prime(sql, ctx, function () {  // prime its vars via sql
-
-								initEngine(ctx.thread, eng.Code || "", ctx, function (err, ctx) {
-
-									if ( err ) 
-										cb( null );
-
-									else
-										cb( function EngineStepper() {  // Callback with this stepper	
-											try {  	// step the engine
-												var err =  stepEngine(ctx.thread, eng.Code, ctx);
-												return err || ctx.tau;
-											}
-
-											catch (err) {
-												return( err );
-											}
-										});
-
-								});
-
-							});
+						try {  // prime its vars
+							Copy(JSON.parse(eng.Vars) || {}, ctx );
 						}
 
-						else
-							cb( null );
+						catch (err) {
+							Trace(err);
+						}
+
+						ENGINE.prime(sql, ctx, function () {  // prime its vars via sql
+
+							// console.log({primed: ctx});
+						
+							initEngine(ctx.thread, eng.Code || "", ctx, function (err, ctx) {
+
+								// console.log({init: err, ctx: ctx});
+								
+								if ( err ) 
+									cb( null );
+
+								else
+									cb( function EngineStepper() {  // Callback with this stepper	
+										try {  	// step the engine
+											var err =  stepEngine(ctx.thread, eng.Code, ctx);  // dont  combine in return because of order of evaluations
+											return err ? null : ctx.tau;
+										}
+
+										catch (err) {
+											return( null );
+										}
+									});
+
+							});
+
+						});
+					}
+
+					else
+						cb( null );
 				}
 			});
 		},
@@ -898,7 +911,15 @@ console.log([">init",err]);
 			},
 			
 			cv: function cvInit(name,code,ctx,cb)  {
-				cb( ENGINE.opencv(name,code,ctx), ctx );
+				if ( ctx.frame && ctx.detector )
+					if ( err = ENGINE.opencv(name,code,ctx) )
+						cb( ENGINE.errors[err] || ENGINE.errors.badCode, ctx );
+				
+					else
+						cb( null, ctx );
+				
+				else
+					cb( ENGINE.errors.badContext, ctx );
 			},
 			
 			js: function jsInit(name,code,ctx,cb)  {
@@ -947,10 +968,16 @@ console.log([">init",err]);
 			},
 			
 			cv: function cvStep(name,code,ctx) {
-				if ( err = ENGINE.opencv(name,code,ctx) )
-					return ENGINE.errors[err] || ENGINE.errors.badCode;
-				else 
-					return null;
+				
+				if ( ctx.frame && ctx.detector )
+					if ( err = ENGINE.opencv(name,code,ctx) )
+						return ENGINE.errors[err] || ENGINE.errors.badCode;
+					
+					else 
+						return null;
+				
+				else
+					return ENGINE.errors.badContext;
 			},
 			
 			js: function jsStep(name,code,ctx) {
