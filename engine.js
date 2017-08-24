@@ -913,7 +913,8 @@ console.log([">init",err]);
 			cv: function cvInit(name,code,ctx,cb)  {
 				if ( ctx.frame && ctx.detector )
 					if ( err = ENGINE.opencv(name,code,ctx) )
-						cb( ENGINE.errors[err] || ENGINE.errors.badCode, ctx );
+						cb( null, ctx );
+						//cb( ENGINE.errors[err] || ENGINE.errors.badCode, ctx );
 				
 					else
 						cb( null, ctx );
