@@ -161,6 +161,8 @@ var
 			CRYPTO: require('crypto'),
 			RAN: require("randpr"),
 			SVD: require("node-svd"),
+			MLE: require("expectation-maximization"),
+			MVN: require("multivariate-normal"),
 			CON: console,
 			console: console,
 			JSON: JSON
@@ -188,7 +190,7 @@ var
 			badPort: new Error("engine provided invalid port"),
 			badCode: new Error("engine returned invalid code"),
 			lostContext: new Error("engine context lost"),
-			noStepper: new Error("engine has no stepper or an invalid context"),
+			noStepper: new Error("engine does not exist, is disabled, or has no context"),
 			badStep: new Error("engine step faulted"),
 			badContext: new Error("engine context bad")
 		},
@@ -672,11 +674,12 @@ console.log([">kill ",err]);
 				});
 
 			ENGINE.run( sql, ctx, function (step) {
+				//console.log({engstep: step, eng: req.table});
 				if ( step ) 
 					res( step() );
 				
 				else 
-					res( ENGINE.errors.noStepper );
+					res( null );
 			});
 		},
 			
