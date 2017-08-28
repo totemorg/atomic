@@ -237,15 +237,18 @@ var
 		},
 			
 		program: function (sql, ctx, cb) {  //< callback cb(ctx) with programed engine context or null if error
-			ctx.state = {};
 			try {  // prime its state
 				ctx.state = JSON.parse(ctx.state) || {};
 				if (ctx.state.constructor != Object) ctx.state = {};
 			}
 
 			catch (err) {
-				Trace(err);
+				ctx.state = {};
+				//Trace(err);
 			}
+			
+			if (ctx.query) Copy(ctx.query,ctx.state);
+			//console.log(ctx);
 			
 			if ( initEngine = ctx.init )
 				ENGINE.prime(sql, ctx.state, function (state) {  // prime its state via sql
@@ -566,7 +569,7 @@ console.log([">kill ",ctx]);
 					thread: req.client.replace(/\./g,"") + "." + req.table,
 					group: req.group,
 					name: req.table,
-					state: req.query
+					query: req.query
 				};
 
 			ENGINE.run( sql, ctx, function (step) {
