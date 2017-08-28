@@ -238,8 +238,8 @@ var
 			
 		program: function (sql, ctx, cb) {  //< callback cb(ctx) with programed engine context or null if error
 			ctx.state = {};
-			try {  // prime its vars
-				ctx.state = JSON.parse(ctx.vars) || {};
+			try {  // prime its state
+				ctx.state = JSON.parse(ctx.state) || {};
 				if (ctx.state.constructor != Object) ctx.state = {};
 			}
 
@@ -248,7 +248,7 @@ var
 			}
 			
 			if ( initEngine = ctx.init )
-				ENGINE.prime(sql, ctx.state, function (state) {  // prime its vars via sql
+				ENGINE.prime(sql, ctx.state, function (state) {  // prime its state via sql
 					
 					if (state) 
 						initEngine(ctx.thread, ctx.code || "", state, function (err, ctx) {
@@ -387,27 +387,32 @@ var
 				if (ctx)
 					ENGINE.getCore( sql, ctx, function (ctx) {  // run(args,core,cb)
 						
-						var mywid = CLUSTER.isMaster ? 0 : CLUSTER.worker.id;
+						if (ctx) {
+							var mywid = CLUSTER.isMaster ? 0 : CLUSTER.worker.id;
 
-						console.log({ismas:CLUSTER.isMaster, ctxwid:ctx.wid, mywid: mywid, cores:ENGINE.cores, next:ENGINE.nextcore});
+							console.log({ismas:CLUSTER.isMaster, ctxwid:ctx.wid, mywid: mywid, cores:ENGINE.cores, next:ENGINE.nextcore});
+
+							if ( ctx.wid == mywid )   	// was assigned to this stateful worker/master
+								cb( ctx );
+
+							else
+								if ( mywid ) 		// im a worker so I dont know about other workers (req made on 8080) 
+									cb( null ); 
+
+								else 				// im the master so I know about my workers
+								if ( worker = CLUSTER.workers[ ctx.wid ] ) {		// let assigned stateful engine respond on this socket
+									delete ctx.init;
+									delete ctx.step;
+									ctx.action = req.action;
+									worker.send( ctx, req.connection );
+								}
+
+								else // naughty worker dropped its thread
+									cb( null ); 
+						}
 						
-						if ( ctx.wid == mywid )   	// was assigned to this stateful worker/master
-							cb( ctx );
-
 						else
-							if ( mywid ) 		// im a worker so I dont know about other workers (req made on 8080) 
-								cb( null ); 
-						
-							else 				// im the master so I know about my workers
-							if ( worker = CLUSTER.workers[ ctx.wid ] ) {		// let assigned stateful engine respond on this socket
-								delete ctx.init;
-								delete ctx.step;
-								ctx.action = req.action;
-								worker.send( ctx, req.connection );
-							}
-						
-							else // naughty worker dropped its thread
-								cb( null ); 
+							cb( null );
 					});
 								   
 				else
@@ -596,12 +601,12 @@ console.log([">init",ctx]);
 		/**
 		@method prime
 
-		Callback engine cb(ctx) with its state ctx primed with vars from its ctx.entry, then export its 
-		ctx vars specified by its ctx.exit.
+		Callback engine cb(ctx) with its state ctx primed with state from its ctx.entry, then export its 
+		ctx state specified by its ctx.exit.
 		The ctx.sqls = {var:"query...", ...} || "query..." enumerates the engine's ctx.entry (to import 
-		vars into its ctx before the engine is run), and enumerates the engine's ctx.exit (to export 
-		vars from its ctx after the engine is run).  If an sqls entry/exit exists, this will cause the 
-		ctx.vars = [var, ...] list to be built to synchronously import/export the vars into/from the 
+		state into its ctx before the engine is run), and enumerates the engine's ctx.exit (to export 
+		state from its ctx after the engine is run).  If an sqls entry/exit exists, this will cause the 
+		ctx.state = [var, ...] list to be built to synchronously import/export the state into/from the 
 		engine's context.
 		 * */
 			var keys = ctx.keys;
@@ -705,11 +710,11 @@ console.log([">init",ctx]);
 					if ( isEmpty = engs.each( function (n, eng, isLast) {
 						
 						if (isLast) cb( Copy({
-							type: eng.Engine, 
-							vars: eng.Vars,
+							type: eng.Type, 
+							state: eng.State,
 							code: eng.Code,
-							init: ENGINE.init[ eng.Engine ],
-							step: ENGINE.step[ eng.Engine ]
+							init: ENGINE.init[ eng.Type ],
+							step: ENGINE.step[ eng.Type ]
 						}, ctx));
 						
 					}) ) cb( null );
@@ -780,8 +785,8 @@ console.log([">init",ctx]);
 			
 			sq:  function sqInit(name,code,ctx,cb) {
 				ENGINE.thread( function (sql) {
-					ctx.state.SQL[ctx.action](sql, [], function (recs) {
-						ctx.state.tau = [1,2,3];  // cant work as no cb exists
+					ctx.SQL[ctx.action](sql, [], function (recs) {
+						ctx.tau = [1,2,3];  // cant work as no cb exists
 					});
 				});
 				
