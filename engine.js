@@ -77,95 +77,28 @@ var
 			if (thread = ENGINE.thread)
 				thread( function (sql) { // compile engines defined in engines DB
 
-					/*
-					function compileEngine(engine, name, code, res) {
-						try {
-							VM.runInContext( "FLEX."+engine+"."+name+"="+code, VM.createContext({FLEX:FLEX})  );
-
-							if (res) res("ok");
-						}
-						catch (err) {
-							if (res) res(new Error(err+""));
-						}
-					}	
-					*/
-					/*
-					sql.query("DELETE FROM app.simcores", function (err) {
-						Trace(err || "RESET ENGINE CORES");
-					});*/
-
-					ENGINE.nextcore = ENGINE.cores ? 1 : 0;
-
+					// Using https generates a TypeError("Listener must be a function") at runtime.
+					
 					if (CLUSTER.isWorker) 	
-						CLUSTER.worker.process.on("message", function (req,socket) {
+						process.on("message", function (req,socket) {  // cant use CLUSTER.worker.process.on
 							
-							function run(state, ctx) {
-								Trace("CORE"+CLUSTER.worker.id+" RUNING ");
-								Copy(state, ctx.state);
-								
-								switch ( ctx.action ) {
-									case "update": 
-										socket.end( "" );
-										break;
-
-									case "delete":
-									case "select":
-										socket.end( "worker tbd" );
-										break;
-
-									case "insert":
-										var err = ENGINE.advance(ctx);
-										socket.end( err ? "worker failed engine step" : JSON.stringify( ctx.state.tau || null ) );
-										break;
-
-									default:
-										socket.end( "bad worker action" );
-
-								}
-							}
-							
-							if (req.action) { 		// process only tau messages (ignores sockets, etc)
-								
-								Trace("CORE"+CLUSTER.worker.id+" GRABBING "+req.thread+" FOR "+req.action);
-								
-								if ( ctx = ENGINE.context[req.thread] )
-									run( req.state, ctx );
-								
-								else {
-									var ctx = ENGINE.context[req.thread] = new Object(req);
-									Trace("CORE"+CLUSTER.worker.id+" INITING "+req.thread);
-									console.log( ENGINE.context );
-									
+							if (req.thread) { 		// process only our messages (ignores sockets, etc)
+								console.log("CORE"+CLUSTER.worker.id+" GRABBING "+req.thread+" FOR "+req.action);
+//console.log(req);							
+								if ( route = ENGINE[req.action] ) 
 									ENGINE.thread( function (sql) {
-										Trace("CORE"+CLUSTER.worker.id+" PGMING "+req.thread);
-										console.log({ctx:ctx});
-										ENGINE.run( sql, ctx, function (step) {
-											console.log({stepper: step});
-											if (step)
-												run( req.state, ctx );
-											else
-												socket.end( "worker failed to initialize" );
+										req.sql = sql;
+										req.connection = null;
+										route( req, function (ack) {
+											socket.end( JSON.stringify(ack) );
+											sql.release();
 										});
-									});										
-								}
-								/*ENGINE.thread(function (sql) {
-									args.sql = sql;
+									});
+								
+								else
+									socket.end( ENGINE.errors.badRequest+"" );  
 
-									ENGINE.execute(core, args, function (context) {
-
-										if (engine = ENGINE[core.type] )
-											try {
-												var rtn = engine(core.name,args.port,context.tau,context,core.code);
-											}
-											catch (err) {
-												var rtn = ENGINE.errors.badType; //err+"";
-											}
-										else
-											var rtn = ENGINE.errors.badType;
-
-										var rtn = ENGINE.errors[rtn];
-										*/
-							}
+							}									
 						});
 				});
 
@@ -218,7 +151,8 @@ var
 			noStepper: new Error("engine does not exist, is disabled, or has no context"),
 			badStep: new Error("engine step faulted"),
 			badContext: new Error("engine context bad"),
-			badProgram: new Error("engine failed to program")
+			badProgram: new Error("engine failed to program"),
+			badRequest: new Error("worker does not understand request")
 		},
 			
 		context: {},
@@ -237,29 +171,14 @@ var
 			 });
 		},
 
-		advance: function (ctx) {
-			if ( stepEngine = ctx.step )
-				try {  	// step the engine
-					// dont  combine err with return because of order of evaluations
-					//console.log( stepEngine, ctx.type, ENGINE.step[ctx.type] );
-					var err =  stepEngine(ctx.thread, ctx.code, ctx.state); 
-					return err ? ENGINE.errors[err] || ENGINE.badError : null;
-				}
-
-				catch (err) {
-					return err;
-				}
-
-			else 
-				return ENGINE.errors.noStepper;
-		},
-			
 		program: function (sql, ctx, cb) {  //< callback cb(ctx) with programed engine context or null if error
 			if ( initEngine = ctx.init )
 				ENGINE.prime(sql, ctx.state, function (state) {  // prime its state via sql
+					//console.log({primeeng: state});
 					
 					if (state) 
 						initEngine(ctx.thread, ctx.code || "", state, function (err, state) {
+							//console.log({initeng: err});
 							cb( err ? null : ctx );
 						});
 					
@@ -270,117 +189,11 @@ var
 			else
 				cb( null );
 		},
-					
-		getCore: function (req, cb) {  // callback cb(ctx) with existing/new engine context or null if error
-			var
-				sql = req.sql,
-				thread = `${req.client}.${req.table}.${req.type}.${req.body.thread || "0"}`,
-				newctx = {
-					thread: thread,
-					action: req.action,
-					group: req.group,
-					name: req.table,
-					state: Copy( req.query, {
-						tau: req.body.tau || [],
-						port: req.body.port || ""
-					})
-				},
-				myid = CLUSTER.isMaster ? 0 : CLUSTER.worker.id;
-
-			function run(ctx, cb) {
-				Copy( newctx.state, ctx.state );	
-				cb( ctx );
-			}			
 			
-			if ( ctx = ENGINE.context[thread] ) {  // work/handoff this context thread
-				
-				newctx.id = ctx.id;
-				if ( ctx.id == myid )  // its mine so work it
-					run( ctx, cb);
-			
-				else 
-				if ( !myid )  // the master can handoff	to workers
-					if ( worker = CLUSTER.workers[ ctx.id ] )  //handoff to worker on this socket
-						worker.send( newctx , req.connection );
-
-					else  // handoff failed
-						cb( null );
-					
-				else  // workers cant handoff
-					cb( null );
-			}
-			
-			else {  // create new context thread and work/handoff
-				var ctx = {
-					id: CLUSTER.isMaster	// let master allocate a worker
-								? ENGINE.cores 
-										? ENGINE.nextcore++ % ENGINE.cores  // use next worker
-										: myid 					// no cores so use me
-
-								: myid, // use me
-
-					group: req.group,
-					name: req.table,
-					thread: thread
-				};
-				
-				if ( ctx.id == myid)  {  // assigned to me so run it in its state context
-					ENGINE.context[thread] = ctx;
-					
-					ENGINE.getState(sql, ctx, function (ctx) {   // try to get an engine to prime ctx.state
-						if (ctx) 
-							run( ctx, cb );
-						else
-							cb( null );
-					});
-				}
-				
-				else 
-				if ( worker = CLUSTER.workers[ ctx.id ] ) 	//handoff to worker on this socket
-					worker.send( newctx , req.connection );
-
-				else  // handoff failed
-					cb( null );					
-			}
-		},
-
-		/*
-		call: function (ctx,cb) { // Call (compile and/or step) an engine with callback cb(context) in its context.
-
-			Each(context.tau, function (n,tau) { 			// prefix jobs with mount point
-				tau.job = ENGINE.paths.jobs + tau.job;
-			});
-
-			if ( engine = ENGINE[core.type] )
-				try {  												// call the engine
-		//Trace(">context",context);
-					var rtn = engine(core.name,context.port,context.tau,context,core.code);
-
-					Each(context.tau, function (n,tau) { 			// remove mount point from jobs
-						if (tau.job) 
-							tau.job = tau.job.substr(ENGINE.paths.jobs.length);
-					}); 
-
-					cb(null,context);
-				}
-
-				catch (err) {
-					cb(err,context);
-				}
-
-			else
-				cb (new Error(`Bad engine type ${core.type}`));
-
-			//save(sql,context.otau,context.port,core.name,core.save);
-		} */
-								
-		allocate: function (sql, req, cb) {  // callback cb(ctx); context ctx null if thread dropped; no cb if handoff
-		},
-
+		run: function (req, cb) {  // callback cb(ctx, step) with engine context and a stepper, or with nulls if error. 
+		// req = { group, table, client, query, body, action, state }
+		// if a req.state is not provided, then the engine programmed.
 		/**
-		* @method allocate
-		* @member ENGINE
-		* 
 		* Allocate the supplied callback cb(core) with the engine core that is/was allocated to a Client.Engine.Type.Instance
 		* thread as defined by this request (in the req.body and req.log).  If a workflow Instance is 
 		* provided, then the engine is assumed to be in a workflow (thus the returned core will remain
@@ -409,21 +222,120 @@ var
 		* This method will callback cb(core) with the requested engine core; null if the core could not
 		* be located or allocated.
 		*/
-		/*
-		Get assocated engine core if already allocated; otherwise allocate a new core.  We keep the
-		cores in a sql table so that all cluster workers have a common place to access engine
-		cores, thus allowing the engine to stay on the same worker core.  In this way, we can
-		step the engine on the same thread (hence state) is was compiled on.  If no thread is
-		specified (e.g. when engine called outside a workflow), then the engine will be forced
-		to recompile itself.
-		*/
+			
+			var
+				sql = req.sql,
+				thread = `${req.client}.${req.table}.${req.body.thread || 0}`;
+
+			function CONTEXT (thread) {  // create new engine context for provided thread name
+				this.myid = CLUSTER.isMaster ? 0 : CLUSTER.worker.id;  // my worker id
+
+				this.id = CLUSTER.isMaster	// potential worker id
+					? ENGINE.cores 
+							? (ENGINE.nextcore++ % ENGINE.cores)+1  // use next worker
+							: this.myid 					// no cores so master uses itself
+
+					: this.myid; // use me
+
+				this.worker = CLUSTER.isMaster ? CLUSTER.workers[this.id] : null;
+
+				this.thread = thread;
+			}
+						
+			function take(ctx, cb) {
+				Copy( Copy( req.query, { 
+					tau: req.body.tau || [],
+					port: req.body.port || ""
+				} ), ctx.state );	
+
+				cb( ctx.state, function () {  // callback with engine state context and this stepper (which returns an error or null if it worked)
+
+					if ( stepEngine = ctx.step )
+						try {  	// step the engine
+							// dont  combine err with return because of order of evaluations
+							//console.log( stepEngine, ctx.type, ENGINE.step[ctx.type] );
+							var err =  stepEngine(ctx.thread, ctx.code, ctx.state); 
+							return err ? ENGINE.errors[err] || ENGINE.badError : null;
+						}
+
+						catch (err) {
+							return err;
+						}
+
+					else 
+						return ENGINE.errors.noStepper;
+
+				});
+			}
+
+			function handoff(ctx, cb) {
+				if ( worker = ctx.worker ) //handoff thread to worker on this socket 
+					if (req.connection) 
+						worker.send({
+							group: req.group,
+							table: req.table,
+							client: req.client,
+							query: req.query,
+							body: req.body,
+							action: req.action,
+							thread: ctx.thread
+						}, req.connection) ;
+
+					else
+						cb( null );
+				
+				else // cant handoff to master
+					cb( null );
+			}
+
+			if ( ENGINE.cores && CLUSTER.isMaster)  // on master so assign / handoff to worker
+				if ( ctx = ENGINE.context[thread] ) // handoff to assigned worker
+					handoff( ctx, cb );
+
+				else { // assign a worker then handoff
+					var ctx = ENGINE.context[thread] = new CONTEXT(thread);
+					Trace( `CORE${ctx.id} ASSIGNED ${ctx.thread}` );
+					handoff( ctx, cb );
+				}
+
+			else // on worker
+			if ( ctx = ENGINE.context[thread] ) {  // run it if worker has the context
+				Trace( `CORE${ctx.id} WORKING ${ctx.thread}` );
+				if ( ctx.state )  // was sucessfullyl initialized so can take
+					take( ctx, cb );
+
+				else  // failed initialization so much reject
+					cb( null );
+			}
+
+			else { // worker must initialize it, then run it
+				var ctx = ENGINE.context[thread] = new CONTEXT(thread);
+				Trace( `CORE${ctx.id} INITIALIZING ${ctx.thread}` );
+				ENGINE.getEngine( req, ctx, function (ctx) {
+					if (ctx) 
+						ENGINE.program( sql, ctx, function (ctx) {
+							if (ctx) // all went well so take it
+								take( ctx, cb );
+
+							else  // failed to compile
+								cb( null );
+						});
+
+					else
+						cb( null );
+				});
+			}
+				
+		},
+
+		save: function (sql,taus,port,engine,saves) {
 		/**
 		 * @method save
 		 * @member ENGINE
 		 * 
 		 * Save tau job files.
 		*/
-		save: function (sql,taus,port,engine,saves) {
+			
 			var t = new Date();
 
 			Each(taus, function (n,tau) {
@@ -464,11 +376,11 @@ var
 			});
 		},
 		
+		returns: function (context) {  //< legacy
 		/**
 		 * @method returns
 		 * Return tau parameters in matrix format
 		 * */
-		returns: function (context) {  //< legacy
 			var tau = context.tau || [];
 
 			return tau;
@@ -527,50 +439,31 @@ var
 		 * Provide methods to step/insert/POST, compile/update/PUT, run/select/GET, and free/delete/DELETE and engine.
 		*/
 		insert: function (req,res) {	// step a stateful engine
-			ENGINE.getCore(req, function (ctx) {
-console.log([">step ",ctx]);
-				if ( ctx ) {
-					var err = ENGINE.advance( ctx );
-					res( err ? (ENGINE.errors[err] || ENGINE.errors.badError)+"" : JSON.stringify( ctx.state.tau || "[]" ) ); 
-				}
+			ENGINE.run(req, function (ctx,step) {
+//console.log(">step ",ctx);
+				if ( ctx ) 
+					res( step() || JSON.stringify( ctx.tau || "[]" ) ); 
 				
 				else
 					res( ENGINE.errors.badThread );
-				
 			});
 		},
 			
 		delete: function (req,res) {	// free a stateful engine
-			ENGINE.getCore(req, function (ctx) {
-console.log([">kill ",ctx]);
+			ENGINE.run(req, function (ctx,step) {
+//console.log(">kill ",ctx);
 
-				if (ctx)  {
-					sql.query("DELETE FROM ??.simcores WHERE Thread=?", [ctx.group,ctx.thread]);
-					res( ctx ? "" : ENGINE.errors.hadFault+"" ); 
-				}
-				
-				else
-					res( ENGINE.errors.badThread );				
+				res( ctx ? "" : ENGINE.errors.badThread );				
 			});
 		},
 			
 		select: function (req,res) {	// run a stateless engine 
-			var 
-				sql = req.sql,
-				ctx = {
-					thread: `${req.client}.${req.table}.${req.type}.${req.body.thread || "0"}`,
-					group: req.group,
-					name: req.table,
-					state: req.query
-				};
-
-			ENGINE.run( sql, ctx, function (step) {
-				if (step) 
-					if ( err = step( ctx ) )
-						res( err );
-
-					else 
-						res( ctx.state.tau );
+			ENGINE.run( req, function (ctx, step) {
+				
+//console.log(">run", ctx);
+				
+				if (ctx) 
+					res( step() || ctx.tau );
 				
 				else
 					res( ENGINE.errors.noStepper );
@@ -578,17 +471,10 @@ console.log([">kill ",ctx]);
 		},
 			
 		update: function (req,res) {	// compile a stateful engine
-			ENGINE.getCore( req, function (ctx) {
-console.log([">init",ctx]);
+			ENGINE.run( req, function (ctx,step) {
+//console.log(">init",ctx);
 
-				if ( ctx )
-					ENGINE.program( req.sql, ctx, function (ctx) {
-						res( ctx ? "" : ENGINE.errors.badProgram+"" ); 
-					});
-				
-				else
-					res( ENGINE.errors.badThread );
-			
+				res( ctx ? "" : ENGINE.errors.badThread );
 			});
 		},
 			
@@ -690,11 +576,10 @@ console.log([">init",ctx]);
 				cb(ctx);
 		},
 
-		getState: function (sql, ctx, cb) { //< callback cb(ctx) with engine defined by its context
-			
-			sql.query(
-				"SELECT * FROM ??.engines WHERE least(?) LIMIT 0,1", [ ctx.group, {
-					Name: ctx.name,
+		getEngine: function (req, ctx, cb) { //< callback cb(ctx) with engine defined by its context
+			req.sql.query(
+				"SELECT * FROM ??.engines WHERE least(?) LIMIT 0,1", [ req.group, {
+					Name: req.table,
 					Enabled: true
 			}], function (err, engs) {
 				
@@ -705,20 +590,27 @@ console.log([">init",ctx]);
 					var isEmpty = engs.each( function (n, eng, isLast) {
 						
 						try {  // prime its state
-							ctx.state = JSON.parse(eng.State) || {};
-							if (ctx.state.constructor != Object) ctx.state = {};
+							var state = JSON.parse(eng.State);
 						}
 
 						catch (err) {
-							ctx.state = {};
+							var state = null;
 							//Trace(err);
 						}
 
 						if (isLast) cb( Copy({
+							state: Copy( state || {}, {
+								group: req.group,
+								table: req.table,
+								client: req.client,
+								query: req.query,
+								body: req.body,
+								action: req.action
+							}),
 							type: eng.Type, 
 							code: eng.Code,
 							init: ENGINE.init[ eng.Type ],
-							step: ENGINE.step[ eng.Type ]							
+							step: ENGINE.step[ eng.Type ]
 						}, ctx ) );
 						
 					});
@@ -727,23 +619,6 @@ console.log([">init",ctx]);
 				}
 			})
 
-		},
-			
-		run: function (sql, ctx, cb) { //< callback cb(step) with its advance
-			
-			ENGINE.getState( sql, ctx, function (ctx) {				
-				if (ctx) 
-					ENGINE.program( sql, ctx, function (ctx) {
-						if (ctx) 
-							cb( ENGINE.advance );
-
-						else
-							cb( null );
-					});
-				
-				else
-					cb( null );
-			});
 		},
 			
 		init: {  // program engines on thread thread
@@ -757,7 +632,6 @@ console.log([">init",ctx]);
 				if ( ctx.frame && ctx.detector )
 					if ( err = ENGINE.opencv(thread,code,ctx) )
 						cb( null, ctx );
-						//cb( ENGINE.errors[err] || ENGINE.errors.badError, ctx );
 				
 					else
 						cb( null, ctx );
@@ -782,7 +656,6 @@ console.log([">init",ctx]);
 
 				ENGINE.plugins.MATH.eval(code,ctx);
 
-				//Trace({ma: ctx});
 				cb( null, ctx );
 			},
 			
