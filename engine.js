@@ -269,6 +269,7 @@ var
 			}
 
 			function handoff(ctx, cb) {
+				
 				if ( worker = ctx.worker ) //handoff thread to worker on this socket 
 					if (req.connection) 
 						worker.send({
