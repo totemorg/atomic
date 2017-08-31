@@ -269,18 +269,27 @@ var
 			}
 
 			function handoff(ctx, cb) {
+				var msg = {
+					id: ctx.id,
+					group: req.group,
+					table: req.table,
+					client: req.client,
+					query: req.query,
+					body: req.body,
+					action: req.action,
+					thread: ctx.thread
+				};
 				
 				if ( worker = ctx.worker ) //handoff thread to worker on this socket 
-					if (req.connection) 
-						worker.send({
-							group: req.group,
-							table: req.table,
-							client: req.client,
-							query: req.query,
-							body: req.body,
-							action: req.action,
-							thread: ctx.thread
-						}, req.connection) ;
+					if ( relay = ENGINE.workerRelay ) 
+						relay(msg, function (ack) {
+							console.log({engrx:ack});
+							cb( ack );
+						});
+				
+					else
+					if ( con = req.connection ) 
+						worker.send(msg, con) ;
 
 					else
 						cb( null );
