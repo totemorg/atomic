@@ -87,11 +87,12 @@ var
 //console.log(req);							
 								if ( route = ENGINE[req.action] ) 
 									ENGINE.thread( function (sql) {
-										req.sql = sql;
-										req.connection = null;
+										req.sql = sql;  // dont send via IPC to worker; they will get their own
+										delete req.connection;
 										route( req, function (ack) {
-											socket.end( JSON.stringify(ack) );
+											console.log( "sending " + JSON.stringify(ack));
 											sql.release();
+											socket.end( JSON.stringify(ack) );
 										});
 									});
 								
@@ -280,15 +281,10 @@ var
 					thread: ctx.thread
 				};
 				
-				if ( worker = ctx.worker ) //handoff thread to worker on this socket 
-					if ( relay = ENGINE.workerRelay ) 
-						relay(msg, function (ack) {
-							console.log({engrx:ack});
-							cb( ack );
-						});
+				console.log(msg, req.connection ? true : false);
 				
-					else
-					if ( con = req.connection ) 
+				if ( worker = ctx.worker ) //handoff thread to worker on this socket 
+					if ( con = req.connection )   // must be HTTP connection (HTTPS will fail as socket is rightly closed)
 						worker.send(msg, con) ;
 
 					else
