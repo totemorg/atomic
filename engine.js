@@ -276,10 +276,10 @@ var
 				
 			}
 						
-			function take(ctx, cb) {
+			function exec(ctx, cb) {
 				Copy( Copy( req.query, { 
-					tau: req.body.tau || [],
-					port: req.body.port || ""
+					tau: req.body.tau || []
+					//port: req.body.port || ""
 				} ), ctx.state );	
 
 				cb( ctx.state, function () {  // callback with engine state context and this stepper (which returns an error or null if it worked)
@@ -304,7 +304,7 @@ var
 
 			function handoff(ctx, cb) {
 				var 
-					horeq = {  // handoff request 
+					horeq = {  // light-weight handoff request (no sql, socket, state etc that ipc cannot and shall not handle)
 						group: req.group,
 						table: req.table,
 						client: req.client,
@@ -328,8 +328,9 @@ var
 				ENGINE.getEngine( req, ctx, function (ctx) {
 					if (ctx) 
 						ENGINE.program( sql, ctx, function (ctx) {
+							
 							if (ctx) // all went well so take it
-								take( ctx, cb );
+								exec( ctx, cb );
 
 							else  // failed to compile
 								cb( null );
@@ -349,7 +350,7 @@ var
 			
 					else
 					if ( ctx.state )  // was sucessfullly linitialized so can take
-						take( ctx, cb );
+						exec( ctx, cb );
 
 					else  // had failed initialization so must reject
 						cb( null );
@@ -640,7 +641,6 @@ var
 				
 				else {
 					var isEmpty = engs.each( function (n, eng, isLast) {
-						
 						try {  // prime its state
 							var state = JSON.parse(eng.State);
 						}
