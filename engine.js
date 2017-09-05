@@ -16,6 +16,7 @@ var 														// NodeJS modules
 	CP = require("child_process"),
 	FS = require("fs"),	
 	CLUSTER = require("cluster"),
+	NET = require("net"),
 	VM = require("vm");
 	
 var 														// Totem modules
@@ -74,33 +75,63 @@ var
 
 			if (opts) Copy(opts,ENGINE);
 
+			if (CLUSTER.isMaster) {
+				/*var ipcsrv = NET.createServer( function (c) {
+					L("srv got connect");
+					c.on("data", function (d) {
+						L("srv got data",d);
+					});
+					c.on("end", function () {
+						L("srv got end");
+					});
+					//c.pipe(c);
+					//c.write("your connected");
+				});
+				ipcsrv.listen("/tmp/totem.sock");*/
+				
+				/*
+				var sock = ENGINE.ipcsocket = NET.createConnection("/tmp/totem.sock", function () {
+					console.log("connected?");
+				});
+				sock.on("error", function (err) {
+					console.log("sockerr",err);
+				});
+				sock.on("data", function (d) {
+					console.log("got",d);
+				}); */
+			}
+			
 			if (thread = ENGINE.thread)
 				thread( function (sql) { // compile engines defined in engines DB
 
 					// Using https generates a TypeError("Listener must be a function") at runtime.
 					
-					if (CLUSTER.isWorker) 	
-						process.on("message", function (req,socket) {  // cant use CLUSTER.worker.process.on
-							
-							if (req.thread) { 		// process only our messages (ignores sockets, etc)
-								console.log("CORE"+CLUSTER.worker.id+" GRABBING "+req.thread+" FOR "+req.action);
-//console.log(req);							
+					process.on("message", function (req,socket) {  // cant use CLUSTER.worker.process.on
+
+						if (req.action) { 		// process only our messages (ignores sockets, etc)
+							if (CLUSTER.isWorker) {
+								console.log("CORE"+CLUSTER.worker.id+" GRABBING "+req.action);
+	//console.log(req);							
 								if ( route = ENGINE[req.action] ) 
 									ENGINE.thread( function (sql) {
-										req.sql = sql;  // dont send via IPC to worker; they will get their own
-										delete req.connection;
-										route( req, function (ack) {
-											console.log( "sending " + JSON.stringify(ack));
+										req.sql = sql;  
+										//delete req.socket;
+										route( req, function (tau) {
+											//console.log( "sending " + JSON.stringify(tau));
 											sql.release();
-											socket.end( JSON.stringify(ack) );
+											socket.end( JSON.stringify(tau) );
 										});
 									});
-								
+
 								else
 									socket.end( ENGINE.errors.badRequest+"" );  
-
-							}									
-						});
+							}
+							
+							else {
+							}
+								
+						}									
+					});
 				});
 
 			return ENGINE;
@@ -156,8 +187,8 @@ var
 			badRequest: new Error("worker does not understand request")
 		},
 			
-		context: {},
-		vmcontext: {},
+		context: {},  // engine contexts
+		vmcontext: {},  // js-engine wrapper contexts
 			
 		tau: function (job) { // default event token sent to and produced by engines in workflows
 			return new Object({
@@ -193,7 +224,8 @@ var
 			
 		run: function (req, cb) {  // callback cb(ctx, step) with engine context and a stepper, or with nulls if error. 
 		// req = { group, table, client, query, body, action, state }
-		// if a req.state is not provided, then the engine programmed.
+		// if a req.state is not provided, then the engine is programmed.
+			
 		/**
 		* Allocate the supplied callback cb(core) with the engine core that is/was allocated to a Client.Engine.Type.Instance
 		* thread as defined by this request (in the req.body and req.log).  If a workflow Instance is 
@@ -229,18 +261,19 @@ var
 				thread = `${req.client}.${req.table}.${req.body.thread || 0}`;
 
 			function CONTEXT (thread) {  // create new engine context for provided thread name
-				this.myid = CLUSTER.isMaster ? 0 : CLUSTER.worker.id;  // my worker id
-
-				this.id = CLUSTER.isMaster	// potential worker id
-					? ENGINE.cores 
-							? (ENGINE.nextcore++ % ENGINE.cores)+1  // use next worker
-							: this.myid 					// no cores so master uses itself
-
-					: this.myid; // use me
-
-				this.worker = CLUSTER.isMaster ? CLUSTER.workers[this.id] : null;
-
+				this.worker = CLUSTER.isMaster
+					? CLUSTER.workers[ 1 + Math.floor(Math.random() * ENGINE.cores) ]
+					: CLUSTER.worker;
+				
 				this.thread = thread;
+				this.state = null;
+				/*
+				var sock = this.socket = NET.connect("/tmp/totem."+thread+".sock");
+				sock.on("data", function (d) {
+					console.log("thread",this.thread,"rx",d);
+				}); 
+				sock.write("hello there");*/
+				
 			}
 						
 			function take(ctx, cb) {
@@ -270,53 +303,28 @@ var
 			}
 
 			function handoff(ctx, cb) {
-				var msg = {
-					id: ctx.id,
-					group: req.group,
-					table: req.table,
-					client: req.client,
-					query: req.query,
-					body: req.body,
-					action: req.action,
-					thread: ctx.thread
-				};
+				var 
+					horeq = {  // socketless request to protect against infinite handoffs
+						group: req.group,
+						table: req.table,
+						client: req.client,
+						query: req.query,
+						body: req.body,
+						action: req.action
+					};
 				
-				console.log(msg, req.connection ? true : false);
-				
-				if ( worker = ctx.worker ) //handoff thread to worker on this socket 
-					if ( con = req.connection )   // must be HTTP connection (HTTPS will fail as socket is rightly closed)
-						worker.send(msg, con) ;
+				if ( CLUSTER.isWorker )   // handoff thread to master
+					process.send(horeq, req.xdom() );
 
-					else
-						cb( null );
+				else
+				if ( worker = ctx.worker )  //handoff thread to worker 
+					worker.send(horeq, req.xdom() );
 				
-				else // cant handoff to master
+				else // cant handoff 
 					cb( null );
 			}
-
-			if ( ENGINE.cores && CLUSTER.isMaster)  // on master so assign / handoff to worker
-				if ( ctx = ENGINE.context[thread] ) // handoff to assigned worker
-					handoff( ctx, cb );
-
-				else { // assign a worker then handoff
-					var ctx = ENGINE.context[thread] = new CONTEXT(thread);
-					Trace( `CORE${ctx.id} ASSIGNED ${ctx.thread}` );
-					handoff( ctx, cb );
-				}
-
-			else // on worker
-			if ( ctx = ENGINE.context[thread] ) {  // run it if worker has the context
-				Trace( `CORE${ctx.id} WORKING ${ctx.thread}` );
-				if ( ctx.state )  // was sucessfullyl initialized so can take
-					take( ctx, cb );
-
-				else  // failed initialization so much reject
-					cb( null );
-			}
-
-			else { // worker must initialize it, then run it
-				var ctx = ENGINE.context[thread] = new CONTEXT(thread);
-				Trace( `CORE${ctx.id} INITIALIZING ${ctx.thread}` );
+			
+			function init(ctx, cb) {
 				ENGINE.getEngine( req, ctx, function (ctx) {
 					if (ctx) 
 						ENGINE.program( sql, ctx, function (ctx) {
@@ -330,8 +338,47 @@ var
 					else
 						cb( null );
 				});
+			}				
+
+			//console.log(thread, CLUSTER.isMaster, ENGINE.context[thread] ? "ctx":"noctx");
+			
+			if ( CLUSTER.isMaster )  // on master so assign / handoff to worker
+				if ( ctx = ENGINE.context[thread] ) // handoff to assigned worker
+					if (ENGINE.cores)
+						handoff( ctx, cb );
+			
+					else
+					if ( ctx.state )  // was sucessfullly linitialized so can take
+						take( ctx, cb );
+
+					else  // had failed initialization so must reject
+						cb( null );
+
+				else { // assign a worker then handoff
+					var ctx = ENGINE.context[thread] = new CONTEXT(thread);
+					if (ENGINE.cores) 
+						handoff( ctx, cb );
+					
+					else
+						init( ctx, cb );
+				}
+
+			else // on worker 
+			if ( ctx = ENGINE.context[thread] ) {  // run it if worker has an initialized context
+				Trace( `CORE${ctx.worker.id} WORKING ${ctx.thread}` );
+				if ( ctx.state )  // was sucessfullyl initialized so can take
+					take( ctx, cb );
+
+				else  // had failed initialization so must reject
+					cb( null );
 			}
-				
+
+			else { // worker must initialize its context, then run it
+				var ctx = ENGINE.context[thread] = new CONTEXT(thread);
+				Trace( `CORE${ctx.worker.id} INITIALIZING ${ctx.thread}` );
+				init( ctx, cb );
+			}
+
 		},
 
 		save: function (sql,taus,port,engine,saves) {
@@ -465,7 +512,6 @@ var
 			
 		select: function (req,res) {	// run a stateless engine 
 			ENGINE.run( req, function (ctx, step) {
-				
 //console.log(">run", ctx);
 				
 				if (ctx) 
@@ -627,7 +673,7 @@ var
 
 		},
 			
-		init: {  // program engines on thread thread
+		init: {  // program engines on given thread 
 			py: function pyInit(thread,code,ctx,cb)  {
 				if ( !ctx.ports ) ctx.ports = {};
 				
@@ -686,7 +732,7 @@ var
 			}			
 		},
 			
-		step: {  // step engines on thread thread
+		step: {  // step engines on given thread 
 			py: function pyStep(thread,code,ctx) {
 				if ( err = ENGINE.python(thread,code,ctx) )
 					return ENGINE.errors[err] || ENGINE.errors.badError;
