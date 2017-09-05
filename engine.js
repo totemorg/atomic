@@ -117,7 +117,7 @@ var
 										req.sql = sql;  
 										//delete req.socket;
 										route( req, function (tau) {
-											//console.log( "sending " + JSON.stringify(tau));
+											console.log( "sending " + JSON.stringify(tau));
 											sql.release();
 											socket.end( JSON.stringify(tau) );
 										});
@@ -304,7 +304,7 @@ var
 
 			function handoff(ctx, cb) {
 				var 
-					horeq = {  // socketless request to protect against infinite handoffs
+					horeq = {  // handoff request 
 						group: req.group,
 						table: req.table,
 						client: req.client,
@@ -314,11 +314,11 @@ var
 					};
 				
 				if ( CLUSTER.isWorker )   // handoff thread to master
-					process.send(horeq, req.xdom() );
+					process.send(horeq, req.resSocket() );
 
 				else
 				if ( worker = ctx.worker )  //handoff thread to worker 
-					worker.send(horeq, req.xdom() );
+					worker.send(horeq, req.resSocket() );
 				
 				else // cant handoff 
 					cb( null );
