@@ -20,11 +20,10 @@ var 														// NodeJS modules
 	VM = require("vm");
 	
 var 														// Totem modules
-	ENUM = require("enum");
-	
-var															// shortcuts
+	ENUM = require("enum"),
 	Copy = ENUM.copy,
-	Each = ENUM.each;
+	Each = ENUM.each,
+	Log = console.log;
 	
 var
 	ENGINE = module.exports = Copy( //< extend the engineIF built by node-gyp
@@ -71,7 +70,7 @@ var
 		*/
 		config: function (opts) {  // configure with options
 	
-			Trace(`Engines configured`);
+			Trace(`CONFIG ENGINES`);
 
 			if (opts) Copy(opts,ENGINE);
 
@@ -366,7 +365,7 @@ var
 
 			else // on worker 
 			if ( ctx = ENGINE.context[thread] ) {  // run it if worker has an initialized context
-				Trace( `CORE${ctx.worker.id} WORKING ${ctx.thread}` );
+				Trace( `RUN core-${ctx.worker.id} FOR ${ctx.thread}`, sql );
 				if ( ctx.state )  // was sucessfullyl initialized so can take
 					take( ctx, cb );
 
@@ -376,7 +375,7 @@ var
 
 			else { // worker must initialize its context, then run it
 				var ctx = ENGINE.context[thread] = new CONTEXT(thread);
-				Trace( `CORE${ctx.worker.id} INITIALIZING ${ctx.thread}` );
+				Trace( `INIT core-${ctx.worker.id} FOR ${ctx.thread}` );
 				init( ctx, cb );
 			}
 
@@ -725,7 +724,7 @@ var
 				if (code) context.code = code;
 
 				CP.exec(context.code, function (err,stdout,stderr) {
-					Trace(err || stdout);
+					Log(err || stdout);
 				});
 
 				return null;
@@ -812,8 +811,8 @@ var
 			
 	});
 
-function Trace(msg,arg) {
-	ENUM.trace("E>",msg,arg);
+function Trace(msg,sql) {
+	ENUM.trace("E>",msg,sql);
 }
 	
 // UNCLASSIFIED
