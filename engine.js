@@ -324,7 +324,7 @@ var
 			}
 			
 			function init(ctx, cb) {
-				ENGINE.getEngine( req, ctx, function (ctx) {
+				ENGINE.getContext( req, ctx, function (ctx) {
 					if (ctx) 
 						ENGINE.program( sql, ctx, function (ctx) {
 							
@@ -628,47 +628,53 @@ var
 				cb(ctx);
 		},
 
-		getEngine: function (req, ctx, cb) { //< callback cb(ctx) with engine defined by its context
-			req.sql.query(
-				"SELECT * FROM ??.engines WHERE least(?) LIMIT 0,1", [ req.group, {
-					Name: req.table,
+		getEngine: function (sql, group, name, cb) {  //< callback cb(eng) with unique engine or null
+			
+			sql.query(
+				"SELECT * FROM ??.engines WHERE least(?) LIMIT 0,1", [ group, {
+					Name: name,
 					Enabled: true
 			}], function (err, engs) {
 				
 				if (err) 
 					cb( null );
 				
-				else {
-					var isEmpty = engs.each( function (n, eng, isLast) {
-						try {  // prime its state
-							var state = JSON.parse(eng.State);
-						}
-
-						catch (err) {
-							var state = null;
-							//Trace(err);
-						}
-
-						if (isLast) cb( Copy({
-							state: Copy( state || {}, {
-								group: req.group,
-								table: req.table,
-								client: req.client,
-								query: req.query,
-								body: req.body,
-								action: req.action
-							}),
-							type: eng.Type, 
-							code: eng.Code,
-							init: ENGINE.init[ eng.Type ],
-							step: ENGINE.step[ eng.Type ]
-						}, ctx ) );
-						
-					});
-						
-					if (isEmpty) cb( null );
+				else
+				if ( isEmpty = engs.each() )
+					cb( null );
+				
+				else
+					cb( engs[0] );
+			});
+		},
+			
+		getContext: function (req, ctx, cb) { //< callback cb(ctx) with engine defined by its context
+			
+			ENGINE.getEngine(req.sql, req.group, req.table, function (eng) {
+				try {  // prime its state
+					var state = JSON.parse(eng.State);
 				}
-			})
+
+				catch (err) {
+					var state = null;
+				}
+
+				cb( Copy({
+					state: Copy( state || {}, {
+						group: req.group,
+						table: req.table,
+						client: req.client,
+						query: req.query,
+						body: req.body,
+						action: req.action
+					}),
+					type: eng.Type, 
+					code: eng.Code,
+					init: ENGINE.init[ eng.Type ],
+					step: ENGINE.step[ eng.Type ]
+				}, ctx ) );
+
+			});
 
 		},
 			
