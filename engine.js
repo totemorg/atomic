@@ -275,7 +275,7 @@ var
 				
 			}
 						
-			function exec(ctx, cb) {
+			function exec(ctx, cb) {  //< callback cb(ctx,stepcb) with revised engine ctx and stepper
 				Copy( Copy( req.query, { 
 					tau: req.body.tau || []
 					//port: req.body.port || ""
@@ -301,7 +301,7 @@ var
 				});
 			}
 
-			function handoff(ctx, cb) {
+			function handoff(ctx, cb) {  //< handoff ctx to worker or  cb(null) if handoff fails
 				var 
 					horeq = {  // light-weight handoff request (no sql, socket, state etc that ipc cannot and shall not handle)
 						group: req.group,
@@ -323,11 +323,11 @@ var
 					cb( null );
 			}
 			
-			function init(ctx, cb) {
-				ENGINE.getContext( req, ctx, function (ctx) {
+			function init(ctx, cb) {  //< initialize engine then callback cb(ctx,stepper) or cb(null) if failed
+				
+				ENGINE.getContext( req, function (ctx) {
 					if (ctx) 
 						ENGINE.program( sql, ctx, function (ctx) {
-							
 							if (ctx) // all went well so take it
 								exec( ctx, cb );
 
@@ -348,7 +348,7 @@ var
 						handoff( ctx, cb );
 			
 					else
-					if ( ctx.state )  // was sucessfullly linitialized so can take
+					if ( ctx.state )  // was sucessfullly linitialized so can execute it
 						exec( ctx, cb );
 
 					else  // had failed initialization so must reject
@@ -366,8 +366,8 @@ var
 			else // on worker 
 			if ( ctx = ENGINE.context[thread] ) {  // run it if worker has an initialized context
 				Trace( `RUN core-${ctx.worker.id} FOR ${ctx.thread}`, sql );
-				if ( ctx.state )  // was sucessfullyl initialized so can take
-					take( ctx, cb );
+				if ( ctx.state )  // was sucessfullyl initialized so can execute it
+					exec( ctx, cb );
 
 				else  // had failed initialization so must reject
 					cb( null );
@@ -628,7 +628,7 @@ var
 				cb(ctx);
 		},
 
-		getEngine: function (sql, group, name, cb) {  //< callback cb(eng) with unique engine or null
+		getEngine: function (sql, group, name, cb) {  //< callback cb(eng) with unique engine or null if failed
 			
 			sql.query(
 				"SELECT * FROM ??.engines WHERE least(?) LIMIT 0,1", [ group, {
@@ -648,31 +648,37 @@ var
 			});
 		},
 			
-		getContext: function (req, ctx, cb) { //< callback cb(ctx) with engine defined by its context
+		getContext: function (req, cb) { //< prime engine context then callback cb(ctx) with context or null if failed
 			
 			ENGINE.getEngine(req.sql, req.group, req.table, function (eng) {
-				try {  // prime its state
-					var state = JSON.parse(eng.State);
-				}
+				if (eng) {
+					var ctx = {
+						state: {
+							group: req.group,
+							table: req.table,
+							client: req.client,
+							query: req.query,
+							body: req.body,
+							action: req.action
+						},
+						type: eng.Type, 
+						code: eng.Code,
+						init: ENGINE.init[ eng.Type ],
+						step: ENGINE.step[ eng.Type ]
+					};
+					
+					try {  // prime its state
+						Copy( JSON.parse(eng.State), ctx.state );
+					}
 
-				catch (err) {
-					var state = null;
-				}
+					catch (err) {
+					}
 
-				cb( Copy({
-					state: Copy( state || {}, {
-						group: req.group,
-						table: req.table,
-						client: req.client,
-						query: req.query,
-						body: req.body,
-						action: req.action
-					}),
-					type: eng.Type, 
-					code: eng.Code,
-					init: ENGINE.init[ eng.Type ],
-					step: ENGINE.step[ eng.Type ]
-				}, ctx ) );
+					cb(ctx);
+				}
+				
+				else
+					cb( null );
 
 			});
 
