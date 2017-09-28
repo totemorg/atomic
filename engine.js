@@ -148,7 +148,7 @@ var
 			LWIP: require('graceful-lwip'),
 			DSP: require('digitalsignals'),
 			CRYPTO: require('crypto'),
-			RAN: require("randpr"),
+			RAND: require("randpr"),
 			SVD: require("node-svd"),
 			MLE: require("expectation-maximization"),
 			MVN: require("multivariate-normal"),
