@@ -259,6 +259,8 @@ var
 				sql = req.sql,
 				thread = `${req.client}.${req.table}.${req.body.thread || 0}`;
 
+			Log("def eng thread", req.client, req.table, req.body.thread, "-->", thread);
+			
 			function CONTEXT (thread) {  // create new engine context for provided thread name
 				this.worker = CLUSTER.isMaster
 					? CLUSTER.workers[ 1 + Math.floor(Math.random() * ENGINE.cores) ]
@@ -276,15 +278,15 @@ var
 			}
 						
 			function exec(ctx, cb) {  //< callback cb(ctx,stepcb) with revised engine ctx and stepper
-				Copy( Copy( req.query, { 
+				Copy( Copy( req.query, { // add query context and default taus to the engine's state context
 					tau: req.body.tau || []
 					//port: req.body.port || ""
 				} ), ctx.state );	
 
-				cb( ctx.state, function () {  // callback with engine state context and this stepper (which returns an error or null if it worked)
+				cb( ctx.state, function () {  // callback with engine its state context and this stepper
 
 					if ( stepEngine = ctx.step )
-						try {  	// step the engine
+						try {  	// step the engine -  return an error if it failed or null if it worked
 							// dont  combine err with return because of order of evaluations
 							//console.log( stepEngine, ctx.type, ENGINE.step[ctx.type] );
 							var err =  stepEngine(ctx.thread, ctx.code, ctx.state); 
@@ -652,6 +654,9 @@ var
 			
 			ENGINE.getEngine(req.sql, req.group, req.table, function (eng) {
 				if (eng) {
+					
+					Log(eng);
+					
 					var ctx = {
 						state: {
 							group: req.group,
@@ -710,6 +715,35 @@ var
 				cb( null, ctx );
 			},
 			
+			mw: function mwInit(thread,code,ctx,cb) {
+				
+				Log(thread,code,ctx);
+				
+				var 
+					fn = thread.replace(/\./g,"_"),
+					fp = "./public/matlab/",
+					fq = fp + "queue.m",
+					fm = fp + fn + ".m",
+					fs = fp + fn + ".mat",
+					fc = [];
+				
+				FS.writeFile(fm, code, "utf8");
+				
+				Each(ctx, function (key,val) {
+					fc.push(`'${key}'`);
+					fc.push(val); 
+				});
+				
+				ENGINE.watchFile(fs, function (action) {
+					Log("matlab init done",action,"ctx = read then cb");
+					FS.writeFile(fq, "", "utf8");
+					cb(null,ctx);
+				});
+				
+				FS.writeFile(fq, `${fn}(struct(${fc.join(',')}, @(d) save('${fs}', 'd', '-ascii') );`, "utf8");
+
+			},
+			
 			ma: function maInit(thread,code,ctx,cb) {
 
 				Copy(ENGINE.plugins, ctx);
@@ -732,7 +766,7 @@ var
 				return null;	
 			},
 			
-			sh: function (thread,port,tau,context,code) {  // Linux shell engines
+			sh: function shInit(thread,code,ctx,cb) {  // Linux shell engines
 				if (code) context.code = code;
 
 				CP.exec(context.code, function (err,stdout,stderr) {
@@ -788,6 +822,9 @@ var
 					return ENGINE.errors.lostContext;
 			},
 			
+			mw: function mwStep(thread,code,ctx) {
+			},
+			
 			ma: function maStep(thread,code,ctx) {
 				ENGINE.plugins.MATH.eval(code,ctx);
 
@@ -810,7 +847,7 @@ var
 				return null;	
 			},
 			
-			sh: function (thread,port,tau,context,code) {  // Linux shell engines
+			sh: function shStep(thread,code,ctx) {  // Linux shell engines
 				if (code) context.code = code;
 
 				CP.exec(context.code, function (err,stdout,stderr) {
