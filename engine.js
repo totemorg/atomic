@@ -2,14 +2,20 @@
 
 /**
  * @class ENGINE
- * @requires engineIF
  * @requires child_process
  * @requires fs
+ * @requires crypto
+
+ * @requires engineIF
  * @requires enum
+ * @requires graceful-lwip
+ * @requires liegroup
+ 
  * @requires mathjs
  * @requires digitalsignals
- * @requires graceful-lwip
- * @requires crypto
+ * @requires nodehmm
+ * @requires node-svd
+ * @requires jsbayes
  */
 
 var 														// NodeJS modules
@@ -62,6 +68,40 @@ var
 		*/
 		nextcore: 0,
 		
+		mw: {
+			path: "./public/matlab/",
+			
+			start: function (qname) {
+				var
+					path = ENGINE.mw.path + qname + "_queue",
+					opath = path + ".mat",
+					mpath = path + ".m",
+					queue = ENGINE.mw[qname];
+				
+				ENGINE.watchFile( opath, function (ev, sql) {  // flush queue when work on queue completed
+					queue.push( `save('${opath}', '1', '-ascii');` );
+					FS.writeFile( mpath, queue.join("\n"), "utf8");
+					queue.slice();
+				});
+			},
+			
+			queue: function (qname, fname, mcode, cb) {
+				var
+					path = `${ENGINE.mw.path}${fname}.mat`,
+					queue = ENGINE.mw[qname];
+				
+				queue.push(mcode);				
+				
+				ENGINE.watchFile(path, function (action) {  // watch for queue output
+					Log("matlab init done",action,"ctx = read then cb");
+					cb(null,ctx);
+				});
+			},
+			
+			init: [],
+			step: []
+		},
+			
 		/**
 		@cfg {Object}
 		@method config
@@ -99,6 +139,9 @@ var
 					console.log("got",d);
 				}); */
 			}
+			
+			ENGINE.mw.start("init");
+			ENGINE.mw.start("step");
 			
 			if (thread = ENGINE.thread)
 				thread( function (sql) { // compile engines defined in engines DB
@@ -147,13 +190,13 @@ var
 			MATH: require('mathjs'),
 			LWIP: require('graceful-lwip'),
 			DSP: require('digitalsignals'),
-			CRYPTO: require('crypto'),
-			RAND: require("randpr"),
+			CRY: require('crypto'),
+			RAN: require("randpr"),
 			SVD: require("node-svd"),
 			MLE: require("expectation-maximization"),
 			MVN: require("multivariate-normal"),
-			CON: console,
-			console: console,
+			VITA: require("nodehmm"),
+			LOG: console.log,
 			JSON: JSON
 		},
 			
@@ -204,12 +247,12 @@ var
 
 		program: function (sql, ctx, cb) {  //< callback cb(ctx) with programed engine context or null if error
 			if ( initEngine = ctx.init )
-				ENGINE.prime(sql, ctx.state, function (state) {  // prime its state via sql
-					//console.log({primeeng: state});
+				ENGINE.prime(sql, ctx.req.query, function (query) {  // mixin sql vars into engine query
+					Log("eng prime", ctx.thread, query);
 					
-					if (state) 
-						initEngine(ctx.thread, ctx.code || "", state, function (err, state) {
-							//console.log({initeng: err});
+					if (query) 
+						initEngine(ctx.thread, ctx.code || "", query, function (err, query) {
+							Log("eng init", err);
 							cb( err ? null : ctx );
 						});
 					
@@ -259,15 +302,15 @@ var
 				sql = req.sql,
 				thread = `${req.client}.${req.table}.${req.body.thread || 0}`;
 
-			Log("def eng thread", req.client, req.table, req.body.thread, "-->", thread);
+			//Log("def eng thread", req.client, req.table, req.body.thread, "-->", thread);
 			
-			function CONTEXT (thread) {  // create new engine context for provided thread name
+			function CONTEXT (thread) {  // engine context constructor for specified thread 
 				this.worker = CLUSTER.isMaster
 					? CLUSTER.workers[ 1 + Math.floor(Math.random() * ENGINE.cores) ]
 					: CLUSTER.worker;
 				
 				this.thread = thread;
-				this.state = null;
+				this.req = null;
 				/*
 				var sock = this.socket = NET.connect("/tmp/totem."+thread+".sock");
 				sock.on("data", function (d) {
@@ -277,19 +320,19 @@ var
 				
 			}
 						
-			function exec(ctx, cb) {  //< callback cb(ctx,stepcb) with revised engine ctx and stepper
-				Copy( Copy( req.query, { // add query context and default taus to the engine's state context
+			function execute(ctx, cb) {  //< callback cb(ctx,stepcb) with revised engine ctx and stepper
+				/*Copy( Copy( req.query, { // add query context and default taus to the engine's state context
 					tau: req.body.tau || []
 					//port: req.body.port || ""
-				} ), ctx.state );	
+				} ), ctx.req );	*/
 
-				cb( ctx.state, function () {  // callback with engine its state context and this stepper
+				cb( ctx.req.query, function () {  // callback engine using this stepper
 
 					if ( stepEngine = ctx.step )
 						try {  	// step the engine -  return an error if it failed or null if it worked
 							// dont  combine err with return because of order of evaluations
 							//console.log( stepEngine, ctx.type, ENGINE.step[ctx.type] );
-							var err =  stepEngine(ctx.thread, ctx.code, ctx.state); 
+							var err =  stepEngine(ctx.thread, ctx.code, ctx.req.query); 
 							return err ? ENGINE.errors[err] || ENGINE.badError : null;
 						}
 
@@ -305,7 +348,7 @@ var
 
 			function handoff(ctx, cb) {  //< handoff ctx to worker or  cb(null) if handoff fails
 				var 
-					horeq = {  // light-weight handoff request (no sql, socket, state etc that ipc cannot and shall not handle)
+					ipcreq = {  // ipc request must not contain sql, socket, state etc
 						group: req.group,
 						table: req.table,
 						client: req.client,
@@ -315,23 +358,24 @@ var
 					};
 				
 				if ( CLUSTER.isWorker )   // handoff thread to master
-					process.send(horeq, req.resSocket() );
+					process.send(ipcreq, req.resSocket() );
 
 				else
 				if ( worker = ctx.worker )  //handoff thread to worker 
-					worker.send(horeq, req.resSocket() );
+					worker.send(ipcreq, req.resSocket() );
 				
 				else // cant handoff 
 					cb( null );
 			}
 			
-			function init(ctx, cb) {  //< initialize engine then callback cb(ctx,stepper) or cb(null) if failed
+			function initialize(ctx, cb) {  //< initialize engine then callback cb(ctx,stepper) or cb(null) if failed
 				
-				ENGINE.getContext( req, function (ctx) {
+				Log("eng init",ctx.thread);
+				ENGINE.setContext( req, ctx, function () {
 					if (ctx) 
 						ENGINE.program( sql, ctx, function (ctx) {
-							if (ctx) // all went well so take it
-								exec( ctx, cb );
+							if (ctx) // all went well so execute it
+								execute( ctx, cb );
 
 							else  // failed to compile
 								cb( null );
@@ -342,43 +386,45 @@ var
 				});
 			}				
 
-			//console.log(thread, CLUSTER.isMaster, ENGINE.context[thread] ? "ctx":"noctx");
+			Log("eng thread", thread, CLUSTER.isMaster ? "on mstr" : "on wrkr", ENGINE.context[thread] ? "has ctx":"new ctx");
 			
-			if ( CLUSTER.isMaster )  // on master so assign / handoff to worker
-				if ( ctx = ENGINE.context[thread] ) // handoff to assigned worker
-					if (ENGINE.cores)
+			if ( CLUSTER.isMaster )  { // on master so handoff to worker or execute 
+				if ( ctx = ENGINE.context[thread] ) // get context
+					if (ENGINE.cores) // handoff to worker
 						handoff( ctx, cb );
 			
 					else
-					if ( ctx.state )  // was sucessfullly linitialized so can execute it
-						exec( ctx, cb );
+					if ( ctx.req )  // was sucessfullly initialized so execute it
+						execute( ctx, cb );
 
-					else  // had failed initialization so must reject
+					else  // never initialized so reject it
 						cb( null );
 
-				else { // assign a worker then handoff
+				else { // assign a worker to new context then handoff or initialize
 					var ctx = ENGINE.context[thread] = new CONTEXT(thread);
 					if (ENGINE.cores) 
 						handoff( ctx, cb );
 					
 					else
-						init( ctx, cb );
+						initialize( ctx, cb );
+				}
+			}
+			
+			else { // on worker 
+				if ( ctx = ENGINE.context[thread] ) {  // run it if worker has an initialized context
+					Trace( `RUN core-${ctx.worker.id} FOR ${ctx.thread}`, sql );
+					if ( ctx.req )  // was sucessfullyl initialized so can execute it
+						execute( ctx, cb );
+
+					else  // had failed initialization so must reject
+						cb( null );
 				}
 
-			else // on worker 
-			if ( ctx = ENGINE.context[thread] ) {  // run it if worker has an initialized context
-				Trace( `RUN core-${ctx.worker.id} FOR ${ctx.thread}`, sql );
-				if ( ctx.state )  // was sucessfullyl initialized so can execute it
-					exec( ctx, cb );
-
-				else  // had failed initialization so must reject
-					cb( null );
-			}
-
-			else { // worker must initialize its context, then run it
-				var ctx = ENGINE.context[thread] = new CONTEXT(thread);
-				Trace( `INIT core-${ctx.worker.id} FOR ${ctx.thread}` );
-				init( ctx, cb );
+				else { // worker must initialize its context, then run it
+					var ctx = ENGINE.context[thread] = new CONTEXT(thread);
+					Trace( `INIT core-${ctx.worker.id} FOR ${ctx.thread}` );
+					initialize( ctx, cb );
+				}
 			}
 
 		},
@@ -517,7 +563,7 @@ var
 //console.log(">run", ctx);
 				
 				if (ctx) 
-					res( step() || ctx.tau );
+					res( step() || ctx.tau || 0 );
 				
 				else
 					res( ENGINE.errors.noStepper );
@@ -541,12 +587,12 @@ var
 		The ctx.sqls = {var:"query...", ...} || "query..." enumerates the engine's ctx.entry (to import 
 		state into its ctx before the engine is run), and enumerates the engine's ctx.exit (to export 
 		state from its ctx after the engine is run).  If an sqls entry/exit exists, this will cause the 
-		ctx.state = [var, ...] list to be built to synchronously import/export the state into/from the 
+		ctx.req = [var, ...] list to be built to synchronously import/export the state into/from the 
 		engine's context.
 		 * */
 			var keys = ctx.keys;
 			
-			if (keys) {    	  // enumerate over each sqls key
+			if (keys) {    	  // enumerate over each sql key
 				if ( keys.length ) { 							// more keys to import/export
 					var 
 						key = keys.pop(), 					// var to import/export
@@ -650,35 +696,33 @@ var
 			});
 		},
 			
-		getContext: function (req, cb) { //< prime engine context then callback cb(ctx) with context or null if failed
+		setContext: function (req, ctx, cb) { //< prime engine context then callback cb(ctx) with context or null if failed
 			
 			ENGINE.getEngine(req.sql, req.group, req.table, function (eng) {
 				if (eng) {
 					
-					Log(eng);
-					
-					var ctx = {
-						state: {
-							group: req.group,
-							table: req.table,
-							client: req.client,
-							query: req.query,
-							body: req.body,
-							action: req.action
-						},
-						type: eng.Type, 
-						code: eng.Code,
-						init: ENGINE.init[ eng.Type ],
-						step: ENGINE.step[ eng.Type ]
-					};
-					
-					try {  // prime its state
-						Copy( JSON.parse(eng.State), ctx.state );
+					try {  // add to context
+						Copy({
+							req: {
+								group: req.group,
+								table: req.table,
+								client: req.client,
+								query: Copy( req.query, JSON.parse(eng.State || "null") || {} ),
+								body: req.body,
+								action: req.action
+							},
+							type: eng.Type, 
+							code: eng.Code,
+							init: ENGINE.init[ eng.Type ],
+							step: ENGINE.step[ eng.Type ]
+						}, ctx);
 					}
 
 					catch (err) {
 					}
 
+					Log("eng get", ctx);
+					
 					cb(ctx);
 				}
 				
@@ -717,31 +761,42 @@ var
 			
 			mw: function mwInit(thread,code,ctx,cb) {
 				
-				Log(thread,code,ctx);
+				Log("mw init", thread,ctx);
 				
 				var 
-					fn = thread.replace(/\./g,"_"),
-					fp = "./public/matlab/",
-					fq = fp + "queue.m",
-					fm = fp + fn + ".m",
-					fs = fp + fn + ".mat",
-					fc = [];
+					fn = thread.replace(".ic.gov","").replace(/[@.]/g,"_"),
+					path = ENGINE.mw.path + fn,
+					mpath = path + ".m",
+					opath = path + ".mat";
 				
-				FS.writeFile(fm, code, "utf8");
-				
-				Each(ctx, function (key,val) {
-					fc.push(`'${key}'`);
-					fc.push(val); 
-				});
-				
-				ENGINE.watchFile(fs, function (action) {
-					Log("matlab init done",action,"ctx = read then cb");
-					FS.writeFile(fq, "", "utf8");
-					cb(null,ctx);
-				});
-				
-				FS.writeFile(fq, `${fn}(struct(${fc.join(',')}, @(d) save('${fs}', 'd', '-ascii') );`, "utf8");
+				FS.writeFile( mpath, `
+function ws = ${fn}()
+	ws.set = @set;
+	ws.get = @get;
+	ws.run = @run;
 
+	function set(key,val)
+		ws.(key) = val;
+	end
+
+	function res = get(key)
+		res = ws.(key);
+	end
+
+	function run(arg)
+		res = 0;
+		${code}
+		save( '${fn}', 'res', '-ascii' );
+	end
+end`, "utf8" );
+
+				FS.writeFile(opath, "", "utf8", function (err) {  // make sure output watch file exists
+					ENGINE.mw.queue("init", fn, `ws_${fn} = ${fn}`, function (res) {  // add request to init-queue
+						Log("INIT "+fn);
+					});
+				});
+				
+				cb(null,ctx);				
 			},
 			
 			ma: function maInit(thread,code,ctx,cb) {
@@ -823,6 +878,39 @@ var
 			},
 			
 			mw: function mwStep(thread,code,ctx) {
+				function arglist(x) {
+					var rtn = [], q = "'";
+					Each(x, function (key,val) {
+						rtn.push(`'${key}'`);
+						
+						if (val)
+							switch ( val.constructor ) {
+								case Array:
+									rtn.push( "[" + val.join(",") + "]" ); break;
+									
+								case String: 
+									rtn.push( q + val + q ); break;
+
+								default:
+									rtn.push(val || 0);
+							}
+						else
+							rtn.push(0);
+						
+					});
+					return `struct(${rtn.join(",")})`;
+				}
+
+				Log("mw step", thread,ctx);
+				
+				var 
+					fn = thread.replace(".ic.gov","").replace(/[@.]/g,"_");
+				
+				ENGINE.mw.queue("step", fn, `ws_${fn}.run(${arglist(ctx)});`, function (res) {  // add request to step-queue
+					Log("STEP "+fn);
+				});
+				
+				return null;
 			},
 			
 			ma: function maStep(thread,code,ctx) {
