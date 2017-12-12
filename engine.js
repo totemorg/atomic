@@ -69,37 +69,71 @@ var
 		nextcore: 0,
 		
 		mw: {
-			path: "./public/matlab/",
-			
+			path: {
+				save: "./public/matlab/",
+				agent: "http://totem.west.ile.nga.ic.gov:8080/sim/"
+			},
+				
 			start: function (qname) {
 				var
-					path = ENGINE.mw.path + qname + "_queue",
-					opath = path + ".mat",
-					mpath = path + ".m",
+					agent = ENGINE.mw.path.agent,
+					queue = ENGINE.mw.code[qname],
+					mpath = ENGINE.mw.path.save + fname + ".m",
+					restart = `res=1;save('${fname}.mat','res','-ascii'); disp(webread('${agent}${fname}));` ;
+								
+				Log("START",qname,queue.length);
+				ENGINE.mw.queue(qname, qname, restart, function (req,res) {
+					ENGINE.mw.start(req.query.job);
+				});
+				
+				FS.writeFile( mpath, queue.join("\n"), "utf8" );
+				queue.length=0;
+			},
+			
+			/*
+			start: function (qname) {
+				var
+					mfile = qname + "_queue",
+					path = ENGINE.mw.path.results,
+					opath = path + mfile + ".mat",
+					mpath = path + mfile + ".m",
 					queue = ENGINE.mw[qname];
 				
 				ENGINE.watchFile( opath, function (ev, sql) {  // flush queue when work on queue completed
-					queue.push( `save('${opath}', '1', '-ascii');` );
+					queue.push( `res=1;save('${mfile}', 'res', '-ascii');` );
 					FS.writeFile( mpath, queue.join("\n"), "utf8");
 					queue.slice();
 				});
 			},
+			*/
 			
 			queue: function (qname, fname, mcode, cb) {
+				ENGINE.mw.code[qname].push(mcode);
+				ENGINE.mw.cb[fname] = cb;
+			},
+			
+			/*
+			queue: function (qname, mfile, mcode, cb) {
 				var
-					path = `${ENGINE.mw.path}${fname}.mat`,
+					path = ENGINE.mw.path,
+					opath = path + mfile + ".mat",
 					queue = ENGINE.mw[qname];
 				
-				queue.push(mcode);				
+				queue.push(mcode);
 				
 				ENGINE.watchFile(path, function (action) {  // watch for queue output
 					Log("matlab init done",action,"ctx = read then cb");
+					var ctx = [0];
 					cb(null,ctx);
 				});
+			}, */
+			
+			code: {
+				init: [],
+				step: []
 			},
 			
-			init: [],
-			step: []
+			cb: {}
 		},
 			
 		/**
@@ -764,16 +798,17 @@ var
 				Log("mw init", thread,ctx);
 				
 				var 
-					fn = thread.replace(".ic.gov","").replace(/[@.]/g,"_"),
-					path = ENGINE.mw.path + fn,
-					mpath = path + ".m",
-					opath = path + ".mat";
+					fname = thread.replace(".ic.gov","").replace(/[@.]/g,"_"),
+					agent = ENGINE.mw.path.agent,
+					spath = ENGINE.mw.path.save,
+					mpath = spath + fname + ".m",
+					opath = spath + fname + ".mat";
 				
 				FS.writeFile( mpath, `
-function ws = ${fn}()
+function ws = ${fname}()
 	ws.set = @set;
 	ws.get = @get;
-	ws.run = @run;
+	ws.step = @step;
 
 	function set(key,val)
 		ws.(key) = val;
@@ -783,17 +818,20 @@ function ws = ${fn}()
 		res = ws.(key);
 	end
 
-	function run(arg)
+	function store(res)
+		save( '${fname}.mat', 'res', '-ascii' );
+		webread( '${agent}?job=${fname}' );
+	end
+
+	function step(arg)
 		res = 0;
 		${code}
-		save( '${fn}', 'res', '-ascii' );
+		store(res);
 	end
 end`, "utf8" );
 
-				FS.writeFile(opath, "", "utf8", function (err) {  // make sure output watch file exists
-					ENGINE.mw.queue("init", fn, `ws_${fn} = ${fn}`, function (res) {  // add request to init-queue
-						Log("INIT "+fn);
-					});
+				ENGINE.mw.queue("init", fname, `ws_${fname} = ${fname}; ws_${fname}.store(1);`, function (res) {  // add request to init-queue
+					Log("INIT "+fname);
 				});
 				
 				cb(null,ctx);				
@@ -904,10 +942,10 @@ end`, "utf8" );
 				Log("mw step", thread,ctx);
 				
 				var 
-					fn = thread.replace(".ic.gov","").replace(/[@.]/g,"_");
+					fname = thread.replace(".ic.gov","").replace(/[@.]/g,"_");
 				
-				ENGINE.mw.queue("step", fn, `ws_${fn}.run(${arglist(ctx)});`, function (res) {  // add request to step-queue
-					Log("STEP "+fn);
+				ENGINE.mw.queue("step", fname, `ws_${fname}.step(${arglist(ctx)});`, function (res) {  // add request to step-queue
+					Log("STEP "+fname);
 				});
 				
 				return null;
