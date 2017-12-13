@@ -74,32 +74,30 @@ var
 				agent: "http://totem.west.ile.nga.ic.gov:8080/matlab"
 			},
 				
-			flush: function (qname) {
+			flush: function (sql,qname) {
 				var
 					agent = ENGINE.matlab.path.agent,
 					fname = qname,
 					mpath = ENGINE.matlab.path.save + fname + ".m",
-					mcode = `res=1;save('${fname}.mat','res','-ascii'); disp(webread('${agent}?queue=${fname}));` ;
+					mcode = `disp(webread('${agent}?flush=${qname}'));` ;
 								
-				Trace("START MATLAB");
-				ENGINE.thread( function (sql) {
-					sql.query("INSERT INTO openv.matlab SET ?", {
-						queue: qname,
-						script: mcode
-					}, function (err) {
+				Trace("FLUSH MATLAB");
+				
+				sql.query("INSERT INTO openv.matlab SET ?", {
+					queue: qname,
+					script: mcode
+				}, function (err) {
 
-						sql.query("SELECT * FROM openv.matlab WHERE ? ORDER BY ID", {
+					sql.query("SELECT * FROM openv.matlab WHERE ? ORDER BY ID", {
+						queue: qname
+					}, function (err,recs) {
+
+						FS.writeFile( mpath, recs.joinify("\n", function (rec) {
+							return rec.script;
+						}), "utf8" );
+
+						sql.query("DELETE FROM openv.matlab WHERE ?", {
 							queue: qname
-						}, function (err,recs) {
-
-							FS.writeFile( mpath, recs.joinify("\n", function (rec) {
-								return rec.script;
-							}), "utf8" );
-
-							sql.query("DELETE FROM openv.matlab WHERE ?", {
-								queue: qname
-							});
-							sql.release();
 						});
 					});
 				});
@@ -115,30 +113,8 @@ var
 					});
 					sql.release();
 				});
-			},
+			}
 			
-			/*
-			queue: function (qname, mfile, mcode, cb) {
-				var
-					path = ENGINE.matlab.path,
-					opath = path + mfile + ".mat",
-					queue = ENGINE.matlab[qname];
-				
-				queue.push(mcode);
-				
-				ENGINE.watchFile(path, function (action) {  // watch for queue output
-					Log("matlab init done",action,"ctx = read then cb");
-					var ctx = [0];
-					cb(null,ctx);
-				});
-			}, */
-			
-			code: {
-				init: [],
-				step: []
-			},
-			
-			cb: {}
 		},
 			
 		/**
@@ -179,11 +155,11 @@ var
 				}); */
 			}
 			
-			ENGINE.matlab.flush("init");
-			ENGINE.matlab.flush("step");
-
 			if (thread = ENGINE.thread)
 				thread( function (sql) { // compile engines defined in engines DB
+
+					ENGINE.matlab.flush(sql, "init_queue");
+					ENGINE.matlab.flush(sql, "step_queue");
 
 					// Using https generates a TypeError("Listener must be a function") at runtime.
 
@@ -812,6 +788,7 @@ function ws = ${fname}()
 	ws.set = @set;
 	ws.get = @get;
 	ws.step = @step;
+	ws.store = @store;
 
 	function set(key,val)
 		ws.(key) = val;
@@ -823,7 +800,7 @@ function ws = ${fname}()
 
 	function store(res)
 		save( '${fname}.mat', 'res', '-ascii' );
-		webread( '${agent}?job=${fname}' );
+		webread( '${agent}?save=${fname}' );
 	end
 
 	function step(arg)
@@ -833,9 +810,9 @@ function ws = ${fname}()
 	end
 end`, "utf8" );
 
-				ENGINE.matlab.queue( "init", fname, `ws_${fname} = ${fname}; ws_${fname}.store(1);` );
+				ENGINE.matlab.queue( "init_queue", `ws_${fname} = ${fname}; \nws_${fname}.store(1);` );
 				
-				cb(null,ctx);				
+				cb(null,ctx);
 			},
 			
 			ma: function maInit(thread,code,ctx,cb) {
@@ -943,7 +920,7 @@ end`, "utf8" );
 				var 
 					fname = thread.replace(".ic.gov","").replace(/[@.]/g,"_");
 				
-				ENGINE.matlab.queue( "step", fname, `ws_${fname}.step(${arglist(ctx)});` );
+				ENGINE.matlab.queue( "step_queue", `ws_${fname}.step(${arglist(ctx)});` );
 				
 				return null;
 			},
