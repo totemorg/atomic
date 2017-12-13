@@ -68,56 +68,61 @@ var
 		*/
 		nextcore: 0,
 		
-		mw: {
+		matlab: {
 			path: {
 				save: "./public/matlab/",
-				agent: "http://totem.west.ile.nga.ic.gov:8080/sim/"
+				agent: "http://totem.west.ile.nga.ic.gov:8080/matlab"
 			},
 				
-			start: function (qname) {
+			flush: function (qname) {
 				var
-					agent = ENGINE.mw.path.agent,
-					queue = ENGINE.mw.code[qname],
-					mpath = ENGINE.mw.path.save + fname + ".m",
-					restart = `res=1;save('${fname}.mat','res','-ascii'); disp(webread('${agent}${fname}));` ;
+					agent = ENGINE.matlab.path.agent,
+					fname = qname,
+					mpath = ENGINE.matlab.path.save + fname + ".m",
+					mcode = `res=1;save('${fname}.mat','res','-ascii'); disp(webread('${agent}?queue=${fname}));` ;
 								
-				Log("START",qname,queue.length);
-				ENGINE.mw.queue(qname, qname, restart, function (req,res) {
-					ENGINE.mw.start(req.query.job);
+				Trace("START MATLAB");
+				ENGINE.thread( function (sql) {
+					sql.query("INSERT INTO openv.matlab SET ?", {
+						queue: qname,
+						script: mcode
+					}, function (err) {
+
+						sql.query("SELECT * FROM openv.matlab WHERE ? ORDER BY ID", {
+							queue: qname
+						}, function (err,recs) {
+
+							FS.writeFile( mpath, recs.joinify("\n", function (rec) {
+								return rec.script;
+							}), "utf8" );
+
+							sql.query("DELETE FROM openv.matlab WHERE ?", {
+								queue: qname
+							});
+							sql.release();
+						});
+					});
 				});
 				
-				FS.writeFile( mpath, queue.join("\n"), "utf8" );
-				queue.length=0;
 			},
 			
-			/*
-			start: function (qname) {
-				var
-					mfile = qname + "_queue",
-					path = ENGINE.mw.path.results,
-					opath = path + mfile + ".mat",
-					mpath = path + mfile + ".m",
-					queue = ENGINE.mw[qname];
+			queue: function (qname, mcode) {
 				
-				ENGINE.watchFile( opath, function (ev, sql) {  // flush queue when work on queue completed
-					queue.push( `res=1;save('${mfile}', 'res', '-ascii');` );
-					FS.writeFile( mpath, queue.join("\n"), "utf8");
-					queue.slice();
+				ENGINE.thread( function (sql) {
+					sql.query("INSERT INTO openv.matlab SET ?", {
+						queue: qname,
+						script: mcode
+					});
+					sql.release();
 				});
-			},
-			*/
-			
-			queue: function (qname, fname, mcode, cb) {
-				ENGINE.mw.code[qname].push(mcode);
-				ENGINE.mw.cb[fname] = cb;
 			},
 			
 			/*
 			queue: function (qname, mfile, mcode, cb) {
 				var
-					path = ENGINE.mw.path,
+					path = ENGINE.matlab.path,
 					opath = path + mfile + ".mat",
-					queue = ENGINE.mw[qname];
+					queue = ENGINE.matlab[qname];
 				
 				queue.push(mcode);
 				
@@ -174,14 +179,14 @@ var
 				}); */
 			}
 			
-			ENGINE.mw.start("init");
-			ENGINE.mw.start("step");
-			
+			ENGINE.matlab.flush("init");
+			ENGINE.matlab.flush("step");
+
 			if (thread = ENGINE.thread)
 				thread( function (sql) { // compile engines defined in engines DB
 
 					// Using https generates a TypeError("Listener must be a function") at runtime.
-					
+
 					process.on("message", function (req,socket) {  // cant use CLUSTER.worker.process.on
 
 						if (req.action) { 		// process only our messages (ignores sockets, etc)
@@ -795,12 +800,10 @@ var
 			
 			mw: function mwInit(thread,code,ctx,cb) {
 				
-				Log("mw init", thread,ctx);
-				
 				var 
 					fname = thread.replace(".ic.gov","").replace(/[@.]/g,"_"),
-					agent = ENGINE.mw.path.agent,
-					spath = ENGINE.mw.path.save,
+					agent = ENGINE.matlab.path.agent,
+					spath = ENGINE.matlab.path.save,
 					mpath = spath + fname + ".m",
 					opath = spath + fname + ".mat";
 				
@@ -830,9 +833,7 @@ function ws = ${fname}()
 	end
 end`, "utf8" );
 
-				ENGINE.mw.queue("init", fname, `ws_${fname} = ${fname}; ws_${fname}.store(1);`, function (res) {  // add request to init-queue
-					Log("INIT "+fname);
-				});
+				ENGINE.matlab.queue( "init", fname, `ws_${fname} = ${fname}; ws_${fname}.store(1);` );
 				
 				cb(null,ctx);				
 			},
@@ -939,14 +940,10 @@ end`, "utf8" );
 					return `struct(${rtn.join(",")})`;
 				}
 
-				Log("mw step", thread,ctx);
-				
 				var 
 					fname = thread.replace(".ic.gov","").replace(/[@.]/g,"_");
 				
-				ENGINE.mw.queue("step", fname, `ws_${fname}.step(${arglist(ctx)});`, function (res) {  // add request to step-queue
-					Log("STEP "+fname);
-				});
+				ENGINE.matlab.queue( "step", fname, `ws_${fname}.step(${arglist(ctx)});` );
 				
 				return null;
 			},
