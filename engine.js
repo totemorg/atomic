@@ -315,9 +315,10 @@ var
 			
 			var
 				sql = req.sql,
-				thread = `${req.client}.${req.table}.${req.body.thread || 0}`;
+				query = req.query,
+				thread = `${req.client}.${req.table}.${query.ID || 0}`;
 
-			//Log("def eng thread", req.client, req.table, req.body.thread, "-->", thread);
+			//Log("def eng thread", thread, req.query);
 			
 			function CONTEXT (thread) {  // engine context constructor for specified thread 
 				this.worker = CLUSTER.isMaster
@@ -780,14 +781,14 @@ var
 					fname = thread.replace(".ic.gov","").replace(/[@.]/g,"_"),
 					agent = ENGINE.matlab.path.agent,
 					spath = ENGINE.matlab.path.save,
-					mpath = spath + fname + ".m",
-					opath = spath + fname + ".mat";
+					mpath = spath + fname + ".m";
 				
 				FS.writeFile( mpath, `
 function ws = ${fname}()
 	ws.set = @set;
 	ws.get = @get;
 	ws.step = @step;
+	ws.run = @run;
 	ws.store = @store;
 
 	function set(key,val)
@@ -799,15 +800,22 @@ function ws = ${fname}()
 	end
 
 	function store(res)
-		save( '${fname}.mat', 'res', '-ascii' );
+		fid = fopen('${fname}.out', 'wt');
+		fprintf(fid, '%s', jsonencode(res) );
+		fclose(fid);
+		%save( '${fname}.mat', 'json', '-ascii' );
 		webread( '${agent}?save=${fname}' );
 	end
 
-	function step(arg)
+	function res = step(arg)
 		res = 0;
 		${code}
-		store(res);
 	end
+
+	function run(arg)
+		store(step(arg));
+	end
+
 end`, "utf8" );
 
 				ENGINE.matlab.queue( "init_queue", `ws_${fname} = ${fname}; \nws_${fname}.store(1);` );
@@ -902,7 +910,8 @@ end`, "utf8" );
 						if (val)
 							switch ( val.constructor ) {
 								case Array:
-									rtn.push( "[" + val.join(",") + "]" ); break;
+								case Object:
+									rtn.push( `jsondecode('${JSON.stringify(val)}')` ); break;
 									
 								case String: 
 									rtn.push( q + val + q ); break;
@@ -920,7 +929,7 @@ end`, "utf8" );
 				var 
 					fname = thread.replace(".ic.gov","").replace(/[@.]/g,"_");
 				
-				ENGINE.matlab.queue( "step_queue", `ws_${fname}.step(${arglist(ctx)});` );
+				ENGINE.matlab.queue( "step_queue", `ws_${fname}.run(${arglist(ctx)});` );
 				
 				return null;
 			},
