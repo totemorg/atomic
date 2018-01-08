@@ -51,13 +51,16 @@ using namespace std;
 #define LOCAL(X) PyDict_GetItemString(pLocals,X)
 
 // hash members to pass to standalone machine
-
-#define PYCONTEXT "ctx"		// py redudant context if needed
-#define PYPORT "port"		// py string for function (aka port) to call stateful machine, or empty to call stateless machine.
 #define PYERR "err"			// py number to return erro code
 #define PYPARM "parm" 		// py hash reserved to return hash from external modules
-#define PYPORTS "ports"		// py hash of port hashes
+#define PYPORT "port"		// py string for function (aka port) to call stateful machine, or empty to call stateless machine.
 
+/*
+#define PYCONTEXT "ctx"		// py redudant context if needed
+#define PYPORTS "ports"		// py hash of port hashes
+*/
+
+/*
 // Parameters used to wrap python code to provide sql connector and debugging
 
 #define WRAP_ADDTRACE trace
@@ -67,6 +70,7 @@ using namespace std;
 #define WRAP_DBNAME getenv("DB_NAME")
 #define WRAP_DBUSER getenv("DB_USER")
 #define PYTHONORIGIN getenv("PYTHONORIGIN")
+*/
 
 // Danger zone
 
@@ -87,6 +91,7 @@ str indent(str code) {
 	return rtn;
 }
 
+/*
 str wrap(str code,str port,V8OBJECT parm,str idx,str args) {  // wrap user python code in machine interface
 	str rtn = mac_strclone(strlen(code)+1000,"");
 	
@@ -148,14 +153,6 @@ str wrap(str code,str port,V8OBJECT parm,str idx,str args) {  // wrap user pytho
 		if (N) {
 			for (int n=0;n<N;n++)
 				sprintf(rtn,"%sSQL%d=SQL.cursor(buffered=True)\n", rtn, n);
-			/*
-			strcat(rtn,"TAU['cur'] = [");
-
-			for (int n=0; n<N; n++) {
-				sprintf(rtn,"%s%s%s",rtn,n?",":"","TAU['cnx'].cursor(buffered=True)");
-			}
-			strcat(rtn,"]\n");
-			* */
 		}
 #endif
 
@@ -216,6 +213,7 @@ str wrap(str code,str port,V8OBJECT parm,str idx,str args) {  // wrap user pytho
 	
 	return rtn;
 }
+*/
 
 class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 	public:
@@ -384,6 +382,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 					pGlobals = PyModule_GetDict(pMain);	
 //printf(TRACE "globals=%p\n",pGlobals);
 					
+					/*
 					str comp = wrap(  // generate code to compile
 						code,
 						port,
@@ -391,11 +390,12 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 						PYPORT,
 						PYCONTEXT "," PYPORTS "[" PYPORT "]"
 					);
+					*/
 
-//printf(TRACE "pgm compile=\n%s infile=%d\n",comp,Py_file_input);
+printf(TRACE "py>compile=\n%s infile=%d\n",code,Py_file_input);
 
 					// For some reason cant recompile already compiled code.  
-					pCodeTest = (PyCodeObject*) Py_CompileString(comp, "py>traceback", Py_file_input);
+					pCodeTest = (PyCodeObject*) Py_CompileString(code, "py>traceback", Py_file_input);
 
 					if (pCodeTest) pCode = pCodeTest;
 					

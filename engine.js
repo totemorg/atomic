@@ -29,7 +29,8 @@ var 														// Totem modules
 	ENUM = require("enum"),
 	Copy = ENUM.copy,
 	Each = ENUM.each,
-	Log = console.log;
+	Log = console.log,
+	ENV = process.env;
 	
 var
 	ENGINE = module.exports = Copy( //< extend the engineIF built by node-gyp
@@ -749,11 +750,90 @@ var
 
 		},
 			
+		gen: {
+			trace: false,
+			db: {
+				user: ENV.DB_USER,
+				name: ENV.DB_NAME,
+				pass: ENV.DB_PASS
+			},				
+			usedb: true,
+			usecaffe: false,
+			usecode: true,
+			useport: false
+		},
+				
 		init: {  // program engines on given thread 
 			py: function pyInit(thread,code,ctx,cb)  {
-				if ( !ctx.ports ) ctx.ports = {};
+				var pycode = "", gen = ENGINE.gen;
 				
-				cb( ENGINE.python(thread,code,ctx), ctx );
+				if (gen.usecaffe) pycode += `
+#caffe interface
+import caffe
+`;
+
+				/*
+					mysql connection notes:
+					install the python2.7 connector (rpm -Uvh mysql-conector-python-2.x.rpm)
+					into /usr/local/lib/python2.7/site-packages/mysql, then copy
+					this mysql folder to the anaconda/lib/python2.7/site-packages.
+
+					import will fail with mysql-connector-python-X installed (rum or rpm installed as root using either
+					python 2.2 or python 2.7).  Will however import under python 2.6.  To fix, we must:
+
+							cp -R /usr/lib/python2.6/site-packages/mysql $CONDA/lib/python2.7/site-packages
+
+					after "rpm -i mysql-connector-python-2.X"
+				*/
+				if (gen.usedb) pycode += `
+#db connector interface
+import mysql.connector
+sql = mysql.connector.connect(user='${gen.db.user}', password='${gen.db.pass}', database='${gen.db.name}')
+SQL0 = sql.cursor(buffered=True)
+SQL1 = sql.cursor(buffered=True)
+`;
+				
+				if (gen.trace) pycode += `
+#trace engine entry
+print 'py>>locals', locals()
+import sys
+print 'py>sys', sys.path, sys.version
+print 'py>caffe',caffe
+print 'py>sql', sql
+`;
+				if (gen.usecode) pycode += `
+#engine code
+${code}
+`;
+				if (gen.useport) {
+					var ports = Object.keys( ctx.ports || {} );
+
+					ports.each( function (n,port) {
+						ports[n] = port + ":" + port;
+					});
+
+					ports = "{" + ports.join(",") + "}";
+
+					pycode += `
+#entry code
+PORTS=${ports}
+if '${ctx.port}':
+	if '${ctx.port}' in PORTS
+		PYERR = PORTS['${ctx.port}']()
+	else:
+		PYERR = 104
+else:
+	PYERR = 0
+`;
+				}				
+
+				if (gen.hasdb) pycode += `
+#exit code
+SQL.commit()
+SQL.close()
+`;
+
+				cb( ENGINE.python(thread,pycode,ctx), ctx );
 			},
 			
 			cv: function cvInit(thread,code,ctx,cb)  {
@@ -775,21 +855,28 @@ var
 				cb( null, ctx );
 			},
 			
-			mw: function mwInit(thread,code,ctx,cb) {
+			ma: function maInit(thread,code,ctx,cb) {
 				
 				var 
 					fname = thread.replace(".ic.gov","").replace(/[@.]/g,"_"),
 					agent = ENGINE.matlab.path.agent,
 					spath = ENGINE.matlab.path.save,
-					mpath = spath + fname + ".m";
+					mpath = spath + fname + ".m",
+					config = gen;
 				
 				FS.writeFile( mpath, `
-function ws = ${fname}()
+function ws = ${fname}( )
 	ws.set = @set;
 	ws.get = @get;
 	ws.step = @step;
 	ws.run = @run;
-	ws.store = @store;
+	ws.onExit = @onExit;
+
+	if ${gen.usedb}
+		ws.db = database('${gen.db.name}','${gen.db.user}','${gen.db.pass}');
+	else
+		ws.db = 0;
+	end
 
 	function set(key,val)
 		ws.(key) = val;
@@ -799,31 +886,70 @@ function ws = ${fname}()
 		res = ws.(key);
 	end
 
-	function store(res)
-		fid = fopen('${fname}.out', 'wt');
-		fprintf(fid, '%s', jsonencode(res) );
-		fclose(fid);
-		%save( '${fname}.mat', 'json', '-ascii' );
-		webread( '${agent}?save=${fname}' );
+	function res = step(ctx)
+		res = 0; 		% prime on-exit data
+		data = onEntry(ctx.query.entry);
+
+		if ${gen.usecode}
+			${code}
+		end
+
 	end
 
-	function res = step(arg)
-		res = 0;
-		${code}
+	function run(ctx)
+		onExit(step(ctx), ctx.query.exit);
 	end
 
-	function run(arg)
-		store(step(arg));
+	function onExit(res, query)
+		if isstruct(ws.db)  		% db provided
+			if query.length
+				select(ws.db, query);
+			end
+		else 							% use file system as json db		
+			fid = fopen('${fname}.out', 'wt');
+			fprintf(fid, '%s', jsonencode(res) );
+			fclose(fid);
+			%save( '${fname}.mat', 'json', '-ascii' );
+			webread( '${agent}?save=${fname}' );
+		end
+	end
+
+	function data = onEntry(query)
+		try
+			if endsWith(query, '.jpg')
+				data = imread(query);
+
+			elseif endsWith(query, '.json')
+				fid = fopen(query, 'rt');
+				data = jsondecode(getl( fid ));
+				fclose(fid);
+
+			elseif query.length
+				if isstruct(ws.db)   % db provided
+					data = select(ws.db, query);
+				else
+					data = [];
+				end	
+
+			else
+				data = [];
+
+			end
+		
+		catch err
+			data = [];
+		end
+
 	end
 
 end`, "utf8" );
 
-				ENGINE.matlab.queue( "init_queue", `ws_${fname} = ${fname}; \nws_${fname}.store(1);` );
+				ENGINE.matlab.queue( "init_queue", `ws_${fname} = ${fname}; \nws_${fname}.onExit(1);` );
 				
 				cb(null,ctx);
 			},
 			
-			ma: function maInit(thread,code,ctx,cb) {
+			em: function emInit(thread,code,ctx,cb) {
 
 				Copy(ENGINE.plugins, ctx);
 				
@@ -901,7 +1027,7 @@ end`, "utf8" );
 					return ENGINE.errors.lostContext;
 			},
 			
-			mw: function mwStep(thread,code,ctx) {
+			ma: function maStep(thread,code,ctx) {
 				function arglist(x) {
 					var rtn = [], q = "'";
 					Each(x, function (key,val) {
@@ -934,7 +1060,7 @@ end`, "utf8" );
 				return null;
 			},
 			
-			ma: function maStep(thread,code,ctx) {
+			em: function meStep(thread,code,ctx) {
 				ENGINE.plugins.MATH.eval(code,ctx);
 
 				//Trace({R:ctx.R, A:ctx.A, X:ctx.X});
