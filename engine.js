@@ -204,7 +204,7 @@ var
 		*/
 		plugins: {  // plugins libs available to all engines
 			MATH: require('mathjs'),
-			LWIP: require('graceful-lwip'),
+			IMAGE: require('graceful-lwip'),
 			DSP: require('digitalsignals'),
 			CRY: require('crypto'),
 			RAN: require("randpr"),
@@ -751,16 +751,20 @@ var
 		},
 			
 		gen: {
-			trace: false,
+			trace: true,
 			db: {
 				user: ENV.DB_USER,
 				name: ENV.DB_NAME,
 				pass: ENV.DB_PASS
 			},				
-			usedb: true,
+			usedb: false,
 			usecaffe: false,
 			usecode: true,
-			useport: false
+			useport: false,
+			useimage: true,
+			usejson: true,
+			load: true,
+			save: true
 		},
 				
 		init: {  // program engines on given thread 
@@ -769,7 +773,7 @@ var
 				
 				if (gen.usecaffe) pycode += `
 #caffe interface
-import caffe
+import caffe as CAFFE
 `;
 
 				/*
@@ -783,24 +787,53 @@ import caffe
 
 							cp -R /usr/lib/python2.6/site-packages/mysql $CONDA/lib/python2.7/site-packages
 
-					after "rpm -i mysql-connector-python-2.X"
+					after "rpm -i mysql-connector-python-2.X".
+					
+					For some reaon, only two sql cursors are allowed.
 				*/
 				if (gen.usedb) pycode += `
 #db connector interface
-import mysql.connector
-sql = mysql.connector.connect(user='${gen.db.user}', password='${gen.db.pass}', database='${gen.db.name}')
-SQL0 = sql.cursor(buffered=True)
-SQL1 = sql.cursor(buffered=True)
+import mysql.connector as SQLC
+SQL = SQLC.connect(user='${gen.db.user}', password='${gen.db.pass}', database='${gen.db.name}')
+SQL0 = SQL.cursor(buffered=True)
+SQL1 = SQL.cursor(buffered=True)
 `;
 				
+				if (gen.useimage) pycode += `
+#jpeg image interface
+from PIL import Image as IMAGE
+`;
+
+				if (gen.usejson) pycode += `
+#json interface
+import json as JSON
+`;
+
 				if (gen.trace) pycode += `
 #trace engine entry
 print 'py>>locals', locals()
-import sys
-print 'py>sys', sys.path, sys.version
-print 'py>caffe',caffe
-print 'py>sql', sql
+import sys as SYS
+print 'py>sys', SYS.path, SYS.version
+print 'py>caffe',CAFFE
+print 'py>sql', SQL
 `;
+				if (gen.load) pycode += `
+if job.load.endswith(".jpg"):
+	data = IMAGE.open(job.load)
+
+elif job.load.endswith(".json"):
+	data = JSON.loads(job.load)
+
+elif job.load
+	SQL0.execute(job.load)
+	data = []
+	for (rec) in SQL0:
+		data.append(rec)
+
+else:
+	data = []
+`;
+
 				if (gen.usecode) pycode += `
 #engine code
 ${code}
@@ -827,12 +860,15 @@ else:
 `;
 				}				
 
-				if (gen.hasdb) pycode += `
+				if (gen.usedb) pycode += `
 #exit code
 SQL.commit()
 SQL.close()
 `;
 
+				Log(pycode);
+				Log(ctx);
+				
 				cb( ENGINE.python(thread,pycode,ctx), ctx );
 			},
 			
@@ -888,16 +924,12 @@ function ws = ${fname}( )
 
 	function res = step(ctx)
 		res = 0; 		% prime on-exit data
-		data = onEntry(ctx.query.entry);
-
-		if ${gen.usecode}
-			${code}
-		end
-
+		data = onEntry(ctx.job.load);
+		${code}
 	end
 
 	function run(ctx)
-		onExit(step(ctx), ctx.query.exit);
+		onExit(step(ctx), ctx.job.exit);
 	end
 
 	function onExit(res, query)
