@@ -244,7 +244,10 @@ var
 				em.eval(code, emctx);
 				
 				Each(emctx, function (key, val) {
-					ctx[key] = emctx[key]._data;
+					if (val._data)
+						ctx[key] = val._data;
+					else
+						ctx[key] = val;
 				});
 			}
 		},
