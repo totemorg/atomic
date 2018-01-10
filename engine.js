@@ -156,6 +156,17 @@ var
 				}); */
 			}
 			
+			var em = ENGINE.plugins.MATH;
+			
+			em.import({
+				isEqual: function (a,b) {
+					return a==b;
+				},
+				disp: function (a) {
+					console.log(a);
+				}
+			});
+			
 			if (thread = ENGINE.thread)
 				thread( function (sql) { // compile engines defined in engines DB
 
@@ -202,7 +213,7 @@ var
 		@member ENGINE
 		Modules to share accross all js-engines
 		*/
-		plugins: {  // plugins libs available to all engines
+		plugins: {  // js-engine plugins 
 			MATH: require('mathjs'),
 			IMAGE: require('graceful-lwip'),
 			DSP: require('digitalsignals'),
@@ -213,7 +224,29 @@ var
 			MVN: require("multivariate-normal"),
 			VITA: require("nodehmm"),
 			LOG: console.log,
-			JSON: JSON
+			JSON: JSON,
+			MAT: function (ctx,code) {
+				var
+					emctx = {},
+					em = ENGINE.plugins.MATH;
+				
+				Each(ctx, function (key, val) {
+					switch (val.constructor) {
+						case Array:
+							emctx[key] = em.matrix(val);
+							break;
+
+						default:
+							emctx[key] = val;
+					}
+				});
+							
+				em.eval(code, emctx);
+				
+				Each(emctx, function (key, val) {
+					ctx[key] = emctx[key]._data;
+				});
+			}
 		},
 			
 		/**
@@ -335,17 +368,21 @@ var
 			}
 						
 			function execute(ctx, cb) {  //< callback cb(ctx,stepcb) with revised engine ctx and stepper
-				var runctx = ctx.req.query;
+				var 
+					query = ctx.req.query,
+					body = ctx.req.body,
+					port = body.port || "",
+					runctx = body.tau || query;
 				
 				cb( runctx, function () {  // callback engine using this stepper
 
 					if ( stepEngine = ctx.step )
 						try {  	// step the engine -  return an error if it failed or null if it worked
 							var 
-								body = req.body,
 								err =  // stepEngine(ctx.thread, ctx.code, ctx.req.query); 
-									stepEngine(ctx.thread, body.port || "", body.tau || runctx);
+									stepEngine(ctx.thread, port, runctx);
 							
+							Log("run save=", runctx.Save);
 							return err ? ENGINE.errors[err] || ENGINE.badError : null;
 						}
 
@@ -556,7 +593,7 @@ var
 			ENGINE.run(req, function (ctx,step) {
 //console.log(">step ",ctx);
 				if ( ctx ) 
-					res( step() || JSON.stringify( ctx.tau || "[]" ) ); 
+					res( step() || JSON.stringify( ctx.Save || "[]" ) ); 
 				
 				else
 					res( ENGINE.errors.badThread );
@@ -576,7 +613,7 @@ var
 //console.log(">run", ctx);
 				
 				if (ctx) 
-					res( step() || ctx.tau || 0 );
+					res( step() || ctx.Save || 0 );
 				
 				else
 					res( ENGINE.errors.badEngine );
@@ -635,7 +672,7 @@ var
 		//Trace([key,err,q.sql]);
 
 						if (err) {
-							ctx.err = err;
+							//ctx.err = err;
 							ctx[key] = null;
 						}
 						
@@ -850,7 +887,7 @@ ${code}
 PORTS=${ports}
 if PORT:
 	if PORT in PORTS:
-		ERR = PORTS[PORT]()
+		ERR = PORTS[PORT](TAU,CTX.ports[PORT])
 	else:
 		ERR = 103
 else:
@@ -914,16 +951,13 @@ LOG("js>ctx", CTX);
 ` };
 				
 				if (gen.port) { jscode += `
-if ( port = PORTS[PORT] ) ERR = port();
+if ( port = PORTS[PORT] ) ERR = port(TAU, CTX.ports[PORT]);
 ` };
 
 				if (gen.code) { jscode += `
 function onEntry(DATA) {
+	CTX.Save = 0;
 	${code}
-	return RES;
-}
-
-function onExit(RES) {
 }
 ` };
 				
@@ -933,7 +967,7 @@ if (Job = CTX.Job)
 		if ( Query.endsWith(".json") )
 			FS.readFile( Query, function (err, buf) {
 				try {
-					onExit( onEntry( JSON.parse( buf ) ) );
+					onEntry( JSON.parse( buf ) );
 				}
 				catch (err) {
 				}
@@ -941,27 +975,24 @@ if (Job = CTX.Job)
 
 		else
 		if ( Query.endsWith(".jpg") ) 
-			IMAGE.open( Query , function (err, DATA) {
-				if ( !err ) onExit( onEntry( DATA ) );
+			IMAGE.open( Query , function (err, data) {
+				if ( !err ) onEntry( data );
 			});
 
 		else
-			SQL.query( Query, function (err, DATA) {
-				if ( !err ) onExit( onEntry( DATA ) );
+			SQL.query( Query, function (err, data) {
+				if ( !err ) onEntry( data );
 			});
 
 	else 
-		onExit( onEntry( null ) );
+		onEntry( null );
 
 else
-	onExit( onEntry( null ) );
+	onEntry( null );
 `; }
 				
 				else jscode += code;
 
-				if (gen.res) { jscode += `
-` };
-				
 				vm.code = jscode;
 				Log(vm.code);
 				
@@ -1057,7 +1088,8 @@ end`, "utf8" );
 				
 				cb(null,ctx);
 			},
-			
+
+			/*
 			em: function emInit(thread,code,ctx,cb) {
 
 				Copy(ENGINE.plugins, ctx);
@@ -1069,11 +1101,12 @@ end`, "utf8" );
 
 				cb( null, ctx );
 			},
+			*/
 			
 			sq:  function sqInit(thread,code,ctx,cb) {
 				ENGINE.thread( function (sql) {
 					ctx.SQL[ctx.action](sql, [], function (recs) {
-						ctx.tau = [1,2,3];  // cant work as no cb exists
+						ctx.Save = [1,2,3];  // cant work as no cb exists
 					});
 				});
 				
@@ -1100,7 +1133,6 @@ end`, "utf8" );
 			},
 			
 			cv: function cvStep(thread,port,ctx) {
-				
 				if ( ctx.frame && ctx.detector )
 					if ( err = ENGINE.opencv(thread,code,ctx) )
 						return ENGINE.errors[err] || ENGINE.errors.badError;
@@ -1115,21 +1147,8 @@ end`, "utf8" );
 			js: function jsStep(thread,port,ctx) {
 				if ( vm = ENGINE.vm[thread] ) 
 					ENGINE.thread( function (sql) {
-						Copy( {SQL: sql, CTX: ctx, DATA: [], RES: [], PORT: port, PORTS: vm.ctx}, vm.ctx );
+						Copy( {SQL: sql, CTX: ctx, DATA: [], RES: [], PORT: port, TAU: ctx, PORTS: vm.ctx}, vm.ctx );
 						
-						/*
-						if (vm.port) 
-							if ( port = vm[vm.port] ) {
-								port( ctx, function (rtn) {
-									vm.tau = rtn;
-								});
-								return null;
-							}
-
-							else 
-								return ENGINE.errors.badPort;
-						*/
-
 						VM.runInContext(vm.code,vm.ctx);
 						return null;
 					});
@@ -1171,20 +1190,20 @@ end`, "utf8" );
 				return null;
 			},
 			
+			/*
 			em: function meStep(thread,code,ctx) {
 				if ( vm = ENGINE.vm[thread] )
 					ENGINE.thread( function (sql) {
 						Copy( {SQL: sql, CTX: ctx, DATA: [], RES: [], PORT: port, PORTS: vm.ctx}, vm.ctx );
 						
 						ENGINE.plugins.MATH.eval(vm.code,vm.ctx);
-
-						//Trace({R:ctx.R, A:ctx.A, X:ctx.X});
 						return null;
 					});
 				
 				else
 					return ENGINE.errors.lostContext;					
 			},
+			*/
 			
 			sq: function sqStep(thread,port,ctx) {
 
