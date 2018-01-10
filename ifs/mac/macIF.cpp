@@ -7,23 +7,21 @@ Defines a V8 machine pool generator:
  
 to generate MAX number of CLS-class machines MAX_machine[0, ...] each machine accepting a list of either:
  
- 		[ name string, port string, event list ]
- 		[ name string, code string, parm hash ]
+ 		[ name string, code string, context hash ]
+ 		[ name string, port string, context hash or event list ]
  
 and returning an interger error code.  CLS specifies the technology being interfaced (opencv, python, ....).
 
 A machine name (typically "Client.Engine.Instance") uniquely identifies the engine's compute thread.  Compute threads
 can be freely added to the pool until the pool becomes full.  
  
-When stepping a machine, port specifies either the name of the input port on which arriving events [ tau, tau, ... ] list 
+When stepping a machine, port specifies either the name of the input port on which arriving events [ tau, tau, ... ] 
 are latched, or the name of the output port on which departing events [ tau, tau, ... ] are latched; thus stepping the 
-machine in a stateful way (to maximize data restfulness).  Given, however, an empty port will, the machine is 
-stepped in a stateless way: by latching events to all input ports, then latching all output ports to events.
+machine in a stateful way (to maximize data restfulness).  An empty port will cause the machine to be 
+stepped in a stateless way with the supplied context hash.
  
-When programming a machine with code, parm = { ports: {name1: {...}, name2: {...}, ...}, tau: [tau,tau,...], ... } defines 
-parameters to machine i/o ports and i/o events.  Empty code will monitor current machine parameters.
-
-Machines DO NOT check validity of input arguments ... so pass 'em correctly!
+When programming a machine, the context hash = { ports: {name1: {...}, name2: {...}, ...}, key: value, .... } defines 
+parameters to/from a machine.  Empty code will cause the machine to monitor its current parameters.
 
 See the opencv.cpp, python.cpp, etc machines for usage examples.  This interface is created using node-gyp with 
 the binding.gyp provided.

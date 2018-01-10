@@ -4,22 +4,20 @@
 Reserves a pool of V8 python machines:
  
  		error = python.call( [ id string, code string, context hash ] )
+ 		error = python.call( [ id string, port string, context hash or event list] )
  
 and returns an interger error code.
 
 A machine id (typically "Name.Client.Instance") uniquely identifies the machine's compute thread.  Compute
 threads can be freely added to the pool until the pool becomes full.  
  
-When stepping a machine, code specifies either the name of the input port on which the arriving context 
-is latched, or the name of the output port on which the departing context is latched; thus stepping
-the machine in a stateful way (to maximize data restfulness).  Given, however, an empty port will, the machine is 
-stepped in a stateless way: by latching events to all input ports, then latching all output ports to events.
-
-When programming a machine with code, the context = { ports: {name1: {...}, name2: {...}, ...}, ...} defines 
-parameters to input-output ports, and port = "python program\n" (or "module name"  to import 
-under $PYTHONPATH).  Empty code will monitor current machine parameters.
-
-See the tauIF.cpp for usage examples.  This interface is created using node-gyp with the binding.gyp provided.
+When stepping a machine, port specifies either the name of the input port on which arriving events [ tau, tau, ... ] 
+are latched, or the name of the output port on which departing events [ tau, tau, ... ] are latched; thus stepping the 
+machine in a stateful way (to maximize data restfulness).  An empty port will cause the machine to be 
+stepped in a stateless way with the supplied context hash.
+ 
+When programming a machine, the context hash = { ports: {name1: {...}, name2: {...}, ...}, key: value, .... } defines 
+parameters to/from a machine.  Empty code will cause the machine to monitor its current parameters.  
 */
 
 #define MAXMACHINES 64
@@ -47,16 +45,20 @@ using namespace std;
 // Machine specs
 
 #define TRACE "py>"
-#define CTXINDEX(X) "ctx['" X "']"
 #define LOCAL(X) PyDict_GetItemString(pLocals,X)
 
-// hash members to pass to standalone machine
-#define PYERR "err"			// py number to return erro code
-#define PYPARM "parm" 		// py hash reserved to return hash from external modules
-#define PYPORT "port"		// py string for function (aka port) to call stateful machine, or empty to call stateless machine.
+/*
+#define CTXINDEX(X) "CTX['" X "']"
+*/
+
+// machine context parameters
+#define PYERR "ERR"			// parameter to hold error code
+#define PYPORT "PORT"		// parameter used to call stateful machine port, or empty for stateless call
+#define PYPARM "PARM" 		// name of hash when using external modules
+#define PYCTX "CTX"		// engine context during stateless call
+#define PYTAU "TAU"		// port events during stateful call
 
 /*
-#define PYCONTEXT "ctx"		// py redudant context if needed
 #define PYPORTS "ports"		// py hash of port hashes
 */
 
@@ -74,6 +76,7 @@ using namespace std;
 
 // Danger zone
 
+/*
 str indent(str code) {
 	int n,N = strlen(code),m,M;
 	
@@ -91,7 +94,6 @@ str indent(str code) {
 	return rtn;
 }
 
-/*
 str wrap(str code,str port,V8OBJECT parm,str idx,str args) {  // wrap user python code in machine interface
 	str rtn = mac_strclone(strlen(code)+1000,"");
 	
@@ -170,7 +172,7 @@ str wrap(str code,str port,V8OBJECT parm,str idx,str args) {  // wrap user pytho
 		);
 
 		V8ARRAY keys = parm->GetOwnPropertyNames();
-		char buf[MAXSTR];
+		char buf[MAX_KEYLEN];
 		
 		for (int n=0,k=0,N=keys->Length(); n<N; n++) {
 			str key = V8TOSTR(keys->Get(n), buf);
@@ -229,7 +231,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 		~PYMACHINE(void) {
 		};
 	
-		// provide V8-python converters
+		// machine V8-python converters
 		V8VALUE clone(PyObject *src) { 				// clone python value into v8 value
 			if (PyList_Check(src)) {
 				int N = PyList_Size(src);
@@ -242,6 +244,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 					
 				return tar;
 			}
+			
 			else
 			if (PyDict_Check(src)) {
 				V8OBJECT tar = v8::Object::New(scope);
@@ -255,41 +258,57 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 				
 				return tar;
 			}
+			
 			else
-			if (PyFunction_Check(src)) {
-				
-			}
+			if (PyFunction_Check(src)) 
+				return V8TONUMBER(0.0);
+			
 			else
 			if (PyFloat_Check(src)) 
 				return V8TONUMBER(PyFloat_AsDouble(src));
+			
 			else
 			if (PyInt_Check(src)) 
 				return V8TONUMBER(PyInt_AsLong(src));
+			
 			else
 			if (PyString_Check(src)) 
 				return V8TOKEY(PyString_AsString(src));
-			else 							// might want to check for null and funcion too
+			
+			else 
 				return V8TONUMBER(0.0);
 		}
 		
 		PyObject *clone(V8VALUE src) {  			// clone v8 object into python object
 //printf(TRACE " clone str=%d num=%d arr=%d obj=%d\n ",src->IsString(),src->IsNumber(),src->IsArray(),src->IsObject() );
-			char buf[MAXSTR];
+			char buf[MAX_KEYLEN];
 			
 			if ( src->IsString() )
 				return PyString_FromString( V8TOSTR(src, buf) );
+			
 			else
 			if ( src->IsNumber() )
 				return PyFloat_FromDouble( src->ToNumber()->Value() );
+				
 			else
 			if ( src->IsArray() ) {
 				V8ARRAY v = V8TOARRAY(src); //Array::Cast(src);
 				return clone( v );
 			}
+			
 			else
 			if ( src->IsObject() )
 				return clone(src->ToObject());
-			else 									// might want to check for null and function too
+				
+			else
+			if ( src->IsNull() )
+				return PyLong_FromVoidPtr(NULL);
+				
+			else
+			if ( src->IsFunction() )
+				return PyLong_FromVoidPtr(NULL);
+				
+			else
 				return PyFloat_FromDouble( 0.0 );
 
 		}
@@ -309,7 +328,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 		PyObject *clone(V8OBJECT src) { 			// clone v8 object into python object
 			PyObject *tar = PyDict_New();
 			V8ARRAY keys = src->GetOwnPropertyNames();
-			char buf[MAXSTR];
+			char buf[MAX_KEYLEN];
 			
 //printf(TRACE "clone object keys=%d\n",keys->Length());
 			
@@ -322,10 +341,12 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 			return tar;
 		}
 				
-		// define program/step interface
+		// machine program/step interface
 		int call(const V8STACK& args) { 			// Monitor/Program/Step machine	
 			
-			if (setup(args)) 
+			err = setup(args);
+			
+			if (err) 
 				return err;
 			
 			else
@@ -370,7 +391,8 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 					pLocals = PyModule_GetDict(pModule);
 //printf(TRACE "locals=%p/\n",pLocals);
 					
-					PyDict_Merge(pLocals, clone(ctx), true);
+					//PyDict_Merge(pLocals, clone(ctx), true);
+					PyDict_SetItemString(pLocals, PYCTX, clone( ctx ));	
 					
 					PyDict_SetItemString(pLocals, PYERR, PyInt_FromLong(0));
 					
@@ -388,22 +410,31 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 						port,
 						V8INDEX(ctx,PYPORTS)->ToObject(),
 						PYPORT,
-						PYCONTEXT "," PYPORTS "[" PYPORT "]"
+						PYCTX "," PYPORTS "[" PYPORT "]"
 					);
 					*/
 
-printf(TRACE "py>compile=\n%s infile=%d\n",code,Py_file_input);
-
-					// For some reason cant recompile already compiled code.  
-					pCodeTest = (PyCodeObject*) Py_CompileString(code, "py>traceback", Py_file_input);
-
-					if (pCodeTest) pCode = pCodeTest;
+//printf(TRACE "compile=\n%s infile=%d\n",code,Py_file_input);
+					// Uncomment if there is a need to define ctx at compile
+					//PyDict_SetItemString(pLocals, PYPORT, PyString_FromString( port ) );
+					//PyDict_SetItemString(pLocals, PYCTX, clone( ctx ));
 					
-					else
-						printf(TRACE "reprogram ignored!!\n");
+					// For some reason cant recompile already compiled code.  
+					pCodeTest = (PyCodeObject*) Py_CompileString(code, "py_traceback", Py_file_input);
+					
+					if (pCodeTest) {
+						pCode = pCodeTest;
+						err = 0;
+					}
+					
+					else {
+						pCode = NULL;
+						err = badCode;
+					}
 
 //printf(TRACE "pcode %s\n", (pCode ? "generated" : "missing"));
-					
+
+					return err;
 					//Py_Finalize(); // dont do this - will cause segment fault
 				}
 			}
@@ -411,11 +442,11 @@ printf(TRACE "py>compile=\n%s infile=%d\n",code,Py_file_input);
 //printf(TRACE "pcode %s\n", (pCode ? "generated" : "missing"));
 			
 			if (!pCode) 
-				err = badInit;
+				err = badCode;
 			
 			else		
 			if ( strlen(path) ) {			// Step external module
-//printf(TRACE "find port=%s\n",port);
+//printf(TRACE "module path=%s\n",port);
 				pFunc = PyObject_GetAttrString(pModule, port);
 				//err = PyInt_AsLong( PyRun_String(port, Py_file_input, pGlobals, pLocals) );
 				//err = PyRun_SimpleString(port);
@@ -434,35 +465,34 @@ printf(TRACE "py>compile=\n%s infile=%d\n",code,Py_file_input);
 //monitor("py set ctx[0]",ctx->ToObject()->Get(0)->ToObject());
 				}
 				else 									// Bad call
-					err = badInit; 
+					err = badCode; 
 			}
 			
 			else 
 			if ( strlen(port) ) {		// Stateful step
-printf(TRACE "Stateful call port=%s\n",port);
+//printf(TRACE "Stateful step port=%s\n",port);
 				PyDict_SetItemString(pLocals, PYPORT, PyString_FromString(port) );
-				//PyDict_SetItemString(pLocals, PYCONTEXT, clone(ctx) );
+				PyDict_SetItemString(pLocals, PYTAU, clone(tau) );
 
 				PyEval_EvalCode(pCode,pGlobals,pLocals);
 				err = PyInt_AsLong( LOCAL(PYERR) );
 				
-				//set(ctx, clone( LOCAL(PYCONTEXT) ));  // update context with local context
-				set(ctx, clone( pLocals )->ToObject() );				
+				set(tau, clone( LOCAL(PYTAU) ));
+				//set(ctx, clone( pLocals )->ToObject() );	
 			}
 			
 			else {					// Stateless step
-//printf(TRACE "Stateless call\n");
-
+//printf(TRACE "Stateless step\n");
 				pLocals = PyModule_GetDict(pModule);
 				pGlobals = PyModule_GetDict(pMain);	
 
 				PyDict_SetItemString(pLocals, PYPORT, PyString_FromString( port ) );
-				//PyDict_SetItemString(pLocals, PYCONTEXT, clone( ctx ));
+				PyDict_SetItemString(pLocals, PYCTX, clone( ctx ));
 
 				PyEval_EvalCode(pCode,pGlobals,pLocals);
 
-				//set(ctx, clone( LOCAL(PYCONTEXT) )->ToObject() );
-				set(ctx, clone( pLocals )->ToObject() );
+				set(ctx, clone( LOCAL(PYCTX) )->ToObject() );
+				//set(ctx, clone( pLocals )->ToObject() );
 				
 				err = PyInt_AsLong( LOCAL(PYERR) );						
 			}

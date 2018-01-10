@@ -5,7 +5,8 @@
 
 #define TRACE "mac>"
 #define QUOTE(X) #X
-#define MAXSTR 512
+#define MAX_KEYLEN 512
+#define MAX_CODELEN 65536
 
 // v8 interface
 
@@ -34,28 +35,6 @@
 #define V8ENTRY(X) X.GetIsolate()
 #define V8EXIT(X)  GetReturnValue().Set(Integer::New(scope, X))
 
-#define V8JSONIFY \
-	outlen += strlen(buff); \
-\
-	for (i=0; i<features; i++) { \
-		buffs[i] = feature[i].json(); \
-		outlen += strlen(buffs[i]); \
-	} \
-\
-	out = mac_strclone(outlen+5+features,"{"); \
-	strcat(out,buff); \
-	strcat(out,"["); \
-\
-	for (i=0; i<features-1; i++) { \
-		strcat(out,buffs[i]); \
-		strcat(out,","); \
-	} \
-\
-	if (features) strcat(out,buffs[i]); \
-\
-	strcat(out,"]}");
-
-
 // basic data type
 
 typedef char *str;
@@ -78,8 +57,8 @@ typedef void V8MACHINE(const V8STACK& args);
 
 #define badModule 	101
 #define badStep 	102
-#define badInit 	103
-#define badEntryExit 104
+#define badPort	103
+#define badCode 104
 #define badPool		105
 #define badArgs		106
 
@@ -110,10 +89,9 @@ class MACHINE {
 			if (name) free(name);
 		}
 	
-		// monitor machine parms for debugging
-		int monitor(void) {
+		int monitor(void) {   // monitor used for debudding machine 
 			V8ARRAY keys = ctx->GetOwnPropertyNames();
-			char buf[MAXSTR];
+			char buf[MAX_KEYLEN];
 			
 			printf(TRACE "%s keys=%d\n",name,keys->Length());
 			
@@ -126,19 +104,21 @@ class MACHINE {
 			return err;
 		}
 		
-		// setup machine for future calls to step
-		int setup(const V8STACK& args) {
-			scope = V8ENTRY(args);
+		int setup(const V8STACK& args) {   // setup used when machine is called
+			scope = V8ENTRY(args);  // retain scope for V8 garbage collection
 			
 			if ( args.Length() != 3 ) return badArgs;
-			if ( !args[0]->IsString() ) return badArgs;
-			if ( !args[1]->IsString() ) return badArgs;
-			if ( !args[2]->IsObject() ) return badArgs;
+			if ( !args[0]->IsString() ) return badArgs;  // test engine name string
+			if ( !args[1]->IsString() ) return badArgs;	// test engine code/port string
+			if ( !args[2]->IsObject() ) return badArgs;	// test engine context
 				
-			code = CODEARG(args, codebuf);
+			port = code = CODEARG(args, codebuf);
+			if ( strlen(code) > MAX_CODELEN) return badCode;
+			
 			ctx = CTXARG(args);
+			tau = TAUARG(args);
 
-//printf(TRACE "setup name=%s code=%s args=%d init=%d\n",name,code,args.Length(),(int) init);
+//printf(TRACE "setup name=%s code=%s args=%d initialized=%d\n",name,code,args.Length(),(int) init);
 
 			return 0;
 		}
@@ -197,23 +177,26 @@ class MACHINE {
 		}
 
 		int steps,depth,drops,err;	// number of steps, current call depth, dropped events, return code
-		bool init;	 	// machine flags
-		str name, code; 		// engine name, port name being latched, engine code file path, engine code
-		char codebuf[MAXSTR];
-		V8OBJECT ctx;		// parameters
+		bool init;	 	// machine was initialzed flag
+		str name, code, port; 		// engine name and engine code/port being latched
+		char codebuf[MAX_CODELEN];  // holds code string
+		V8OBJECT ctx;		// context parameters
+		V8ARRAY tau; 	// port events
 		Isolate *scope; 		// v8 garbage collection thread
 };
 
-// Reserves a pool MAC_machine[0,1,...] of machines.  Each MAC_machine accepts either
-// a [name, port, tau] list to execute a machine, or a [name, ctx, code] list to program 
-// a machine.  If the named machine does not exists in the pool, it is added to the pool.
+/*
+Reserves a pool MAC_machine[0,1,...] of machines.  Each MAC_machine accepts either
+a [name, port, tau] list to execute a machine, or a [name, ctx, code] list to program 
+a machine.  If the named machine does not exists in the pool, it is added to the pool.
+*/
 
 #define V8POOL(MAC,MAX,CLS) \
 CLS MAC##_machine[MAX]; \
 \
 void MAC(const V8STACK& args) { \
 	Isolate *scope = V8ENTRY(args); \
-	char buf[MAXSTR]; \
+	char buf[MAX_KEYLEN]; \
 	str name = NAMEARG(args,buf); \
 	int n; \
 \

@@ -47,6 +47,27 @@ and expects the following compile directives:
 #define MAXCASCADES 10
 #define MAXMACHINES 64
 #define CVBUGJPG "prime.jpg"
+#define JSONIFY \
+	outlen += strlen(buff); \
+\
+	for (i=0; i<features; i++) { \
+		buffs[i] = feature[i].json(); \
+		outlen += strlen(buffs[i]); \
+	} \
+\
+	out = mac_strclone(outlen+5+features,"{"); \
+	strcat(out,buff); \
+	strcat(out,"["); \
+\
+	for (i=0; i<features-1; i++) { \
+		strcat(out,buffs[i]); \
+		strcat(out,","); \
+	} \
+\
+	if (features) strcat(out,buffs[i]); \
+\
+	strcat(out,"]}");
+
 
 //==============================================================
 // OpenCV interface
@@ -869,8 +890,9 @@ printf(TRACE "detects=%d\n",detects.features);
 		int call(const V8STACK& args) {
 			
 			//printf(TRACE "init=%d\n", init);
+			err  = setup(args);
 			
-			if ( setup(args) ) 
+			if ( err ) 
 				return err;
 
 			else
@@ -910,7 +932,7 @@ str	FEATURE::json(void) {
 		name,box.x,box.y,box.width,box.height,row,col,rows,cols);
 	*/
 	
-	V8JSONIFY;
+	JSONIFY;
 	return out;
 }
 

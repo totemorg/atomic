@@ -226,27 +226,22 @@ var
 			0: null,
 			101: new Error("engine could not be loaded"),
 			102: new Error("engine received bad port/query"),
-			103: new Error("engine could not be compiled"),
-			104: new Error("engine failed entry/exit"),
-			105: new Error("engine exhausted engine pool"),
-			106: new Error("engine received bad query"),
-			107: new Error("engine cant reach assigned worker at this port"),
-			108: new Error("engine has no/invalid context"),
-			109: new Error("engine could not handoff to worker"),
+			103: new Error("engine port invalid"),
+			104: new Error("engine failed to compile"),
+			105: new Error("engine exhausted thread pool"),
+			106: new Error("engine received bad arguments"),
 			badType: new Error("engine type not supported"),
-			noEngine: new Error("engine does not exists or is not enabled"),
 			badPort: new Error("engine provided invalid port"),
 			badError: new Error("engine returned invalid code"),
 			lostContext: new Error("engine context lost"),
-			noStepper: new Error("engine does not exist, is disabled, or has no/invalid context"),
+			badEngine: new Error("engine does not exist, is disabled, has invalid context, or failed to compile"),
 			badStep: new Error("engine step faulted"),
-			badContext: new Error("engine context bad"),
-			badProgram: new Error("engine failed to program"),
-			badRequest: new Error("worker does not understand request")
+			badContext: new Error("engine context invalid"),
+			badRequest: new Error("engine worker handoff failed")
 		},
 			
 		context: {},  // engine contexts
-		vmcontext: {},  // js-engine wrapper contexts
+		vm: {},  // js-machines
 			
 		tau: function (job) { // default event token sent to and produced by engines in workflows
 			return new Object({
@@ -264,11 +259,11 @@ var
 		program: function (sql, ctx, cb) {  //< callback cb(ctx) with programed engine context or null if error
 			if ( initEngine = ctx.init )
 				ENGINE.prime(sql, ctx.req.query, function (query) {  // mixin sql vars into engine query
-					Log("eng prime", ctx.thread, query);
+					//Log("eng prime", ctx.thread, query);
 					
 					if (query) 
 						initEngine(ctx.thread, ctx.code || "", query, function (err, query) {
-							Log("eng init", err);
+							//Log("eng init", err);
 							cb( err ? null : ctx );
 						});
 					
@@ -323,8 +318,10 @@ var
 			
 			function CONTEXT (thread) {  // engine context constructor for specified thread 
 				this.worker = CLUSTER.isMaster
-					? CLUSTER.workers[ 1 + Math.floor(Math.random() * ENGINE.cores) ]
-					: CLUSTER.worker;
+					? ENGINE.cores  
+							? CLUSTER.workers[ Math.floor(Math.random() * ENGINE.cores) ]   // assign a worker
+							: 0  // assign to master
+					: CLUSTER.worker;  // use this worker
 				
 				this.thread = thread;
 				this.req = null;
@@ -338,18 +335,17 @@ var
 			}
 						
 			function execute(ctx, cb) {  //< callback cb(ctx,stepcb) with revised engine ctx and stepper
-				/*Copy( Copy( req.query, { // add query context and default taus to the engine's state context
-					tau: req.body.tau || []
-					//port: req.body.port || ""
-				} ), ctx.req );	*/
-
-				cb( ctx.req.query, function () {  // callback engine using this stepper
+				var runctx = ctx.req.query;
+				
+				cb( runctx, function () {  // callback engine using this stepper
 
 					if ( stepEngine = ctx.step )
 						try {  	// step the engine -  return an error if it failed or null if it worked
-							// dont  combine err with return because of order of evaluations
-							//console.log( stepEngine, ctx.type, ENGINE.step[ctx.type] );
-							var err =  stepEngine(ctx.thread, ctx.code, ctx.req.query); 
+							var 
+								body = req.body,
+								err =  // stepEngine(ctx.thread, ctx.code, ctx.req.query); 
+									stepEngine(ctx.thread, body.port || "", body.tau || runctx);
+							
 							return err ? ENGINE.errors[err] || ENGINE.badError : null;
 						}
 
@@ -358,7 +354,7 @@ var
 						}
 
 					else 
-						return ENGINE.errors.noStepper;
+						return ENGINE.errors.badEngine;
 
 				});
 			}
@@ -387,7 +383,7 @@ var
 			
 			function initialize(ctx, cb) {  //< initialize engine then callback cb(ctx,stepper) or cb(null) if failed
 				
-				Log("eng init",ctx.thread);
+				//Log("eng init",ctx.thread);
 				ENGINE.setContext( req, ctx, function () {
 					if (ctx) 
 						ENGINE.program( sql, ctx, function (ctx) {
@@ -403,7 +399,7 @@ var
 				});
 			}				
 
-			Log("eng thread", thread, CLUSTER.isMaster ? "on mstr" : "on wrkr", ENGINE.context[thread] ? "has ctx":"new ctx");
+			Log("eng thread", thread, CLUSTER.isMaster ? "on master" : "on worker", ENGINE.context[thread] ? "has ctx":"needs ctx");
 			
 			if ( CLUSTER.isMaster )  { // on master so handoff to worker or execute 
 				if ( ctx = ENGINE.context[thread] ) // get context
@@ -583,7 +579,7 @@ var
 					res( step() || ctx.tau || 0 );
 				
 				else
-					res( ENGINE.errors.noStepper );
+					res( ENGINE.errors.badEngine );
 			});
 		},
 			
@@ -720,7 +716,7 @@ var
 					
 					try {  // add to context
 						Copy({
-							req: {
+							req: {  // http request 
 								group: req.group,
 								table: req.table,
 								client: req.client,
@@ -738,7 +734,7 @@ var
 					catch (err) {
 					}
 
-					Log("eng get", ctx);
+					//Log("eng get", ctx);
 					
 					cb(ctx);
 				}
@@ -751,30 +747,34 @@ var
 		},
 			
 		gen: {
-			trace: true,
-			db: {
+			debug: false,
+			dbcon: {
 				user: ENV.DB_USER,
 				name: ENV.DB_NAME,
 				pass: ENV.DB_PASS
 			},				
-			usedb: false,
-			usecaffe: false,
-			usecode: true,
-			useport: false,
-			useimage: true,
-			usejson: true,
-			load: true,
-			save: true
+			db: true,
+			libs: true,
+			code: true,
+			port: true,
+			data: true,
+			res: true
 		},
 				
 		init: {  // program engines on given thread 
 			py: function pyInit(thread,code,ctx,cb)  {
-				var pycode = "", gen = ENGINE.gen;
+				var 
+					pycode = "", 
+					gen = ENGINE.gen;
 				
-				if (gen.usecaffe) pycode += `
-#caffe interface
-import caffe as CAFFE
-`;
+				if (gen.libs) { pycode += `
+#import modules
+#import caffe as CAFFE		#caffe interface
+import mysql.connector as SQLC		#db connector interface
+from PIL import Image as IMAGE		#jpeg image interface
+import json as JSON			#json interface
+import sys as SYS			#system info
+` };
 
 				/*
 					mysql connection notes:
@@ -791,54 +791,52 @@ import caffe as CAFFE
 					
 					For some reaon, only two sql cursors are allowed.
 				*/
-				if (gen.usedb) pycode += `
-#db connector interface
-import mysql.connector as SQLC
-SQL = SQLC.connect(user='${gen.db.user}', password='${gen.db.pass}', database='${gen.db.name}')
+				if (gen.db) { pycode += `
+SQL = SQLC.connect(user='${gen.dbcon.user}', password='${gen.dbcon.pass}', database='${gen.dbcon.name}')
 SQL0 = SQL.cursor(buffered=True)
 SQL1 = SQL.cursor(buffered=True)
-`;
+` };
 				
-				if (gen.useimage) pycode += `
-#jpeg image interface
-from PIL import Image as IMAGE
-`;
-
-				if (gen.usejson) pycode += `
-#json interface
-import json as JSON
-`;
-
-				if (gen.trace) pycode += `
-#trace engine entry
-print 'py>>locals', locals()
-import sys as SYS
+				if (gen.debug) { pycode += `
+#trace engine context
+print 'py>locals', locals()
 print 'py>sys', SYS.path, SYS.version
-print 'py>caffe',CAFFE
-print 'py>sql', SQL
-`;
-				if (gen.load) pycode += `
-if job.load.endswith(".jpg"):
-	data = IMAGE.open(job.load)
+#print 'py>caffe',CAFFE
+#print 'py>sql', SQL
+print 'py>ctx',CTX
+print 'py>port',PORT
+` };
 
-elif job.load.endswith(".json"):
-	data = JSON.loads(job.load)
+				if (gen.data) { pycode += `
+#load dataset
+Job = CTX['Job']
+if Job:
+	Query = Job['data']
+	if Query:
+		if Query.endswith(".jpg"):
+			DATA = IMAGE.open(Query)
 
-elif job.load
-	SQL0.execute(job.load)
-	data = []
-	for (rec) in SQL0:
-		data.append(rec)
+		elif Query.endswith(".json"):
+			DATA = JSON.loads(Query)
+
+		else:
+			SQL0.execute(Query)
+			DATA = []
+			for (rec) in SQL0:
+				DATA.append(rec)
+	else:
+		DATA = 0
 
 else:
-	data = []
-`;
-
-				if (gen.usecode) pycode += `
-#engine code
+	DATA = 0
+` };
+				
+				if (gen.code) { pycode += `
+#machine code
 ${code}
-`;
-				if (gen.useport) {
+` };
+			
+				if (gen.port) {
 					var ports = Object.keys( ctx.ports || {} );
 
 					ports.each( function (n,port) {
@@ -848,27 +846,43 @@ ${code}
 					ports = "{" + ports.join(",") + "}";
 
 					pycode += `
-#entry code
+#stateful ports
 PORTS=${ports}
-if '${ctx.port}':
-	if '${ctx.port}' in PORTS
-		PYERR = PORTS['${ctx.port}']()
+if PORT:
+	if PORT in PORTS:
+		ERR = PORTS[PORT]()
 	else:
-		PYERR = 104
+		ERR = 103
 else:
-	PYERR = 0
+	ERR = 0
 `;
 				}				
 
-				if (gen.usedb) pycode += `
+				if (gen.res) { pycode += `
+#save results
+Job = CTX['Job']
+if Job:
+	Query = Job['res']
+	if Query:
+		if Query.endswith(".jpg"):
+			RES.save(Query,"jpg")
+
+		elif Query.endswith(".json"):
+			fid = open(Query, "w")
+			fid.write( json.dumps(RES) )
+			fid.close()
+
+		else:
+			SQL0.execute(Query,RES)
+`;
+				
+				if (gen.db) pycode += `
 #exit code
 SQL.commit()
-SQL.close()
-`;
+SQL0.close()
+SQL1.close()
+` };
 
-				Log(pycode);
-				Log(ctx);
-				
 				cb( ENGINE.python(thread,pycode,ctx), ctx );
 			},
 			
@@ -885,10 +899,73 @@ SQL.close()
 			},
 			
 			js: function jsInit(thread,code,ctx,cb)  {
-				var vmctx = ENGINE.vmcontext[thread] = VM.createContext( Copy(ENGINE.plugins, ctx) );
+				var 
+					gen = ENGINE.gen,
+					plugins = ENGINE.plugins,
+					vm = ENGINE.vm[thread] = {
+						ctx: VM.createContext( gen.libs ? plugins : {} ),
+						code: ""
+					},
+					jscode = "";
+					
+				if (gen.debug) { jscode += `
+// engine context trace
+LOG("js>ctx", CTX);
+` };
 				
-				VM.runInContext(code,vmctx);
-				cb( null, ctx );
+				if (gen.port) { jscode += `
+if ( port = PORTS[PORT] ) ERR = port();
+` };
+
+				if (gen.code) { jscode += `
+function onEntry(DATA) {
+	${code}
+	return RES;
+}
+
+function onExit(RES) {
+}
+` };
+				
+				if (gen.data) { jscode += `
+if (Job = CTX.Job)
+	if ( Query = Job.data )
+		if ( Query.endsWith(".json") )
+			FS.readFile( Query, function (err, buf) {
+				try {
+					onExit( onEntry( JSON.parse( buf ) ) );
+				}
+				catch (err) {
+				}
+			});
+
+		else
+		if ( Query.endsWith(".jpg") ) 
+			IMAGE.open( Query , function (err, DATA) {
+				if ( !err ) onExit( onEntry( DATA ) );
+			});
+
+		else
+			SQL.query( Query, function (err, DATA) {
+				if ( !err ) onExit( onEntry( DATA ) );
+			});
+
+	else 
+		onExit( onEntry( null ) );
+
+else
+	onExit( onEntry( null ) );
+`; }
+				
+				else jscode += code;
+
+				if (gen.res) { jscode += `
+` };
+				
+				vm.code = jscode;
+				Log(vm.code);
+				
+				cb( null, ctx );				
 			},
 			
 			ma: function maInit(thread,code,ctx,cb) {
@@ -908,8 +985,8 @@ function ws = ${fname}( )
 	ws.run = @run;
 	ws.onExit = @onExit;
 
-	if ${gen.usedb}
-		ws.db = database('${gen.db.name}','${gen.db.user}','${gen.db.pass}');
+	if ${gen.db}
+		ws.db = database('${gen.dbcon.name}','${gen.dbcon.user}','${gen.dbcon.pass}');
 	else
 		ws.db = 0;
 	end
@@ -918,18 +995,18 @@ function ws = ${fname}( )
 		ws.(key) = val;
 	end
 
-	function res = get(key)
-		res = ws.(key);
+	function val = get(key)
+		val = ws.(key);
 	end
 
-	function res = step(ctx)
-		res = 0; 		% prime on-exit data
-		data = onEntry(ctx.job.load);
+	function RES = step(CTX)
+		RES = []; 		% default results
+		DATA = onEntry(CTX.Job.data);		% get dataset
 		${code}
 	end
 
-	function run(ctx)
-		onExit(step(ctx), ctx.job.exit);
+	function run(CTX)
+		onExit(step(CTX), CTX.Job.res);
 	end
 
 	function onExit(res, query)
@@ -1015,14 +1092,14 @@ end`, "utf8" );
 		},
 			
 		step: {  // step engines on given thread 
-			py: function pyStep(thread,code,ctx) {
-				if ( err = ENGINE.python(thread,code,ctx) )
+			py: function pyStep(thread,port,ctx) {
+				if ( err = ENGINE.python(thread,port,ctx) )
 					return ENGINE.errors[err] || ENGINE.errors.badError;
 				else
 					return null;
 			},
 			
-			cv: function cvStep(thread,code,ctx) {
+			cv: function cvStep(thread,port,ctx) {
 				
 				if ( ctx.frame && ctx.detector )
 					if ( err = ENGINE.opencv(thread,code,ctx) )
@@ -1035,31 +1112,33 @@ end`, "utf8" );
 					return ENGINE.errors.badContext;
 			},
 			
-			js: function jsStep(thread,code,ctx) {
-				var vmctx = ENGINE.vmcontext[thread];
+			js: function jsStep(thread,port,ctx) {
+				if ( vm = ENGINE.vm[thread] ) 
+					ENGINE.thread( function (sql) {
+						Copy( {SQL: sql, CTX: ctx, DATA: [], RES: [], PORT: port, PORTS: vm.ctx}, vm.ctx );
+						
+						/*
+						if (vm.port) 
+							if ( port = vm[vm.port] ) {
+								port( ctx, function (rtn) {
+									vm.tau = rtn;
+								});
+								return null;
+							}
 
-				if ( vmctx )
-					if (vmctx.port) 
-						if ( port = vmctx[vmctx.port] ) {
-							port( ctx, function (rtn) {
-								vmctx.tau = rtn;
-							});
-							return null;
-						}
-				
-						else 
-							return ENGINE.errors.badPort;
-					
-					else {
-						VM.runInContext(code,vmctx);
+							else 
+								return ENGINE.errors.badPort;
+						*/
+
+						VM.runInContext(vm.code,vm.ctx);
 						return null;
-					}
+					});
 				
 				else 
 					return ENGINE.errors.lostContext;
 			},
 			
-			ma: function maStep(thread,code,ctx) {
+			ma: function maStep(thread,port,ctx) {
 				function arglist(x) {
 					var rtn = [], q = "'";
 					Each(x, function (key,val) {
@@ -1093,13 +1172,21 @@ end`, "utf8" );
 			},
 			
 			em: function meStep(thread,code,ctx) {
-				ENGINE.plugins.MATH.eval(code,ctx);
+				if ( vm = ENGINE.vm[thread] )
+					ENGINE.thread( function (sql) {
+						Copy( {SQL: sql, CTX: ctx, DATA: [], RES: [], PORT: port, PORTS: vm.ctx}, vm.ctx );
+						
+						ENGINE.plugins.MATH.eval(vm.code,vm.ctx);
 
-				//Trace({R:ctx.R, A:ctx.A, X:ctx.X});
-				return null;
+						//Trace({R:ctx.R, A:ctx.A, X:ctx.X});
+						return null;
+					});
+				
+				else
+					return ENGINE.errors.lostContext;					
 			},
 			
-			sq: function sqStep(thread,code,ctx) {
+			sq: function sqStep(thread,port,ctx) {
 
 				ctx.SQL = {};
 				ctx.ports = ctx.ports || {};
@@ -1114,7 +1201,7 @@ end`, "utf8" );
 				return null;	
 			},
 			
-			sh: function shStep(thread,code,ctx) {  // Linux shell engines
+			sh: function shStep(thread,port,ctx) {  // Linux shell engines
 				if (code) context.code = code;
 
 				CP.exec(context.code, function (err,stdout,stderr) {
