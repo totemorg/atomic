@@ -224,7 +224,7 @@ var
 			MVN: require("multivariate-normal"),
 			VITA: require("nodehmm"),
 			LOG: console.log,
-			JSON: JSON,
+			JSON: JSON,			
 			MAT: function (ctx,code) {
 				var
 					emctx = {},
@@ -290,12 +290,14 @@ var
 		},
 
 		program: function (sql, ctx, cb) {  //< callback cb(ctx) with programed engine context or null if error
+			var runctx = ctx.req.query;
+			
 			if ( initEngine = ctx.init )
-				ENGINE.prime(sql, ctx.req.query, function (query) {  // mixin sql vars into engine query
-					//Log("eng prime", ctx.thread, query);
+				ENGINE.prime(sql, runctx, function (runctx) {  // mixin sql vars into engine query
+					//Log("eng prime", ctx.thread, runctx);
 					
-					if (query) 
-						initEngine(ctx.thread, ctx.code || "", query, function (err, query) {
+					if (runctx) 
+						initEngine(ctx.thread, ctx.code || "", runctx, function (err) {
 							//Log("eng init", err);
 							cb( err ? null : ctx );
 						});
@@ -374,15 +376,12 @@ var
 					port = body.port || "",
 					runctx = body.tau || query;
 				
-				cb( runctx, function () {  // callback engine using this stepper
+				cb( runctx, function (cb) {  // callback engine using this stepper
 
 					if ( stepEngine = ctx.step )
-						try {  	// step the engine -  return an error if it failed or null if it worked
-							var 
-								err =  // stepEngine(ctx.thread, ctx.code, ctx.req.query); 
-									stepEngine(ctx.thread, port, runctx);
+						try {  	// step the engine then return an error if it failed or null if it worked
+							var err =  stepEngine(ctx.thread, port, runctx, cb);
 							
-							Log("run save=", runctx.Save);
 							return err ? ENGINE.errors[err] || ENGINE.badError : null;
 						}
 
@@ -421,9 +420,9 @@ var
 			function initialize(ctx, cb) {  //< initialize engine then callback cb(ctx,stepper) or cb(null) if failed
 				
 				//Log("eng init",ctx.thread);
-				ENGINE.setContext( req, ctx, function () {
+				ENGINE.setContext( req, ctx, function () {		// get engine context
 					if (ctx) 
-						ENGINE.program( sql, ctx, function (ctx) {
+						ENGINE.program( sql, ctx, function (ctx) {	// program/initialize the engine
 							if (ctx) // all went well so execute it
 								execute( ctx, cb );
 
@@ -593,7 +592,7 @@ var
 			ENGINE.run(req, function (ctx,step) {
 //console.log(">step ",ctx);
 				if ( ctx ) 
-					res( step() || JSON.stringify( ctx.Save || "[]" ) ); 
+					step( res );
 				
 				else
 					res( ENGINE.errors.badThread );
@@ -613,7 +612,7 @@ var
 //console.log(">run", ctx);
 				
 				if (ctx) 
-					res( step() || ctx.Save || 0 );
+					step( res );
 				
 				else
 					res( ENGINE.errors.badEngine );
@@ -793,9 +792,7 @@ var
 			db: true,
 			libs: true,
 			code: true,
-			port: true,
-			data: true,
-			res: true
+			port: true
 		},
 				
 		init: {  // program engines on given thread 
@@ -844,7 +841,7 @@ print 'py>ctx',CTX
 print 'py>port',PORT
 ` };
 
-				if (gen.data) { pycode += `
+				if (gen.code) { pycode += `
 #load dataset
 Job = CTX['Job']
 if Job:
@@ -866,11 +863,29 @@ if Job:
 
 else:
 	DATA = 0
-` };
 				
-				if (gen.code) { pycode += `
-#machine code
+#engine logic
 ${code}
+
+#save results
+Job = CTX['Job']
+if Job:
+	Query = Job['res']
+	Save = CTX.Save
+	if Query:
+		if Query.endswith(".jpg"):
+			Save.save(Query, "jpg")
+			CTX.Save = "saved"
+
+		elif Query.endswith(".json"):
+			fid = open(Query, "w")
+			fid.write( JSON.dumps(Save) )
+			fid.close()
+			CTX.Save = "saved"
+
+		else:
+			SQL0.execute(Query,Save)
+			CTX.Save = "saved"
 ` };
 			
 				if (gen.port) {
@@ -895,31 +910,14 @@ else:
 `;
 				}				
 
-				if (gen.res) { pycode += `
-#save results
-Job = CTX['Job']
-if Job:
-	Query = Job['res']
-	if Query:
-		if Query.endswith(".jpg"):
-			RES.save(Query,"jpg")
-
-		elif Query.endswith(".json"):
-			fid = open(Query, "w")
-			fid.write( json.dumps(RES) )
-			fid.close()
-
-		else:
-			SQL0.execute(Query,RES)
-`;
-				
-				if (gen.db) pycode += `
+				if (gen.db) { pycode += `
 #exit code
 SQL.commit()
 SQL0.close()
 SQL1.close()
 ` };
 
+				Log("pycode",pycode);
 				cb( ENGINE.python(thread,pycode,ctx), ctx );
 			},
 			
@@ -951,19 +949,39 @@ LOG("js>ctx", CTX);
 ` };
 				
 				if (gen.port) { jscode += `
+// stateful port interface
 if ( port = PORTS[PORT] ) ERR = port(TAU, CTX.ports[PORT]);
 ` };
 
 				if (gen.code) { jscode += `
+// engine logic
 function onEntry(DATA) {
-	CTX.Save = 0;
 	${code}
+
+	var save = CTX.Save || null;
+	if (Job = CTX.Job)
+		if ( Query = Job.save ) {
+			RES("saved");
+			if ( Query.endsWith(".json") )
+				FS.writeFile( Query, JSON.stringify(save) );
+
+			else
+			if ( Query.endsWith(".jpg") )
+				IMAGE.write( Query, save );
+
+			else
+				SQL.query( Query, save, function (err, info) {
+				});
+		}
+		else
+			RES(save);
+	else 
+		RES(save);
 }
-` };
-				
-				if (gen.data) { jscode += `
+
+// request-response interface
 if (Job = CTX.Job)
-	if ( Query = Job.data )
+	if ( Query = Job.load )
 		if ( Query.endsWith(".json") )
 			FS.readFile( Query, function (err, buf) {
 				try {
@@ -991,8 +1009,6 @@ else
 	onEntry( null );
 `; }
 				
-				else jscode += code;
-
 				vm.code = jscode;
 				Log(vm.code);
 				
@@ -1013,8 +1029,7 @@ function ws = ${fname}( )
 	ws.set = @set;
 	ws.get = @get;
 	ws.step = @step;
-	ws.run = @run;
-	ws.onExit = @onExit;
+	ws.send = @send;
 
 	if ${gen.db}
 		ws.db = database('${gen.dbcon.name}','${gen.dbcon.user}','${gen.dbcon.pass}');
@@ -1030,51 +1045,62 @@ function ws = ${fname}( )
 		val = ws.(key);
 	end
 
-	function RES = step(CTX)
-		RES = []; 		% default results
-		DATA = onEntry(CTX.Job.data);		% get dataset
-		${code}
+	function step(CTX)
+		CTX.Save = []; 		% default results
+		DATA = onEntry(CTX.Job.load);		% get dataset
+		
+		${code}			% engine logic
+
+		onExit( CTX.Save, CTX.Job.save);
 	end
 
-	function run(CTX)
-		onExit(step(CTX), CTX.Job.res);
+	function send(val)
+		onExit( val, "" );
 	end
 
-	function onExit(res, query)
-		if isstruct(ws.db)  		% db provided
-			if query.length
+	function onExit(data, query)
+		if query
+			if endsWith(query, ".jpg")   % save jpeg file
+				imwrite(data, query);
+
+			elseif endsWith(query, ".json")  % use file system as json db
+				fid = fopen(query, 'wt');
+				fprintf(fid, '%s', jsonencode(data) );
+				fclose(fid);
+				webread( '${agent}?save=${fname}' );
+
+			else		% db provided
 				select(ws.db, query);
-			end
-		else 							% use file system as json db		
+
+		else
 			fid = fopen('${fname}.out', 'wt');
-			fprintf(fid, '%s', jsonencode(res) );
+			fprintf(fid, '%s', jsonencode(data) );
 			fclose(fid);
-			%save( '${fname}.mat', 'json', '-ascii' );
 			webread( '${agent}?save=${fname}' );
+
 		end
 	end
 
 	function data = onEntry(query)
 		try
-			if endsWith(query, '.jpg')
-				data = imread(query);
+			if query
+				if endsWith(query, '.jpg')
+					data = imread(query);
 
-			elseif endsWith(query, '.json')
-				fid = fopen(query, 'rt');
-				data = jsondecode(getl( fid ));
-				fclose(fid);
+				elseif endsWith(query, '.json')
+					fid = fopen(query, 'rt');
+					data = jsondecode(getl( fid ));
+					fclose(fid);
 
-			elseif query.length
-				if isstruct(ws.db)   % db provided
-					data = select(ws.db, query);
 				else
-					data = [];
-				end	
+					if isstruct(ws.db)   % db provided
+						data = select(ws.db, query);
+					else
+						data = [];
+					end	
 
 			else
 				data = [];
-
-			end
 		
 		catch err
 			data = [];
@@ -1084,7 +1110,7 @@ function ws = ${fname}( )
 
 end`, "utf8" );
 
-				ENGINE.matlab.queue( "init_queue", `ws_${fname} = ${fname}; \nws_${fname}.onExit(1);` );
+				ENGINE.matlab.queue( "init_queue", `ws_${fname} = ${fname}; \nws_${fname}.send(1);` );
 				
 				cb(null,ctx);
 			},
@@ -1125,14 +1151,18 @@ end`, "utf8" );
 		},
 			
 		step: {  // step engines on given thread 
-			py: function pyStep(thread,port,ctx) {
-				if ( err = ENGINE.python(thread,port,ctx) )
+			py: function pyStep(thread,port,ctx,cb) {
+				if ( err = ENGINE.python(thread,port,ctx) ) {
+					cb( null );
 					return ENGINE.errors[err] || ENGINE.errors.badError;
-				else
+				}
+				else {
+					cb( ctx.Save );
 					return null;
+				}
 			},
 			
-			cv: function cvStep(thread,port,ctx) {
+			cv: function cvStep(thread,port,ctx,cb) {
 				if ( ctx.frame && ctx.detector )
 					if ( err = ENGINE.opencv(thread,code,ctx) )
 						return ENGINE.errors[err] || ENGINE.errors.badError;
@@ -1144,10 +1174,10 @@ end`, "utf8" );
 					return ENGINE.errors.badContext;
 			},
 			
-			js: function jsStep(thread,port,ctx) {
+			js: function jsStep(thread,port,ctx,cb) {
 				if ( vm = ENGINE.vm[thread] ) 
 					ENGINE.thread( function (sql) {
-						Copy( {SQL: sql, CTX: ctx, DATA: [], RES: [], PORT: port, TAU: ctx, PORTS: vm.ctx}, vm.ctx );
+						Copy( {RES: cb, SQL: sql, CTX: ctx, DATA: [], PORT: port, TAU: ctx, PORTS: vm.ctx}, vm.ctx );
 						
 						VM.runInContext(vm.code,vm.ctx);
 						return null;
@@ -1157,7 +1187,7 @@ end`, "utf8" );
 					return ENGINE.errors.lostContext;
 			},
 			
-			ma: function maStep(thread,port,ctx) {
+			ma: function maStep(thread,port,ctx,cb) {
 				function arglist(x) {
 					var rtn = [], q = "'";
 					Each(x, function (key,val) {
@@ -1185,7 +1215,8 @@ end`, "utf8" );
 				var 
 					fname = thread.replace(".ic.gov","").replace(/[@.]/g,"_");
 				
-				ENGINE.matlab.queue( "step_queue", `ws_${fname}.run(${arglist(ctx)});` );
+				ctx.Job = { load: "", save: "" };
+				ENGINE.matlab.queue( "step_queue", `ws_${fname}.step(${arglist(ctx)});` );
 				
 				return null;
 			},
@@ -1205,7 +1236,7 @@ end`, "utf8" );
 			},
 			*/
 			
-			sq: function sqStep(thread,port,ctx) {
+			sq: function sqStep(thread,port,ctx,cb) {
 
 				ctx.SQL = {};
 				ctx.ports = ctx.ports || {};
@@ -1220,7 +1251,7 @@ end`, "utf8" );
 				return null;	
 			},
 			
-			sh: function shStep(thread,port,ctx) {  // Linux shell engines
+			sh: function shStep(thread,port,ctx,cb) {  // Linux shell engines
 				if (code) context.code = code;
 
 				CP.exec(context.code, function (err,stdout,stderr) {
