@@ -231,23 +231,17 @@ var
 					em = ENGINE.plugins.MATH;
 				
 				Each(ctx, function (key, val) {
-					switch (val.constructor) {
-						case Array:
-							emctx[key] = em.matrix(val);
-							break;
-
-						default:
-							emctx[key] = val;
-					}
+					emctx[key] = (val && val.constructor == Array) 
+							? emctx[key] = em.matrix(val)
+							: val;
 				});
 							
 				em.eval(code, emctx);
 				
 				Each(emctx, function (key, val) {
-					if (val._data)
-						ctx[key] = val._data;
-					else
-						ctx[key] = val;
+					ctx[key] = (val && val._data)
+						? val._data
+						: val;
 				});
 			}
 		},
@@ -313,38 +307,42 @@ var
 				cb( null );
 		},
 			
-		run: function (req, cb) {  // callback cb(ctx, step) with engine context and a stepper, or with nulls if error. 
-		// req = { group, table, client, query, body, action, state }
-		// if a req.state is not provided, then the engine is programmed.
+		run: function (req, cb) {  // callback cb(ctx, step) with its engine context and stepper, or with nulls if error. 
 			
-		/**
-		* Allocate the supplied callback cb(core) with the engine core that is/was allocated to a Client.Engine.Type.Instance
-		* thread as defined by this request (in the req.body and req.log).  If a workflow Instance is 
-		* provided, then the engine is assumed to be in a workflow (thus the returned core will remain
-		* on the same compile-step thread); otherwise, the engine is assumed to be standalone (thus forcing
-		* the engine to re-compile each time it is stepped).
-		* 
-		* As used here (and elsewhere) the terms "process", "engine core", "safety core", and "worker" are 
-		* equivalent, and should not be confused with a physical "cpu core".  Because heavyweight 
-		* (spawned) workers run in their own V8 instance, these workers can tollerate all faults (even 
-		* core-dump exceptions). The lightweight (cluster) workers used here, however, share the same V8 
-		* instance.  Heavyweight workers thus provide greater safety for bound executables (like opencv and 
-		* python) at the expense of greater cpu overhead.  
-		*
-		* The goal of hyperthreading is to balance threads across cpu cores.  The workerless (master only)
-		* configuration will intrinsically utilize only one of its underlying cpu cores (the OS remains, 
-		* however, free to bounce between cpu cores via SMP).  A worker cluster, however, tends to 
-		* balance threads across all cpu cores, especially when the number of allocated workers exceeds
-		* the number of physical cpu cores.
-		* 
-		* Only the cluster master can see its workers; thus workers can not send work to other workers, only
-		* the master can send work to workers.  Thus hyperthreading to *stateful* engines can be supported
-		* only when master and workers are listening on different ports (workers are all listening on 
-		* same ports to provide *stateless* engines).  So typically place master on port N+1 (to server
-		* stateful engines) and its workers on port N (to serve stateless engines).  
-		*
-		* This method will callback cb(core) with the requested engine core; null if the core could not
-		* be located or allocated.
+		/*
+		Request must contain:
+		
+				req = { group, table, client, query, body, action, state }
+
+		If the engine's req.state is not provided, then the engine is programmed; otherwise it is stepped.
+		
+		Allocate the supplied callback cb(core) with the engine core that is/was allocated to a Client.Engine.Type.Instance
+		thread as defined by this request (in the req.body and req.log).  If a workflow Instance is
+		provided, then the engine is assumed to be in a workflow (thus the returned core will remain
+		on the same compile-step thread); otherwise, the engine is assumed to be standalone (thus forcing
+		the engine to re-compile each time it is stepped).
+		 
+		As used here (and elsewhere) the terms "process", "engine core", "safety core", and "worker" are 
+		equivalent, and should not be confused with a physical "cpu core".  Because heavyweight 
+		(spawned) workers run in their own V8 instance, these workers can tollerate all faults (even 
+		core-dump exceptions). The lightweight (cluster) workers used here, however, share the same V8 
+		instance.  Heavyweight workers thus provide greater safety for bound executables (like opencv and 
+		python) at the expense of greater cpu overhead.  
+		
+		The goal of hyperthreading is to balance threads across cpu cores.  The workerless (master only)
+		configuration will intrinsically utilize only one of its underlying cpu cores (the OS remains, 
+		however, free to bounce between cpu cores via SMP).  A worker cluster, however, tends to 
+		balance threads across all cpu cores, especially when the number of allocated workers exceeds
+		the number of physical cpu cores.
+		 
+		Only the cluster master can see its workers; thus workers can not send work to other workers, only
+		the master can send work to workers.  Thus hyperthreading to *stateful* engines can be supported
+		only when master and workers are listening on different ports (workers are all listening on 
+		same ports to provide *stateless* engines).  So typically place master on port N+1 (to server
+		stateful engines) and its workers on port N (to serve stateless engines).  
+		
+		This method will callback cb(core) with the requested engine core; null if the core could not
+		 be located or allocated.
 		*/
 			
 			var
@@ -383,9 +381,7 @@ var
 
 					if ( stepEngine = ctx.step )
 						try {  	// step the engine then return an error if it failed or null if it worked
-							var err =  stepEngine(ctx.thread, port, runctx, cb);
-							
-							return err ? ENGINE.errors[err] || ENGINE.badError : null;
+							return ENGINE.errors[ stepEngine(ctx.thread, port, runctx, cb) ] || ENGINE.badError;
 						}
 
 						catch (err) {
@@ -438,7 +434,7 @@ var
 				});
 			}				
 
-			Log("eng thread", thread, CLUSTER.isMaster ? "on master" : "on worker", ENGINE.context[thread] ? "has ctx":"needs ctx");
+			//Log("eng thread", thread, CLUSTER.isMaster ? "on master" : "on worker", ENGINE.context[thread] ? "has ctx":"needs ctx");
 			
 			if ( CLUSTER.isMaster )  { // on master so handoff to worker or execute 
 				if ( ctx = ENGINE.context[thread] ) // get context
@@ -584,12 +580,13 @@ var
 		},
 			
 		/**
-		 * @method insert(step)
-		 * @method delete(kill)
-		 * @method select(read)
-		 * @method update(init)
-		 * 
-		 * Provide methods to step/insert/POST, compile/update/PUT, run/select/GET, and free/delete/DELETE and engine.
+		 @method insert(step)
+		 @method delete(kill)
+		 @method select(read)
+		 @method update(init)
+		  
+		 Provides engine CRUD interface: step/insert/POST, compile/update/PUT, run/select/GET, and 
+		 free/delete/DELETE.
 		*/
 		insert: function (req,res) {	// step a stateful engine
 			ENGINE.run(req, function (ctx,step) {
@@ -630,7 +627,7 @@ var
 			});
 		},
 			
-		prime: function (sql, ctx, cb) {  //< callback cb(ctx) with state ctx primed by sql entry/exit keys
+		prime: function (sql, ctx, cb) {  //< callback cb(ctx) with ctx primed by sql ctx.entry and ctx.exit queries
 		/**
 		@method prime
 
@@ -748,7 +745,7 @@ var
 			});
 		},
 			
-		setContext: function (req, ctx, cb) { //< prime engine context then callback cb(ctx) with context or null if failed
+		setContext: function (req, ctx, cb) { //< callback cb(ctx) with primed engine context or null if failed
 			
 			ENGINE.getEngine(req.sql, req.group, req.table, function (eng) {
 				if (eng) {
@@ -785,7 +782,7 @@ var
 
 		},
 			
-		gen: {
+		gen: {  // controls code generation during init
 			debug: false,
 			dbcon: {
 				user: ENV.DB_USER,
@@ -848,7 +845,7 @@ print 'py>port',PORT
 #load dataset
 Job = CTX['Job']
 if Job:
-	Query = Job['data']
+	Query = Job['load']
 	if Query:
 		if Query.endswith(".jpg"):
 			DATA = IMAGE.open(Query)
@@ -873,22 +870,20 @@ ${code}
 #save results
 Job = CTX['Job']
 if Job:
-	Query = Job['res']
-	Save = CTX.Save
+	Query = Job['save']
 	if Query:
 		if Query.endswith(".jpg"):
-			Save.save(Query, "jpg")
-			CTX.Save = "saved"
+			CTX.Save.save(Query, "jpg")
 
 		elif Query.endswith(".json"):
 			fid = open(Query, "w")
-			fid.write( JSON.dumps(Save) )
+			fid.write( JSON.dumps( CTX.Save ) )
 			fid.close()
-			CTX.Save = "saved"
 
 		else:
-			SQL0.execute(Query,Save)
-			CTX.Save = "saved"
+			SQL0.execute(Query,CTX.Save)
+
+		CTX.Save = 0  #clear to speed context latch to host
 ` };
 			
 				if (gen.port) {
@@ -920,7 +915,7 @@ SQL0.close()
 SQL1.close()
 ` };
 
-				Log("pycode",pycode);
+				//Log("pycode",pycode);
 				cb( ENGINE.python(thread,pycode,ctx), ctx );
 			},
 			
@@ -963,8 +958,7 @@ function onEntry(DATA) {
 
 	var save = CTX.Save || null;
 	if (Job = CTX.Job)
-		if ( Query = Job.save ) {
-			RES("saved");
+		if ( Query = Job.save ) {  // the RES was already issued so save results to db
 			if ( Query.endsWith(".json") )
 				FS.writeFile( Query, JSON.stringify(save) );
 
@@ -1013,7 +1007,7 @@ else
 `; }
 				
 				vm.code = jscode;
-				Log(vm.code);
+				//Log(vm.code);
 				
 				cb( null, ctx );				
 			},
@@ -1155,6 +1149,8 @@ end`, "utf8" );
 			
 		step: {  // step engines on given thread 
 			py: function pyStep(thread,port,ctx,cb) {
+				
+				ctx.Job = ctx.Job || 0;
 				if ( err = ENGINE.python(thread,port,ctx) ) {
 					cb( null );
 					return ENGINE.errors[err] || ENGINE.errors.badError;
@@ -1218,7 +1214,8 @@ end`, "utf8" );
 				var 
 					fname = thread.replace(".ic.gov","").replace(/[@.]/g,"_");
 				
-				ctx.Job = { load: "", save: "" };
+				ctx.Job = ctx.Job || {load: "", save: ""};
+				
 				ENGINE.matlab.queue( "step_queue", `ws_${fname}.step(${arglist(ctx)});` );
 				
 				return null;
