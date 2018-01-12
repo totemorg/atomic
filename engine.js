@@ -373,22 +373,30 @@ var
 						
 			function execute(ctx, cb) {  //< callback cb(ctx,stepcb) with revised engine ctx and stepper
 				var 
+					sql = req.sql,
 					query = ctx.req.query,
 					body = ctx.req.body,
 					port = body.port || "",
-					runctx = body.tau || query;
+					runctx = body.tau || Copy( req.query, query);
+				
+				//Log("exe ctx",ctx);
 				
 				cb( runctx, function (cb) {  // callback engine using this stepper
 
 					if ( stepEngine = ctx.step )
-						try {  	// step the engine then return an error if it failed or null if it worked
-							return ENGINE.errors[ stepEngine(ctx.thread, port, runctx, cb) ] || ENGINE.badError;
-						}
+						ENGINE.prime(sql, runctx, function (runctx) {  // mixin sql vars into engine query
+							//Log("run ctx", runctx);
+							
+							try {  	// step the engine then return an error if it failed or null if it worked
+								return ENGINE.errors[ stepEngine(ctx.thread, port, runctx, cb) ] || ENGINE.badError;
+							}
 
-						catch (err) {
-							return err;
-						}
+							catch (err) {
+								return err;
+							}
 
+						});
+					
 					else 
 						return ENGINE.errors.badEngine;
 
@@ -418,11 +426,14 @@ var
 			}
 			
 			function initialize(ctx, cb) {  //< initialize engine then callback cb(ctx,stepper) or cb(null) if failed
+				var
+					sql = req.sql;
 				
 				//Log("eng init",ctx.thread);
-				ENGINE.setContext( req, ctx, function () {		// get engine context
+				
+				ENGINE.getEngine(req, ctx, function (ctx) {
 					if (ctx) 
-						ENGINE.program( sql, ctx, function (ctx) {	// program/initialize the engine
+						ENGINE.program(sql, ctx, function (ctx) {	// program/initialize the engine
 							if (ctx) // all went well so execute it
 								execute( ctx, cb );
 
@@ -726,7 +737,12 @@ var
 				cb(ctx);
 		},
 
-		getEngine: function (sql, group, name, cb) {  //< callback cb(eng) with unique engine or null if failed
+		getEngine: function (req, ctx, cb) {  //< callback cb(ctx) with engine context or null if failed
+			
+			var
+				sql = req.sql,
+				group = req.group,
+				name = req.table;
 			
 			sql.query(
 				"SELECT * FROM ??.engines WHERE least(?) LIMIT 0,1", [ group, {
@@ -742,22 +758,14 @@ var
 					cb( null );
 				
 				else
-					cb( engs[0] );
-			});
-		},
-			
-		setContext: function (req, ctx, cb) { //< callback cb(ctx) with primed engine context or null if failed
-			
-			ENGINE.getEngine(req.sql, req.group, req.table, function (eng) {
-				if (eng) {
-					
-					try {  // add to context
-						Copy({
+					try {  // return full engine context
+						var eng = engs[0];
+						cb( Copy({
 							req: {  // http request 
 								group: req.group,
 								table: req.table,
 								client: req.client,
-								query: Copy( req.query, JSON.parse(eng.State || "null") || {} ),
+								query: JSON.parse(eng.State || "null") || {},
 								body: req.body,
 								action: req.action
 							},
@@ -765,22 +773,13 @@ var
 							code: eng.Code,
 							init: ENGINE.init[ eng.Type ],
 							step: ENGINE.step[ eng.Type ]
-						}, ctx);
+						}, ctx) );
 					}
 
 					catch (err) {
+						cb( null );
 					}
-
-					//Log("eng get", ctx);
-					
-					cb(ctx);
-				}
-				
-				else
-					cb( null );
-
 			});
-
 		},
 			
 		gen: {  // controls code generation during init
