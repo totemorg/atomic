@@ -348,7 +348,8 @@ var
 			var
 				sql = req.sql,
 				query = req.query,
-				thread = `${req.client}.${req.table}.${query.ID || 0}`;
+				client = req.client.replace(".ic.gov","").replace(/\./g,""),
+				thread = `${client}.${req.table}.${query.ID || 0}`;
 
 			//Log("def eng thread", thread, req.query);
 			
@@ -1015,20 +1016,21 @@ else
 			ma: function maInit(thread,code,ctx,cb) {
 				
 				var 
-					fname = thread.replace(".ic.gov","").replace(/[@.]/g,"_"),
+					fname = thread.replace(/\./g,"_"),
 					agent = ENGINE.matlab.path.agent,
 					spath = ENGINE.matlab.path.save,
 					mpath = spath + fname + ".m",
-					config = gen;
+					mcode = "",
+					gen = ENGINE.gen;
 				
-				FS.writeFile( mpath, `
+				if (gen.code) { mcode += `
 function ws = ${fname}( )
 	ws.set = @set;
 	ws.get = @get;
 	ws.step = @step;
 	ws.send = @send;
 
-	if ${gen.db}
+	if false % ${gen.db}
 		ws.db = database('${gen.dbcon.name}','${gen.dbcon.user}','${gen.dbcon.pass}');
 	else
 		ws.db = 0;
@@ -1056,7 +1058,7 @@ function ws = ${fname}( )
 	end
 
 	function onExit(data, query)
-		if query
+		if length(query)>1
 			if endsWith(query, ".jpg")   % save jpeg file
 				imwrite(data, query);
 
@@ -1066,8 +1068,9 @@ function ws = ${fname}( )
 				fclose(fid);
 				webread( '${agent}?save=${fname}' );
 
-			else		% db provided
+			elseif ws.db		% db provided
 				select(ws.db, query);
+			end
 
 		else
 			fid = fopen('${fname}.out', 'wt');
@@ -1080,7 +1083,7 @@ function ws = ${fname}( )
 
 	function data = onEntry(query)
 		try
-			if query
+			if length(query)>1
 				if endsWith(query, '.jpg')
 					data = imread(query);
 
@@ -1095,17 +1098,23 @@ function ws = ${fname}( )
 					else
 						data = [];
 					end	
+				end
 
 			else
 				data = [];
+			end
 		
-		catch err
+		catch 
 			data = [];
 		end
 
 	end
 
-end`, "utf8" );
+end`;
+				};
+
+				Log(mcode);
+				FS.writeFile( mpath, mcode, "utf8" );
 
 				ENGINE.matlab.queue( "init_queue", `ws_${fname} = ${fname}; \nws_${fname}.send(1);` );
 				
@@ -1212,9 +1221,12 @@ end`, "utf8" );
 				}
 
 				var 
-					fname = thread.replace(".ic.gov","").replace(/[@.]/g,"_");
+					fname = thread.replace(/\./g,"_");
 				
-				ctx.Job = ctx.Job || {load: "", save: ""};
+				if ( !ctx.Job ) {
+					cb(0);   // detaches thread and sets default ctx.Save
+					ctx.Job = ctx.Job || {load: "", save: ""};
+				}
 				
 				ENGINE.matlab.queue( "step_queue", `ws_${fname}.step(${arglist(ctx)});` );
 				
