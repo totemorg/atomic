@@ -348,7 +348,7 @@ var
 			var
 				sql = req.sql,
 				query = req.query,
-				client = req.client.replace(".ic.gov","").replace(/\./g,""),
+				client = req.client.replace(".ic.gov","").replace(/\./g,"").replace("@",""),
 				thread = `${client}.${req.table}.${query.ID || 0}`;
 
 			//Log("def eng thread", thread, req.query);
@@ -1047,7 +1047,8 @@ function ws = ${fname}( )
 		CTX.Save = []; 		% default results
 		DATA = onEntry(CTX.Job.load);		% get dataset
 		
-		${code}			% engine logic
+		% engine logic
+		${code}	
 
 		onExit( CTX.Save, CTX.Job.save);
 	end
