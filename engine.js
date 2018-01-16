@@ -8,7 +8,7 @@
 
  * @requires engineIF
  * @requires enum
- * @requires graceful-lwip
+ * @requires lwip
  * @requires liegroup
  
  * @requires mathjs
@@ -215,7 +215,7 @@ var
 		*/
 		plugins: {  // js-engine plugins 
 			MATH: require('mathjs'),
-			IMAGE: require('graceful-lwip'),
+			LWIP: require('lwip'),
 			DSP: require('digitalsignals'),
 			CRY: require('crypto'),
 			RAN: require("randpr"),
@@ -382,14 +382,14 @@ var
 				
 				//Log("exe ctx",runctx);
 				
-				cb( runctx, function (cb) {  // callback engine using this stepper
+				cb( runctx, function (res) {  // callback engine using this stepper
 
 					if ( stepEngine = ctx.step )
 						ENGINE.prime(sql, runctx, function (runctx) {  // mixin sql vars into engine query
 							//Log("prime ctx", runctx);
 							
 							try {  	// step the engine then return an error if it failed or null if it worked
-								return ENGINE.errors[ stepEngine(ctx.thread, port, runctx, cb) ] || ENGINE.badError;
+								return ENGINE.errors[ stepEngine(ctx.thread, port, runctx, res) ] || ENGINE.badError;
 							}
 
 							catch (err) {
@@ -607,7 +607,7 @@ var
 		*/
 		insert: function (req,res) {	// step a stateful engine
 			ENGINE.run(req, function (ctx,step) {
-console.log(">step ",ctx);
+//Log(">step ",ctx);
 				if ( ctx ) 
 					step( res );
 				
@@ -618,7 +618,7 @@ console.log(">step ",ctx);
 			
 		delete: function (req,res) {	// free a stateful engine
 			ENGINE.run(req, function (ctx,step) {
-//console.log(">kill ",ctx);
+//Log(">kill ",ctx);
 
 				res( ctx ? "" : ENGINE.errors.badThread );				
 			});
@@ -626,7 +626,7 @@ console.log(">step ",ctx);
 			
 		select: function (req,res) {	// run a stateless engine 
 			ENGINE.run( req, function (ctx, step) {
-//console.log(">run", ctx);
+//Log(">run", ctx);
 				
 				if (ctx) 
 					step( res );
@@ -789,6 +789,7 @@ console.log(">step ",ctx);
 			
 		gen: {  // controls code generation during init
 			debug: false,
+			trace: false,
 			dbcon: {
 				user: ENV.DB_USER,
 				name: ENV.DB_NAME,
@@ -822,7 +823,7 @@ console.log(">step ",ctx);
 #import modules
 #import caffe as CAFFE		#caffe interface
 import mysql.connector as SQLC		#db connector interface
-from PIL import Image as IMAGE		#jpeg image interface
+from PIL import Image as LWIP		#jpeg image interface
 import json as JSON			#json interface
 import sys as SYS			#system info
 ` };
@@ -860,44 +861,45 @@ print 'py>port',PORT
 
 				if (gen.code) { script += `
 def load(ctx):  #load global dataset request
-	Job = ctx['Job']
-	if Job:
-		Query = Job['load']
+	if 'Load' in ctx:
+		Query = ctx['Load']
 		if Query.endswith(".jpg"):
-			return IMAGE.open(Query)
+			return LWIP.open(Query)
 
 		elif Query.endswith(".json"):
 			return JSON.loads(Query)
 
-		else:
+		elif Query:
 			SQL0.execute(Query)
-			data = []
+			Data = []
 			for (rec) in SQL0:
-				data.append(rec)
+				Data.append(rec)
 
-			return data
+			if 'Offset' in ctx:
+				ctx['Offset'] += len(Data)
 
-	else:
-		return 0
-				
-def save(ctx, data):  #save results
-	Job = ctx['Job']
-
-	if Job:
-		Query = Job['save']
-		if Query.endswith(".jpg"):
-			data.save(Query, "jpg")
-
-		elif Query.endswith(".json"):
-			fid = open(Query, "w")
-			fid.write( JSON.dumps( data ) )
-			fid.close()
+			return Data
 
 		else:
-			SQL0.execute(Query,data)
+			return 0
+				
+def save(ctx):  #save results
+	if 'Dump' in ctx:
+		Query = ctx['Dump']
 
-	else:
-		ctx['Save'] = data
+		if 'Save' in ctx:
+			Data = ctx['Save']
+
+			if Query.endswith(".jpg"):
+				Data.save(Query, "jpg")
+
+			elif Query.endswith(".json"):
+				fid = open(Query, "w")
+				fid.write( JSON.dumps( Data ) )
+				fid.close()
+
+			elif Query:
+				SQL0.execute(Query,Data)
 
 #engine logic and ports
 ${code} 
@@ -912,7 +914,10 @@ if PORT:
 	else:
 		ERR = 103
 else:
-	save( CTX, ${Thread.plugin}(CTX) )
+	if ${Thread.plugin}(CTX):
+		save( CTX )
+	else:
+		ERR = 104
 ` };
 			
 				if (gen.db) { script += `
@@ -922,7 +927,7 @@ SQL0.close()
 SQL1.close()
 ` };
 
-				Log("script",script);
+				if (gen.trace) Log(script);
 				cb( ENGINE.python(thread,script,ctx), ctx );
 			},
 			
@@ -965,68 +970,70 @@ ${code}
 
 // stateful port interface
 load(CTX, function (DATA) {
+
 	if ( port = PORTS[PORT] ) 
 		ERR = port(TAU, CTX.ports[PORT]);
 
 	else
-		${Thread.plugin}(CTX, function (data) {
-			save(CTX, data);
+		${Thread.plugin}(CTX, function (ctx) {
+			if (ctx)
+				save(ctx);
+			else
+				RES( null );
 		});
 });
 
-function save(ctx, data) {
-	if ( Job = ctx.Job )
-		if ( Query = Job.save ) {  // the RES was already issued so save results to db
-			if ( Query.endsWith(".json") )
-				FS.writeFile( Query, JSON.stringify(data) );
+function save(ctx) {
+	var Data = ctx.Save;
 
-			else
-			if ( Query.endsWith(".jpg") )
-				IMAGE.write( Query, data );
+	if ( Query = ctx.Dump ) {  // the RES was already issued so save results to db w/o RES
+		if ( Query.endsWith(".json") )
+			FS.writeFile( Query, JSON.stringify(Data) );
 
-			else
-				SQL.query( Query, data, function (err, info) {
-				});
-		}
 		else
-			RES(data);
-	else 
-		RES(data);
+		if ( Query.endsWith(".jpg") )
+			LWIP.write( Query, Data );
+
+		else
+			SQL.query( Query, Data, function (err, info) {
+			});
+	}
+
+	else
+		RES(ctx);
 }
 
 function load(ctx, cb) {  // prime global dataset request
-	if ( Job = ctx.Job )
-		if ( Query = Job.load )
-			if ( Query.endsWith(".json") )
-				FS.readFile( Query, function (err, buf) {
-					try {
-						cb( JSON.parse( buf ) );
-					}
-					catch (err) {
-					}
-				});
+	if ( Query = ctx.Load )
+		if ( Query.endsWith(".json") )
+			FS.readFile( Query, function (err, buf) {
+				try {
+					cb( JSON.parse( buf ) );
+				}
+				catch (err) {
+					cb( null );
+				}
+			});
 
-			else
-			if ( Query.endsWith(".jpg") ) 
-				IMAGE.open( Query , function (err, data) {
-					if ( !err ) cb( data );
-				});
+		else
+		if ( Query.endsWith(".jpg") ) 
+			LWIP.open( Query , function (err, data) {
+				cb( err ? null : data );
+			});
 
-			else
-				SQL.query( Query, function (err, data) {
-					if ( !err ) cb( data );
-				});
+		else
+			SQL.query( Query, function (err, data) {
+				cb( err ? null : data );
+				ctx.Offset += err ? 0 : data.length;
+			});
 
-		else 
-			cb( null );
-
-	else
+	else 
 		cb( null );
 }
 
 `; }
 				
-				Log(script);
+				if (gen.trace) Log(script);
 				vm.code = script;
 				
 				cb( null, ctx );				
@@ -1093,7 +1100,7 @@ function ws = ${func}( )
 	end
 
 	function data = load(ctx)
-		query = ctx.Job.load;
+		query = ctx.Load;
 
 		try
 			if length(query)>1
@@ -1126,7 +1133,7 @@ function ws = ${func}( )
 	function step(ctx)
 		DATA = load(ctx);
 
-		save( ctx.Job.save, ${func}(ctx)  );
+		save( ctx.Dump, ${func}(ctx)  );
 
 		% engine logic and ports
 		${code}	
@@ -1134,7 +1141,7 @@ function ws = ${func}( )
 
 end`;  };
 
-				Log(script);
+				if (gen.trace) Log(script);
 				FS.writeFile( path, script, "utf8" );
 
 				ENGINE.matlab.queue( "init_queue", `
@@ -1161,7 +1168,7 @@ ws_${func}.save( "", "Queued" );` );
 			sq:  function sqInit(thread,code,ctx,cb) {
 				ENGINE.thread( function (sql) {
 					ctx.SQL[ctx.action](sql, [], function (recs) {
-						ctx.Save = [1,2,3];  // cant work as no cb exists
+						//ctx.Save = [1,2,3];  // cant work as no cb exists
 					});
 				});
 				
@@ -1182,24 +1189,27 @@ ws_${func}.save( "", "Queued" );` );
 		step: {  // step engines on given thread 
 			py: function pyStep(thread,port,ctx,cb) {
 				
-				ctx.Job = ctx.Job || 0;
 				if ( err = ENGINE.python(thread,port,ctx) ) {
 					cb( null );
 					return ENGINE.errors[err] || ENGINE.errors.badError;
 				}
 				else {
-					cb( ctx.Save );
+					cb( ctx );
 					return null;
 				}
 			},
 			
 			cv: function cvStep(thread,port,ctx,cb) {
 				if ( ctx.frame && ctx.detector )
-					if ( err = ENGINE.opencv(thread,code,ctx) )
+					if ( err = ENGINE.opencv(thread,code,ctx) ) {
+						cb(null);
 						return ENGINE.errors[err] || ENGINE.errors.badError;
+					}
 					
-					else 
+					else  {
+						cb( ctx );
 						return null;
+					}
 				
 				else
 					return ENGINE.errors.badContext;
@@ -1213,6 +1223,7 @@ ws_${func}.save( "", "Queued" );` );
 						Copy( {RES: cb, SQL: sql, CTX: ctx, DATA: [], PORT: port, TAU: ctx, PORTS: vm.ctx}, vm.ctx );
 						
 						VM.runInContext(vm.code,vm.ctx);
+						
 						return null;
 					});
 				
@@ -1248,10 +1259,10 @@ ws_${func}.save( "", "Queued" );` );
 				var 
 					func = thread.replace(/\./g,"_");
 				
-				if ( !ctx.Job ) {
-					cb(0);   // detach thread and set default responce
-					ctx.Job = ctx.Job || {load: "", save: ""};
-				}
+				ctx.Load = ctx.Load || "";
+				ctx.Dump = ctx.Dump || "";
+				
+				if ( !ctx.Load ) cb(0);   // detach thread and set default responce
 				
 				ENGINE.matlab.queue( "step_queue", `ws_${func}.step( ${arglist(ctx)} );` );
 				
