@@ -4,18 +4,10 @@
  * @class ENGINE
  * @requires child_process
  * @requires fs
- * @requires crypto
-
  * @requires engineIF
  * @requires enum
- * @requires lwip
- * @requires liegroup
- 
- * @requires mathjs
- * @requires digitalsignals
- * @requires nodehmm
- * @requires node-svd
- * @requires jsbayes
+ * @requires jslab
+ * @requires vm
  */
 
 var 														// NodeJS modules
@@ -156,17 +148,6 @@ var
 				}); */
 			}
 			
-			var em = ENGINE.plugins.MATH;
-			
-			em.import({
-				isEqual: function (a,b) {
-					return a==b;
-				},
-				disp: function (a) {
-					console.log(a);
-				}
-			});
-			
 			if (thread = ENGINE.thread)
 				thread( function (sql) { // compile engines defined in engines DB
 
@@ -214,37 +195,6 @@ var
 		Modules to share accross all js-engines
 		*/
 		plugins: {  // js-engine plugins 
-			MATH: require('mathjs'),
-			LWIP: require('lwip'),
-			DSP: require('digitalsignals'),
-			CRY: require('crypto'),
-			RAN: require("randpr"),
-			SVD: require("node-svd"),
-			MLE: require("expectation-maximization"),
-			MVN: require("multivariate-normal"),
-			VITA: require("nodehmm"),
-			LOG: console.log,
-			Log: console.log,
-			JSON: JSON,			
-			MAT: function (ctx,code) {
-				var
-					emctx = {},
-					em = ENGINE.plugins.MATH;
-				
-				Each(ctx, function (key, val) {
-					emctx[key] = (val && val.constructor == Array) 
-							? emctx[key] = em.matrix(val)
-							: val;
-				});
-							
-				em.eval(code, emctx);
-				
-				Each(emctx, function (key, val) {
-					ctx[key] = (val && val._data)
-						? val._data
-						: val;
-				});
-			}
 		},
 			
 		/**
@@ -789,7 +739,7 @@ var
 			
 		gen: {  // controls code generation during init
 			debug: false,
-			trace: false,
+			trace: true,
 			dbcon: {
 				user: ENV.DB_USER,
 				name: ENV.DB_NAME,

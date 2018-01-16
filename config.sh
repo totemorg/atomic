@@ -23,9 +23,9 @@ export PATH=$CONDA/bin:$INCLUDE/python:$PATH
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIB/python
 
 # Engines
-export ENGINES=$HERE/ifs
+export ENGINES=$SRV/engine/ifs
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ENGINES/python/build/Release:$ENGINES/opencv/build/Release:$ENGINES/mac/build/Release
-export JOBS=$HERE/jobs
+#export JOBS=$HERE/jobs
 #export PATH=$PATH:/usr/lib/qt-3.3/bin:$OPENCV/bin
 
 #export PATH=$INCLUDE:$PATH
@@ -79,7 +79,7 @@ export DB_NAME=$MYSQL_NAME
 export DB_HOST=$MYSQL_HOST
 
 # engine compile switches
-if [ `hostname` == "$GPUHOST" ]; then
+if [ "`hostname`" == "$GPUHOST" ]; then
 	export HASGPU=1
 	export HASCAFFE=1
 else
