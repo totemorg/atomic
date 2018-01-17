@@ -1,4 +1,4 @@
 /_*
-ifs/build/
-ifs/*/build/
-!Release/*.node
+/ifs/build/
+/ifs/*/build/
+!*.node
