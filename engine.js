@@ -915,21 +915,22 @@ LOG("js>ctx", CTX);
 ` };
 				
 				if (gen.code) { script += `
+var DATA= [];
+
 // engine logic and ports
 ${code}
 
 // stateful port interface
-load(CTX, function (DATA) {
+load(CTX, function (res) {
 
 	if ( port = PORTS[PORT] ) 
 		ERR = port(TAU, CTX.ports[PORT]);
 
 	else
 		${Thread.plugin}(CTX, function (ctx) {
-			if (ctx)
-				save(ctx);
-			else
-				RES( null );
+			if (ctx) save(ctx);
+
+			res ( DATA ? ctx : null );
 		});
 });
 
@@ -948,9 +949,6 @@ function save(ctx) {
 			SQL.query( Query, Data, function (err, info) {
 			});
 	}
-
-	else
-		RES(ctx);
 }
 
 function load(ctx, cb) {  // prime global dataset request
@@ -971,8 +969,14 @@ function load(ctx, cb) {  // prime global dataset request
 				cb( err ? null : data );
 			});
 
-		else
-			SQL.query( Query, function (err, data) {
+		else {
+			var recs = [], limit = ctx.Job.limit, offset = 0, done = false;
+			SQL.query( Query ).on("result", function (rec) {
+
+				if ( recs.length == limit ) 
+					ctx( data );
+
+				
 				cb( err ? null : data );
 				ctx.Offset += err ? 0 : data.length;
 			});
@@ -1170,7 +1174,7 @@ ws_${func}.save( "", "Queued" );` );
 
 				if ( vm = ENGINE.vm[thread] ) 
 					ENGINE.thread( function (sql) {
-						Copy( {RES: cb, SQL: sql, CTX: ctx, DATA: [], PORT: port, TAU: ctx, PORTS: vm.ctx}, vm.ctx );
+						Copy( {RES: cb, SQL: sql, CTX: ctx, PORT: port, TAU: ctx, PORTS: vm.ctx}, vm.ctx );
 						
 						VM.runInContext(vm.code,vm.ctx);
 						
