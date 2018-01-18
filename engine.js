@@ -750,7 +750,7 @@ var
 			code: true
 		},
 				
-		init: {  // program engines on given thread 
+		init: {  // program engines on given thread with flush-load-save-code-startup logic
 			py: function pyInit(thread,code,ctx,cb)  {
 				var 
 					Thread = thread.split("."),
@@ -761,6 +761,13 @@ var
 					},								
 					script = "", 
 					gen = ENGINE.gen,
+					logic = {
+						flush: "",						
+						save: "",
+						load: "",
+						code: code,
+						startup: ""
+					},					
 					ports = Object.keys( ctx.ports || {} );
 
 				ports.each( function (n,port) {
@@ -855,7 +862,7 @@ def save(ctx):  #save results
 ${code} 
 
 #onentry logic
-DATA = load(CTX)   
+DATA = load(CTX)
 
 PORTS=${ports}
 if PORT:
@@ -882,6 +889,23 @@ SQL1.close()
 			},
 			
 			cv: function cvInit(thread,code,ctx,cb)  {
+				var 
+					Thread = thread.split("."),
+					Thread = {
+						case: Thread.pop(),
+						plugin: Thread.pop(),
+						client: Thread.pop()
+					},				
+					gen = ENGINE.gen,
+					script = "",
+					logic = {
+						flush: "",						
+						save: "",
+						load: "",
+						code: code,
+						startup: ""
+					};
+
 				if ( ctx.frame && ctx.detector )
 					if ( err = ENGINE.opencv(thread,code,ctx) )
 						cb( null, ctx );
@@ -902,12 +926,101 @@ SQL1.close()
 						client: Thread.pop()
 					},				
 					gen = ENGINE.gen,
+					script = "",
+					logic = {
+						flush: ctx.Flush || function flush(ctx,rec,t0) { 
+							return rec.t > t0;
+						},
+						
+						save: function save(ctx, cb) {
+							if (ctx) {
+								var Data = ctx.Save;
+
+								if ( Query = ctx.Dump ) {  // the RES was already issued so save results to db w/o RES
+									if ( Query.endsWith(".json") )
+										FS.writeFile( Query, JSON.stringify(Data) );
+
+									else
+									if ( Query.endsWith(".jpg") )
+										LWIP.write( Query, Data );
+
+									else
+										SQL.query( Query, Data, function (err, info) {
+										});
+								}
+								else
+									cb(ctx);
+							}
+
+							else
+								cb(ctx);
+						},
+						
+						load: function load(ctx, cb) {  // prime global dataset request
+
+							if ( Query = ctx.Load )
+								if ( Query.endsWith(".json") )
+									FS.readFile( Query, function (err, buf) {
+										try {
+											cb( JSON.parse( buf ) );
+										}
+										catch (err) {
+											cb( null );
+										}
+									});
+
+								else
+								if ( Query.endsWith(".jpg") ) 
+									LWIP.open( Query , function (err, data) {
+										cb( err ? null : data );
+									});
+
+								else {
+									var recs = [], t0 = 0;
+
+									SQL.getRecord( "BUFFER", Query , [], function (rec) {
+
+										if ( flush(ctx, rec, t0) ) {
+											Log("FLUSH ",recs.length);
+											cb( recs );
+											t0 = rec.t;
+											recs.length = 0;
+										}
+
+										recs.push(rec);
+									})
+									.on("end", function () {
+										Log("FLUSH ",recs.length);
+										cb( recs );
+									});
+								}
+
+							else 
+								cb( null );
+						},
+						
+						code: code,
+						
+						startup: `
+var DATA= [];
+load(CTX, function (recs) {
+	DATA = recs; 
+
+	if ( port = PORTS[PORT] )   // stateful port processing
+		ERR = port(TAU, CTX.ports[PORT]);
+
+	else  // stateless processing
+		${Thread.plugin}(CTX, function (ctx) {
+			save(ctx, RES);
+		});	
+}); `
+
+					},
 					plugins = ENGINE.plugins,
 					vm = ENGINE.vm[thread] = {
 						ctx: VM.createContext( gen.libs ? plugins : {} ),
 						code: ""
-					},
-					script = "";
+					};					
 					
 				if (gen.debug) { script += `
 // engine context trace
@@ -915,75 +1028,20 @@ LOG("js>ctx", CTX);
 ` };
 				
 				if (gen.code) { script += `
-var DATA= [];
+// record buffering logic
+${logic.flush+""}
 
-// engine logic and ports
-${code}
+// data loading logic
+${logic.load+""}
 
-// stateful port interface
-load(CTX, function (res) {
+// data saving logic
+${logic.save+""}
 
-	if ( port = PORTS[PORT] ) 
-		ERR = port(TAU, CTX.ports[PORT]);
+// engine and port logic
+${logic.code}
 
-	else
-		${Thread.plugin}(CTX, function (ctx) {
-			if (ctx) save(ctx);
-
-			res ( DATA ? ctx : null );
-		});
-});
-
-function save(ctx) {
-	var Data = ctx.Save;
-
-	if ( Query = ctx.Dump ) {  // the RES was already issued so save results to db w/o RES
-		if ( Query.endsWith(".json") )
-			FS.writeFile( Query, JSON.stringify(Data) );
-
-		else
-		if ( Query.endsWith(".jpg") )
-			LWIP.write( Query, Data );
-
-		else
-			SQL.query( Query, Data, function (err, info) {
-			});
-	}
-}
-
-function load(ctx, cb) {  // prime global dataset request
-	if ( Query = ctx.Load )
-		if ( Query.endsWith(".json") )
-			FS.readFile( Query, function (err, buf) {
-				try {
-					cb( JSON.parse( buf ) );
-				}
-				catch (err) {
-					cb( null );
-				}
-			});
-
-		else
-		if ( Query.endsWith(".jpg") ) 
-			LWIP.open( Query , function (err, data) {
-				cb( err ? null : data );
-			});
-
-		else {
-			var recs = [], limit = ctx.Job.limit, offset = 0, done = false;
-			SQL.query( Query ).on("result", function (rec) {
-
-				if ( recs.length == limit ) 
-					ctx( data );
-
-				
-				cb( err ? null : data );
-				ctx.Offset += err ? 0 : data.length;
-			});
-
-	else 
-		cb( null );
-}
+// startup logic
+${logic.startup}
 
 `; }
 				
