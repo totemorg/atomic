@@ -525,25 +525,6 @@ var
 			else
 				return [{tau: JSON.stringify(tau)}];
 
-			/*
-			for (var x in tau) {
-				var vec = tau[x];
-				if (typeof vec == "object") 
-					if (vec.length > N) N = vec.length;					
-			}
-
-			var recs = new Array(N);
-			for (var n=0; n<N; n++) {
-				var an = recs[n] = {};
-				for (x in tau) 
-					if (tau.hasOwnProperty(x)) {
-						var vec = tau[x];
-						if (typeof vec == "object") an[x] = vec[n] || 0;
-					}
-			}
-
-			return recs;
-			* */
 		},
 			
 		/**
@@ -750,8 +731,18 @@ var
 			code: true
 		},
 				
-		init: {  // program engines on given thread with flush-load-save-code-startup logic
+		init: {  // program engines on given thread with flush-load-save-script logic
 			py: function pyInit(thread,code,ctx,cb)  {
+				function portsDict(portsHash) {
+					var ports = Object.keys( portsHash );
+
+					ports.each( function (n,port) {
+						ports[n] = port + ":" + port;
+					});
+
+					return "{" + ports.join(",") + "}";
+				}					
+					
 				var 
 					Thread = thread.split("."),
 					Thread = {
@@ -761,86 +752,28 @@ var
 					},								
 					script = "", 
 					gen = ENGINE.gen,
+					ports = portsDict( ctx.ports || {} ),
 					logic = {
-						flush: "",						
-						save: "",
-						load: "",
-						code: code,
-						startup: ""
-					},					
-					ports = Object.keys( ctx.ports || {} );
+						flush: {
+							all: `
+def flush(ctx,rec,recs):
+	return False`,
+							
+							none:`
+def flush(ctx,rec,recs):
+	return True`,
 
-				ports.each( function (n,port) {
-					ports[n] = port + ":" + port;
-				});
+							byTime: `
+def flush(ctx,rec,recs):
+	return (rec[ 't' ] -recs[0][ 't' ] ) > ctx.Job.buffer`,
 
-				ports = "{" + ports.join(",") + "}";
-	
-				if (gen.libs) { script += `
-#import modules
-#import caffe as CAFFE		#caffe interface
-import mysql.connector as SQLC		#db connector interface
-from PIL import Image as LWIP		#jpeg image interface
-import json as JSON			#json interface
-import sys as SYS			#system info
-` };
+							byDepth: `
+def flush(ctx,rec,recs):
+	return len(recs) < ctx.Job.buffer`
+						},
 
-				/*
-					mysql connection notes:
-					install the python2.7 connector (rpm -Uvh mysql-conector-python-2.x.rpm)
-					into /usr/local/lib/python2.7/site-packages/mysql, then copy
-					this mysql folder to the anaconda/lib/python2.7/site-packages.
-
-					import will fail with mysql-connector-python-X installed (rum or rpm installed as root using either
-					python 2.2 or python 2.7).  Will however import under python 2.6.  To fix, we must:
-
-							cp -R /usr/lib/python2.6/site-packages/mysql $CONDA/lib/python2.7/site-packages
-
-					after "rpm -i mysql-connector-python-2.X".
-					
-					For some reaon, only two sql cursors are allowed.
-				*/
-				if (gen.db) { script += `
-SQL = SQLC.connect(user='${gen.dbcon.user}', password='${gen.dbcon.pass}', database='${gen.dbcon.name}')
-SQL0 = SQL.cursor(buffered=True)
-SQL1 = SQL.cursor(buffered=True)
-` };
-				
-				if (gen.debug) { script += `
-#trace engine context
-print 'py>locals', locals()
-print 'py>sys', SYS.path, SYS.version
-#print 'py>caffe',CAFFE
-#print 'py>sql', SQL
-print 'py>ctx',CTX
-print 'py>port',PORT
-` };
-
-				if (gen.code) { script += `
-def load(ctx):  #load global dataset request
-	if 'Load' in ctx:
-		Query = ctx['Load']
-		if Query.endswith(".jpg"):
-			return LWIP.open(Query)
-
-		elif Query.endswith(".json"):
-			return JSON.loads(Query)
-
-		elif Query:
-			SQL0.execute(Query)
-			Data = []
-			for (rec) in SQL0:
-				Data.append(rec)
-
-			if 'Offset' in ctx:
-				ctx['Offset'] += len(Data)
-
-			return Data
-
-		else:
-			return 0
-				
-def save(ctx):  #save results
+						save: `
+def save(ctx):  #save jpg/json/event results
 	if 'Dump' in ctx:
 		Query = ctx['Dump']
 
@@ -857,34 +790,141 @@ def save(ctx):  #save results
 
 			elif Query:
 				SQL0.execute(Query,Data)
+`,
+						
+						load: `
+def load(ctx, cb):  #load jpg/json/event dataset
+	if 'Load' in ctx:
+		Query = ctx['Load']
+		if Query.endswith(".jpg"):
+			cb( LWIP.open(Query) )
 
-#engine logic and ports
-${code} 
+		elif Query.endswith(".json"):
+			cb( JSON.loads(Query) )
 
-#onentry logic
-DATA = load(CTX)
+		elif Query.startswith("/"):
+			recs = []
+			for (rec) in FETCH(query):
+				if flush(ctx,rec,recs):
+					print "FLUSH", len(recs)
+					cb( recs )
+					recs = []
 
-PORTS=${ports}
-if PORT:
-	if PORT in PORTS:
-		ERR = PORTS[PORT](TAU,CTX.ports[PORT])
+				recs.append(rec)
+
+			print "FLUSH", len(recs)
+			cb( recs )
+
+		elif Query:
+			recs = []
+			SQL0.execute(Query)
+			for (rec) in SQL0:
+				if flush(ctx,rec,recs):
+					print "FLUSH", len(recs)
+					cb( recs )
+					recs = []
+
+				recs.append(rec)
+
+			print "FLUSH", len(recs)
+			cb( recs )
+
+		else:
+			cb( [] )` 
+					},
+					Job = ctx.Job || {},
+					flush = logic.flush[Job.flush |= ""] || logic.flush.all,
+					script = "";
+				
+				Job.buffer |= 0;
+				
+				if (gen.libs) { script += `
+#import modules
+#import caffe as CAFFE		#caffe interface
+import mysql.connector as SQLC		#db connector interface
+from PIL import Image as LWIP		#jpeg image interface
+import json as JSON			#json interface
+import sys as SYS			#system info
+` }
+				
+				if (gen.dbs) { script += `
+#connect to db
+SQL = SQLC.connect(user='${gen.dbcon.user}', password='${gen.dbcon.pass}', database='${gen.dbcon.name}')
+SQL0 = SQL.cursor(buffered=True)
+SQL1 = SQL.cursor(buffered=True)
+
+def FETCH(query):
+	print "py data fetching tbd", query
+	return []
+` }
+				
+				if (gen.debug) { script += `
+#trace engine context
+	print 'py>locals', locals()
+	print 'py>sys', SYS.path, SYS.version
+	#print 'py>caffe',CAFFE
+	#print 'py>sql', SQL
+	print 'py>ctx',CTX
+	print 'py>port',PORT
+` }
+
+				if (gen.code) { script += `
+# record buffering logic
+${flush}
+
+# data loading logic
+${logic.load}
+
+# data saving logic
+${logic.save}
+
+# get global data
+load(CTX, ${Thread.plugin})
+
+# engine and port logic
+DATA = [];
+${code}
+
+def loadcb(recs):
+	DATA = recs
+
+	PORTS=${ports}
+	if PORT:
+		if PORT in PORTS:
+			ERR = PORTS[PORT](TAU,CTX.ports[PORT])
+		else:
+			ERR = 103
 	else:
-		ERR = 103
-else:
-	if ${Thread.plugin}(CTX):
-		save( CTX )
-	else:
-		ERR = 104
-` };
-			
+		${Thread.plugin}(CTX, save)
+
+load(CTX, loadcb)
+` }
+				
 				if (gen.db) { script += `
-#exit code
-SQL.commit()
-SQL0.close()
-SQL1.close()
-` };
+if ${gen.db}: #exit code
+	SQL.commit()
+	SQL0.close()
+	SQL1.close()
+` }
 
+				/*
+					mysql connection notes:
+					install the python2.7 connector (rpm -Uvh mysql-conector-python-2.x.rpm)
+					into /usr/local/lib/python2.7/site-packages/mysql, then copy
+					this mysql folder to the anaconda/lib/python2.7/site-packages.
+
+					import will fail with mysql-connector-python-X installed (rum or rpm installed as root using either
+					python 2.2 or python 2.7).  Will however import under python 2.6.  To fix, we must:
+
+							cp -R /usr/lib/python2.6/site-packages/mysql $CONDA/lib/python2.7/site-packages
+
+					after "rpm -i mysql-connector-python-2.X".
+					
+					For some reaon, only two sql cursors are allowed.
+				*/
+ 			
 				if (gen.trace) Log(script);
+
 				cb( ENGINE.python(thread,script,ctx), ctx );
 			},
 			
@@ -928,8 +968,22 @@ SQL1.close()
 					gen = ENGINE.gen,
 					script = "",
 					logic = {
-						flush: ctx.Flush || function flush(ctx,rec,t0) { 
-							return rec.t > t0;
+						flush: {
+							all: function flush(ctx,rec,recs) { 
+								return false;
+							},
+							
+							none: function flush(ctx,rec,recs) { 
+								return true;
+							},
+
+							byTime: function flush(ctx,rec,recs) { 
+								return (rec.t - recs[0].t) > ctx.Job.buffer;
+							},
+							
+							byDepth: function flush(ctx,rec,recs) {
+								return recs.length < ctx.Job.buffer;
+							}
 						},
 						
 						save: function save(ctx, cb) {
@@ -975,33 +1029,76 @@ SQL1.close()
 										cb( err ? null : data );
 									});
 
+								else
+								if ( Query.startsWith("/") )
+									FETCH( Query, function (recs) {
+										if ( recs) {
+											recs.each( function (n,rec) {
+												if ( flush(ctx, rec, recs) ) {
+													Log("FLUSH ", recs.length);
+													cb( recs );
+													recs.length = 0;
+												}
+
+												recs.push(rec);
+											});
+
+											Log("FLUSH ", recs.length);
+											cb( recs );	
+										}
+									});
+
 								else {
-									var recs = [], t0 = 0;
+									var recs = [];
 
 									SQL.getRecord( "BUFFER", Query , [], function (rec) {
-
-										if ( flush(ctx, rec, t0) ) {
-											Log("FLUSH ",recs.length);
+										if ( flush(ctx, rec, recs) ) {
+											Log("FLUSH ", recs.length);
 											cb( recs );
-											t0 = rec.t;
 											recs.length = 0;
 										}
 
 										recs.push(rec);
 									})
 									.on("end", function () {
-										Log("FLUSH ",recs.length);
+										Log("FLUSH ", recs.length);
 										cb( recs );
 									});
 								}
 
 							else 
 								cb( null );
-						},
-						
-						code: code,
-						
-						startup: `
+						}						
+					},
+					plugins = ENGINE.plugins,
+					vm = ENGINE.vm[thread] = {
+						ctx: VM.createContext( gen.libs ? plugins : {} ),
+						code: ""
+					},
+					Job = ctx.Job || {},
+					flush = logic.flush[Job.flush |= ""] || logic.flush.all,
+					script = "";
+
+				Job.buffer |= 0;
+				
+				if (gen.debug) { script += `
+// trace engine context
+LOG("js>ctx", CTX);
+` }
+
+				if (gen.code) { script += `
+// record buffering logic
+${flush+""}
+
+// data loading logic
+${logic.load+""}
+
+// data saving logic
+${logic.save+""}
+
+// engine and port logic
+${code}
+
 var DATA= [];
 load(CTX, function (recs) {
 	DATA = recs; 
@@ -1013,42 +1110,13 @@ load(CTX, function (recs) {
 		${Thread.plugin}(CTX, function (ctx) {
 			save(ctx, RES);
 		});	
-}); `
+}); 
+` }
 
-					},
-					plugins = ENGINE.plugins,
-					vm = ENGINE.vm[thread] = {
-						ctx: VM.createContext( gen.libs ? plugins : {} ),
-						code: ""
-					};					
-					
-				if (gen.debug) { script += `
-// engine context trace
-LOG("js>ctx", CTX);
-` };
-				
-				if (gen.code) { script += `
-// record buffering logic
-${logic.flush+""}
-
-// data loading logic
-${logic.load+""}
-
-// data saving logic
-${logic.save+""}
-
-// engine and port logic
-${logic.code}
-
-// startup logic
-${logic.startup}
-
-`; }
-				
 				if (gen.trace) Log(script);
 				vm.code = script;
 				
-				cb( null, ctx );				
+				cb( null, ctx );
 			},
 			
 			ma: function maInit(thread,code,ctx,cb) {
@@ -1195,7 +1263,7 @@ ws_${func}.save( "", "Queued" );` );
 				});
 
 				return null;
-			}			
+			}
 		},
 			
 		step: {  // step engines on given thread 
@@ -1232,7 +1300,7 @@ ws_${func}.save( "", "Queued" );` );
 
 				if ( vm = ENGINE.vm[thread] ) 
 					ENGINE.thread( function (sql) {
-						Copy( {RES: cb, SQL: sql, CTX: ctx, PORT: port, TAU: ctx, PORTS: vm.ctx}, vm.ctx );
+						Copy( {RES: cb, FETCH: ENGINE.fetcher, SQL: sql, CTX: ctx, PORT: port, TAU: ctx, PORTS: vm.ctx}, vm.ctx );
 						
 						VM.runInContext(vm.code,vm.ctx);
 						
