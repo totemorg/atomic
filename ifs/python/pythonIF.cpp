@@ -235,12 +235,14 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 		V8VALUE clone(PyObject *src) { 				// clone python value into v8 value
 			if (PyList_Check(src)) {
 				int N = PyList_Size(src);
-//printf(TRACE "clone list len=%d\n",N);
+printf(TRACE "clone list len=%d\n",N);
 				V8ARRAY tar = v8::Array::New(scope,N);
 				V8OBJECT Tar = tar->ToObject();
 				
-				for (int n=0; n<N; n++)
+				for (int n=0; n<N; n++) {
 					Tar->Set(n,clone( PyList_GetItem(src,n) ));
+printf(TRACE "clone[%d] done\n",n);
+				}
 					
 				return tar;
 			}
@@ -280,8 +282,8 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 		}
 		
 		PyObject *clone(V8VALUE src) {  			// clone v8 object into python object
-//printf(TRACE " clone str=%d num=%d arr=%d obj=%d\n ",src->IsString(),src->IsNumber(),src->IsArray(),src->IsObject() );
-			char buf[MAX_KEYLEN];
+printf(TRACE " clone str=%d num=%d arr=%d obj=%d null=%d\n ",src->IsString(),src->IsNumber(),src->IsArray(),src->IsObject(),src->IsNull() );
+			char buf[MAX_CODELEN];
 			
 			if ( src->IsString() )
 				return PyString_FromString( V8TOSTR(src, buf) );
@@ -317,7 +319,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 			int N = src->Length();
 			PyObject *tar = PyList_New(N);
 			
-//printf(TRACE "clone list len=%d\n",N);
+printf(TRACE "clone list len=%d\n",N);
 			
 			for (int n=0; n<N; n++) 
 				PyList_SetItem(tar, n, clone(src->Get(n)) );
@@ -330,13 +332,15 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 			V8ARRAY keys = src->GetOwnPropertyNames();
 			char buf[MAX_KEYLEN];
 			
-//printf(TRACE "clone object keys=%d\n",keys->Length());
+printf(TRACE "clone object keys=%d\n",keys->Length());
 			
 			for (int n=0,N=keys->Length(); n<N; n++) {
 				str key = V8TOSTR(keys->Get(n), buf);
 				
 				PyDict_SetItemString(tar, key, clone(V8INDEX(src,key)));
+printf(TRACE "clone key=%s\n", buf);
 			}
+printf(TRACE "clone object done\n");
 
 			return tar;
 		}
@@ -369,7 +373,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 				path = strstr(port,"\n") ? NULL : port;
 				init = true;
 
-//printf(TRACE "compile path=%s port=%s\n",path,port);
+printf(TRACE "compile path=%s port=%s\n",path,port);
 				
 				if ( strlen(path) ) { 				// load external module
 					pModule = PyImport_Import(PyString_FromString(path));
@@ -389,7 +393,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 
 					// Prime local dictionary with context hash
 					pLocals = PyModule_GetDict(pModule);
-//printf(TRACE "locals=%p/\n",pLocals);
+printf(TRACE "locals=%p/\n",pLocals);
 					
 					//PyDict_Merge(pLocals, clone(ctx), true);
 					PyDict_SetItemString(pLocals, PYCTX, clone( ctx ));	
@@ -402,7 +406,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 					// Create global dictonary object (reserved)
 					pMain = PyImport_AddModule("__main__");
 					pGlobals = PyModule_GetDict(pMain);	
-//printf(TRACE "globals=%p\n",pGlobals);
+printf(TRACE "globals=%p\n",pGlobals);
 					
 					/*
 					str comp = wrap(  // generate code to compile
@@ -414,7 +418,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 					);
 					*/
 
-//printf(TRACE "compile=\n%s infile=%d\n",code,Py_file_input);
+printf(TRACE "compile=\n%s infile=%d\n",code,Py_file_input);
 					// Uncomment if there is a need to define ctx at compile
 					//PyDict_SetItemString(pLocals, PYPORT, PyString_FromString( port ) );
 					//PyDict_SetItemString(pLocals, PYCTX, clone( ctx ));
@@ -432,14 +436,14 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 						err = badCode;
 					}
 
-//printf(TRACE "pcode %s\n", (pCode ? "generated" : "missing"));
+printf(TRACE "pcode %s\n", (pCode ? "generated" : "missing"));
 
 					return err;
 					//Py_Finalize(); // dont do this - will cause segment fault
 				}
 			}
 			
-//printf(TRACE "pcode %s\n", (pCode ? "generated" : "missing"));
+printf(TRACE "pcode %s\n", (pCode ? "present" : "missing"));
 			
 			if (!pCode) 
 				err = badCode;
@@ -470,7 +474,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 			
 			else 
 			if ( strlen(port) ) {		// Stateful step
-//printf(TRACE "Stateful step port=%s\n",port);
+printf(TRACE "Stateful step port=%s\n",port);
 				PyDict_SetItemString(pLocals, PYPORT, PyString_FromString(port) );
 				PyDict_SetItemString(pLocals, PYTAU, clone(tau) );
 
@@ -482,22 +486,24 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 			}
 			
 			else {					// Stateless step
-//printf(TRACE "Stateless step\n");
+printf(TRACE "Stateless step port=%s\n", port);
 				pLocals = PyModule_GetDict(pModule);
 				pGlobals = PyModule_GetDict(pMain);	
 
 				PyDict_SetItemString(pLocals, PYPORT, PyString_FromString( port ) );
+printf(TRACE "set %s\n",PYCTX);
 				PyDict_SetItemString(pLocals, PYCTX, clone( ctx ));
-
+printf(TRACE "eval code\n");
 				PyEval_EvalCode(pCode,pGlobals,pLocals);
-
+printf(TRACE "latch %s\n",PYCTX);
+				
 				set(ctx, clone( LOCAL(PYCTX) )->ToObject() );
 				//set(ctx, clone( pLocals )->ToObject() );
 				
-				err = PyInt_AsLong( LOCAL(PYERR) );						
+				err = PyInt_AsLong( LOCAL(PYERR) );	
 			}
 					
-//printf(TRACE "err=%d\n",err);
+printf(TRACE "err=%d\n",err);
 			
 			return err;
 		}

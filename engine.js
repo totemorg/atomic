@@ -776,18 +776,14 @@ def flush(ctx,rec,recs):
 def save(ctx):  #save jpg/json/event results
 	if 'Dump' in ctx:
 		Query = ctx['Dump']
-
 		if 'Save' in ctx:
 			Data = ctx['Save']
-
 			if Query.endswith(".jpg"):
 				Data.save(Query, "jpg")
-
 			elif Query.endswith(".json"):
 				fid = open(Query, "w")
 				fid.write( JSON.dumps( Data ) )
 				fid.close()
-
 			elif Query:
 				SQL0.execute(Query,Data)
 `,
@@ -798,10 +794,8 @@ def load(ctx, cb):  #load jpg/json/event dataset
 		Query = ctx['Load']
 		if Query.endswith(".jpg"):
 			cb( LWIP.open(Query) )
-
 		elif Query.endswith(".json"):
 			cb( JSON.loads(Query) )
-
 		elif Query.startswith("/"):
 			recs = []
 			for (rec) in FETCH(query):
@@ -809,12 +803,9 @@ def load(ctx, cb):  #load jpg/json/event dataset
 					print "FLUSH", len(recs)
 					cb( recs )
 					recs = []
-
 				recs.append(rec)
-
 			print "FLUSH", len(recs)
 			cb( recs )
-
 		elif Query:
 			recs = []
 			SQL0.execute(Query)
@@ -823,15 +814,14 @@ def load(ctx, cb):  #load jpg/json/event dataset
 					print "FLUSH", len(recs)
 					cb( recs )
 					recs = []
-
 				recs.append(rec)
-
 			print "FLUSH", len(recs)
 			cb( recs )
-
 		else:
-			cb( [] )` 
-					},
+			cb( [] )
+	else:
+		cb( [], "noport" )
+`  					},
 					Job = ctx.Job || {},
 					flush = logic.flush[Job.flush |= ""] || logic.flush.all,
 					script = "";
@@ -847,7 +837,7 @@ import json as JSON			#json interface
 import sys as SYS			#system info
 ` }
 				
-				if (gen.dbs) { script += `
+				if (gen.db) { script += `
 #connect to db
 SQL = SQLC.connect(user='${gen.dbcon.user}', password='${gen.dbcon.pass}', database='${gen.dbcon.name}')
 SQL0 = SQL.cursor(buffered=True)
@@ -878,33 +868,35 @@ ${logic.load}
 # data saving logic
 ${logic.save}
 
-# get global data
-load(CTX, ${Thread.plugin})
-
 # engine and port logic
-DATA = [];
 ${code}
 
-def loadcb(recs):
+def loadcb(recs,port):
+	print "loadcb recs=", recs
+	print "port=", port
+	#print "ctx=", CTX
 	DATA = recs
-
 	PORTS=${ports}
+	print "ports=", PORTS
 	if PORT:
 		if PORT in PORTS:
 			ERR = PORTS[PORT](TAU,CTX.ports[PORT])
 		else:
 			ERR = 103
 	else:
-		${Thread.plugin}(CTX, save)
+		save( ${Thread.plugin}(CTX) )
 
+DATA = [];
+print locals()
+print CTX
 load(CTX, loadcb)
 ` }
 				
 				if (gen.db) { script += `
-if ${gen.db}: #exit code
-	SQL.commit()
-	SQL0.close()
-	SQL1.close()
+#exit code
+SQL.commit()
+SQL0.close()
+SQL1.close()
 ` }
 
 				/*
@@ -1269,6 +1261,7 @@ ws_${func}.save( "", "Queued" );` );
 		step: {  // step engines on given thread 
 			py: function pyStep(thread,port,ctx,cb) {
 				
+				Log(thread,port,ctx);
 				if ( err = ENGINE.python(thread,port,ctx) ) {
 					cb( null );
 					return ENGINE.errors[err] || ENGINE.errors.badError;
