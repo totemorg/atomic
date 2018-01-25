@@ -765,7 +765,10 @@ def flush(ctx,rec,recs):
 
 							byTime: `
 def flush(ctx,rec,recs):
-	return (rec[ 't' ] -recs[0][ 't' ] ) > ctx.Job.buffer`,
+	if len(recs):
+		return (rec[ 't' ] -recs[0][ 't' ] ) > ctx.Job.buffer
+	else:
+		return False`,
 
 							byDepth: `
 def flush(ctx,rec,recs):
@@ -774,7 +777,6 @@ def flush(ctx,rec,recs):
 
 						save: `
 def save(ctx):  #save jpg/json/event results
-	print "save ctx", ctx
 	if ctx:
 		if 'Dump' in ctx:
 			Query = ctx['Dump']
@@ -791,41 +793,42 @@ def save(ctx):  #save jpg/json/event results
 `,
 						
 						load: `
-def load(ctx, vars, cb, res):  #load jpg/json/event dataset
-	#print "load vars=",vars
-	#print "load res=", res
+def load(ctx, os, cb):  #load jpg/json/event dataset
+	SQL = os['SQL']
+	os['SQL0'] = SQL.cursor(buffered=True)
+	os['SQL1'] = SQL.cursor(buffered=True)
 
 	if 'Load' in ctx:
 		Query = ctx['Load']
 		if Query.endswith(".jpg"):
-			cb( LWIP.open(Query), res )
+			cb( LWIP.open(Query), os )
 		elif Query.endswith(".json"):
-			cb( JSON.loads(Query), res )
+			cb( JSON.loads(Query), os )
 		elif Query.startswith("/"):
 			recs = []
 			for (rec) in FETCH(query):
 				if flush(ctx,rec,recs):
 					print "FLUSH", len(recs)
-					cb( recs, res )
+					cb( recs, os )
 					recs = []
 				recs.append(rec)
 			print "FLUSH", len(recs)
-			cb( recs, res )
+			cb( recs, os )
 		elif Query:
 			recs = []
 			SQL0.execute(Query)
 			for (rec) in SQL0:
 				if flush(ctx,rec,recs):
 					print "FLUSH", len(recs)
-					cb( recs, res )
+					cb( recs, os )
 					recs = []
 				recs.append(rec)
 			print "FLUSH", len(recs)
-			cb( recs, res )
+			cb( recs, os )
 		else:
-			cb( [], res )
+			cb( 0, os )
 	else:
-		cb( [], vars, res )
+		cb( 0, os )
 `  					},
 					Job = ctx.Job || {},
 					flush = logic.flush[Job.flush |= ""] || logic.flush.all,
@@ -834,23 +837,19 @@ def load(ctx, vars, cb, res):  #load jpg/json/event dataset
 				Job.buffer |= 0;
 				
 				if (gen.libs) { script += `
-#import modules
-#import caffe as CAFFE		#caffe interface
-import mysql.connector as SQLC		#db connector interface
-from PIL import Image as LWIP		#jpeg image interface
-import json as JSON			#json interface
-import sys as SYS			#system info
+if INIT:
+	#import modules
+	#import caffe as CAFFE		#caffe interface
+	import mysql.connector as SQLC		#db connector interface
+	from PIL import Image as LWIP		#jpeg image interface
+	import json as JSON			#json interface
+	import sys as SYS			#system info
 ` }
 				
 				if (gen.db) { script += `
-#connect to db
-SQL = SQLC.connect(user='${gen.dbcon.user}', password='${gen.dbcon.pass}', database='${gen.dbcon.name}')
-SQL0 = SQL.cursor(buffered=True)
-SQL1 = SQL.cursor(buffered=True)
-
-def FETCH(query):
-	print "py data fetching tbd", query
-	return []
+if INIT:
+	#connect to db
+	SQL = SQLC.connect(user='${gen.dbcon.user}', password='${gen.dbcon.pass}', database='${gen.dbcon.name}')
 ` }
 				
 				if (gen.debug) { script += `
@@ -878,34 +877,32 @@ ${code}
 
 PORTS = ${ports}
 
-def loadcb(recs,vars,res):
-	print "in loadcb"
-	print "vars=",vars
-	port = vars['PORT']
-	ports = vars['PORTS']
-	ctx = vars['CTX']
-	#tau = vars['TAU']
-	print "loadcb recs=", recs
-	print "port=", port
-	print "ctx=", ctx
-	print "ports=", ports
-	print "res=", res
-	plugin = vars['${Thread.plugin}']
-	# vars['DATA'] = recs
+def loadcb(req, os):
+	#print "loadcb", os['SQL']
+	port = os['PORT']
+	ports = os['PORTS']
+	ctx = os['CTX']
+	plugin = os['${Thread.plugin}']
+	os['REQ'] = req
 	if port:
 		if port in ports:
-			return ports[port](tau,ctx['ports'][port])
+			return ports[port](req,ctx['ports'][port])
 		else:
 			return 103
 	else:
-		print "call plugin", plugin
-		plugin(ctx,res)
+		plugin(ctx,os)
+		save(ctx)
 		return 0
 
-load(CTX, locals(), loadcb, save)
+if INIT:
+	INIT = 0;
+else:
+	os = locals()
+	print "os", os  # why is this dump required to make sql connector visibile to plugin ?
+	load(CTX, os, loadcb)
 ` }
 				
-				if (gen.db) { script += `
+				if (false) { script += `
 #exit code
 SQL.commit()
 SQL0.close()
@@ -983,7 +980,7 @@ SQL1.close()
 							},
 
 							byTime: function flush(ctx,rec,recs) { 
-								return (rec.t - recs[0].t) > ctx.Job.buffer;
+								return recs.length ? (rec.t - recs[0].t) > ctx.Job.buffer : false;
 							},
 							
 							byDepth: function flush(ctx,rec,recs) {
@@ -992,25 +989,20 @@ SQL1.close()
 						},
 						
 						save: function save(ctx, cb) {
-							if (ctx) {
-								var Data = ctx.Save;
+							var Data = ctx.Save;
 
-								if ( Query = ctx.Dump ) {  // the RES was already issued so save results to db w/o RES
-									if ( Query.endsWith(".json") )
-										FS.writeFile( Query, JSON.stringify(Data) );
+							if ( Query = ctx.Dump ) {  // the RES was already issued so save results to db w/o RES
+								if ( Query.endsWith(".json") )
+									FS.writeFile( Query, JSON.stringify(Data) );
 
-									else
-									if ( Query.endsWith(".jpg") )
-										LWIP.write( Query, Data );
-
-									else
-										SQL.query( Query, Data, function (err, info) {
-										});
-								}
 								else
-									cb(ctx);
-							}
+								if ( Query.endsWith(".jpg") )
+									LWIP.write( Query, Data );
 
+								else
+									SQL.query( Query, Data, function (err, info) {
+									});
+							}
 							else
 								cb(ctx);
 						},
@@ -1048,8 +1040,10 @@ SQL1.close()
 												recs.push(rec);
 											});
 
-											Log("FLUSH ", recs.length);
-											cb( recs );	
+											if ( recs.length ) {
+												Log("FLUSH ", recs.length);
+												cb( recs );	
+											}
 										}
 									});
 
@@ -1066,8 +1060,10 @@ SQL1.close()
 										recs.push(rec);
 									})
 									.on("end", function () {
-										Log("FLUSH ", recs.length);
-										cb( recs );
+										if ( recs.length ) {
+											Log("FLUSH ", recs.length);
+											cb( recs );
+										}
 									});
 								}
 
@@ -1104,17 +1100,19 @@ ${logic.save+""}
 // engine and port logic
 ${code}
 
-var DATA= [];
-load(CTX, function (recs) {
-	DATA = recs; 
+load(CTX, function (req) {
+	REQ = req; 
 
 	if ( port = PORTS[PORT] )   // stateful port processing
-		ERR = port(TAU, CTX.ports[PORT]);
+		ERR = port(REQ, CTX.ports[PORT]);
 
 	else  // stateless processing
-		${Thread.plugin}(CTX, function (ctx) {
-			save(ctx, RES);
-		});	
+		ERR = ${Thread.plugin}(CTX, function (ctx) {
+			if (ctx) 
+				save(ctx, RES);
+			else
+				RES(null);
+		});
 }); 
 ` }
 
@@ -1274,7 +1272,6 @@ ws_${func}.save( "", "Queued" );` );
 		step: {  // step engines on given thread 
 			py: function pyStep(thread,port,ctx,cb) {
 				
-				Log(thread,port,ctx);
 				if ( err = ENGINE.python(thread,port,ctx) ) {
 					cb( null );
 					return ENGINE.errors[err] || ENGINE.errors.badError;
@@ -1306,7 +1303,7 @@ ws_${func}.save( "", "Queued" );` );
 
 				if ( vm = ENGINE.vm[thread] ) 
 					ENGINE.thread( function (sql) {
-						Copy( {RES: cb, FETCH: ENGINE.fetcher, SQL: sql, CTX: ctx, PORT: port, TAU: ctx, PORTS: vm.ctx}, vm.ctx );
+						Copy( {RES: cb, FETCH: ENGINE.fetcher, REQ: null, SQL: sql, CTX: ctx, PORT: port, PORTS: vm.ctx}, vm.ctx );
 						
 						VM.runInContext(vm.code,vm.ctx);
 						

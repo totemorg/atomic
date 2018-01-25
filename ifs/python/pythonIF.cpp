@@ -57,10 +57,12 @@ using namespace std;
 #define PYPARM "PARM" 		// name of hash when using external modules
 #define PYCTX "CTX"		// engine context during stateless call
 #define PYTAU "TAU"		// port events during stateful call
+#define PYINIT "INIT" 		// initialize flag
 
 /*
 #define PYPORTS "ports"		// py hash of port hashes
 */
+// Danger zone
 
 /*
 // Parameters used to wrap python code to provide sql connector and debugging
@@ -73,8 +75,6 @@ using namespace std;
 #define WRAP_DBUSER getenv("DB_USER")
 #define PYTHONORIGIN getenv("PYTHONORIGIN")
 */
-
-// Danger zone
 
 /*
 str indent(str code) {
@@ -235,13 +235,13 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 		V8VALUE clone(PyObject *src) { 				// clone python value into v8 value
 			if (PyList_Check(src)) {
 				int N = PyList_Size(src);
-printf(TRACE "clone list len=%d\n",N);
+//printf(TRACE "clone list len=%d\n",N);
 				V8ARRAY tar = v8::Array::New(scope,N);
 				V8OBJECT Tar = tar->ToObject();
 				
 				for (int n=0; n<N; n++) {
 					Tar->Set(n,clone( PyList_GetItem(src,n) ));
-printf(TRACE "clone[%d] done\n",n);
+//printf(TRACE "clone[%d] done\n",n);
 				}
 					
 				return tar;
@@ -282,7 +282,7 @@ printf(TRACE "clone[%d] done\n",n);
 		}
 		
 		PyObject *clone(V8VALUE src) {  			// clone v8 object into python object
-printf(TRACE " clone str=%d num=%d arr=%d obj=%d null=%d\n ",src->IsString(),src->IsNumber(),src->IsArray(),src->IsObject(),src->IsNull() );
+//printf(TRACE " clone str=%d num=%d arr=%d obj=%d null=%d\n ",src->IsString(),src->IsNumber(),src->IsArray(),src->IsObject(),src->IsNull() );
 			char buf[MAX_CODELEN];
 			
 			if ( src->IsString() )
@@ -319,7 +319,7 @@ printf(TRACE " clone str=%d num=%d arr=%d obj=%d null=%d\n ",src->IsString(),src
 			int N = src->Length();
 			PyObject *tar = PyList_New(N);
 			
-printf(TRACE "clone list len=%d\n",N);
+//printf(TRACE "clone list len=%d\n",N);
 			
 			for (int n=0; n<N; n++) 
 				PyList_SetItem(tar, n, clone(src->Get(n)) );
@@ -332,22 +332,22 @@ printf(TRACE "clone list len=%d\n",N);
 			V8ARRAY keys = src->GetOwnPropertyNames();
 			char buf[MAX_KEYLEN];
 			
-printf(TRACE "clone object keys=%d\n",keys->Length());
+//printf(TRACE "clone object keys=%d\n",keys->Length());
 			
 			for (int n=0,N=keys->Length(); n<N; n++) {
 				str key = V8TOSTR(keys->Get(n), buf);
 				
 				PyDict_SetItemString(tar, key, clone(V8INDEX(src,key)));
-printf(TRACE "clone key=%s\n", buf);
+//printf(TRACE "clone key=%s\n", buf);
 			}
-printf(TRACE "clone object done\n");
+//printf(TRACE "clone object done\n");
 
 			return tar;
 		}
 				
 		// machine program/step interface
 		int call(const V8STACK& args) { 			// Monitor/Program/Step machine	
-			
+
 			err = setup(args);
 			
 			if (err) 
@@ -373,7 +373,7 @@ printf(TRACE "clone object done\n");
 				path = strstr(port,"\n") ? NULL : port;
 				init = true;
 
-printf(TRACE "compile path=%s port=%s\n",path,port);
+//printf(TRACE "compile path=%s port=%s\n",path,port);
 				
 				if ( strlen(path) ) { 				// load external module
 					pModule = PyImport_Import(PyString_FromString(path));
@@ -393,12 +393,12 @@ printf(TRACE "compile path=%s port=%s\n",path,port);
 
 					// Prime local dictionary with context hash
 					pLocals = PyModule_GetDict(pModule);
-printf(TRACE "locals=%p/\n",pLocals);
+//printf(TRACE "locals=%p/\n",pLocals);
 					
 					//PyDict_Merge(pLocals, clone(ctx), true);
 					PyDict_SetItemString(pLocals, PYCTX, clone( ctx ));	
-					
 					PyDict_SetItemString(pLocals, PYERR, PyInt_FromLong(0));
+					PyDict_SetItemString(pLocals, PYINIT, PyInt_FromLong(1));
 					
 					// Build a tuple to hold external module arguments
 					pArgs = PyTuple_New(3);
@@ -406,7 +406,7 @@ printf(TRACE "locals=%p/\n",pLocals);
 					// Create global dictonary object (reserved)
 					pMain = PyImport_AddModule("__main__");
 					pGlobals = PyModule_GetDict(pMain);	
-printf(TRACE "globals=%p\n",pGlobals);
+//printf(TRACE "globals=%p\n",pGlobals);
 					
 					/*
 					str comp = wrap(  // generate code to compile
@@ -418,7 +418,7 @@ printf(TRACE "globals=%p\n",pGlobals);
 					);
 					*/
 
-printf(TRACE "compile=\n%s infile=%d\n",code,Py_file_input);
+//printf(TRACE "compile=\n%s infile=%d\n",code,Py_file_input);
 					// Uncomment if there is a need to define ctx at compile
 					//PyDict_SetItemString(pLocals, PYPORT, PyString_FromString( port ) );
 					//PyDict_SetItemString(pLocals, PYCTX, clone( ctx ));
@@ -436,14 +436,12 @@ printf(TRACE "compile=\n%s infile=%d\n",code,Py_file_input);
 						err = badCode;
 					}
 
-printf(TRACE "pcode %s\n", (pCode ? "generated" : "missing"));
+//printf(TRACE "err=%d pcode=%s\n", err, (pCode ? "generated" : "missing"));
 
-					return err;
+					//return err;
 					//Py_Finalize(); // dont do this - will cause segment fault
 				}
 			}
-			
-printf(TRACE "pcode %s\n", (pCode ? "present" : "missing"));
 			
 			if (!pCode) 
 				err = badCode;
@@ -474,7 +472,7 @@ printf(TRACE "pcode %s\n", (pCode ? "present" : "missing"));
 			
 			else 
 			if ( strlen(port) ) {		// Stateful step
-printf(TRACE "Stateful step port=%s\n",port);
+printf(TRACE "stateful step port=%s\n",port);
 				PyDict_SetItemString(pLocals, PYPORT, PyString_FromString(port) );
 				PyDict_SetItemString(pLocals, PYTAU, clone(tau) );
 
@@ -486,16 +484,13 @@ printf(TRACE "Stateful step port=%s\n",port);
 			}
 			
 			else {					// Stateless step
-printf(TRACE "Stateless step port=%s\n", port);
+//printf(TRACE "stateless step port=%s\n", port);
 				pLocals = PyModule_GetDict(pModule);
 				pGlobals = PyModule_GetDict(pMain);	
 
 				PyDict_SetItemString(pLocals, PYPORT, PyString_FromString( port ) );
-printf(TRACE "set %s\n",PYCTX);
 				PyDict_SetItemString(pLocals, PYCTX, clone( ctx ));
-printf(TRACE "eval code\n");
 				PyEval_EvalCode(pCode,pGlobals,pLocals);
-printf(TRACE "latch %s\n",PYCTX);
 				
 				set(ctx, clone( LOCAL(PYCTX) )->ToObject() );
 				//set(ctx, clone( pLocals )->ToObject() );
@@ -503,9 +498,7 @@ printf(TRACE "latch %s\n",PYCTX);
 				err = PyInt_AsLong( LOCAL(PYERR) );	
 			}
 					
-printf(TRACE "err=%d\n",err);
-			
-			return err;
+//printf(TRACE "stateless step err=%d\n",err);
 		}
 		
 	private:
