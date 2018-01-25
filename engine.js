@@ -774,53 +774,58 @@ def flush(ctx,rec,recs):
 
 						save: `
 def save(ctx):  #save jpg/json/event results
-	if 'Dump' in ctx:
-		Query = ctx['Dump']
-		if 'Save' in ctx:
-			Data = ctx['Save']
-			if Query.endswith(".jpg"):
-				Data.save(Query, "jpg")
-			elif Query.endswith(".json"):
-				fid = open(Query, "w")
-				fid.write( JSON.dumps( Data ) )
-				fid.close()
-			elif Query:
-				SQL0.execute(Query,Data)
+	print "save ctx", ctx
+	if ctx:
+		if 'Dump' in ctx:
+			Query = ctx['Dump']
+			if 'Save' in ctx:
+				Data = ctx['Save']
+				if Query.endswith(".jpg"):
+					Data.save(Query, "jpg")
+				elif Query.endswith(".json"):
+					fid = open(Query, "w")
+					fid.write( JSON.dumps( Data ) )
+					fid.close()
+				elif Query:
+					SQL0.execute(Query,Data)
 `,
 						
 						load: `
-def load(ctx, cb):  #load jpg/json/event dataset
+def load(ctx, vars, cb, res):  #load jpg/json/event dataset
+	#print "load vars=",vars
+	#print "load res=", res
+
 	if 'Load' in ctx:
 		Query = ctx['Load']
 		if Query.endswith(".jpg"):
-			cb( LWIP.open(Query) )
+			cb( LWIP.open(Query), res )
 		elif Query.endswith(".json"):
-			cb( JSON.loads(Query) )
+			cb( JSON.loads(Query), res )
 		elif Query.startswith("/"):
 			recs = []
 			for (rec) in FETCH(query):
 				if flush(ctx,rec,recs):
 					print "FLUSH", len(recs)
-					cb( recs )
+					cb( recs, res )
 					recs = []
 				recs.append(rec)
 			print "FLUSH", len(recs)
-			cb( recs )
+			cb( recs, res )
 		elif Query:
 			recs = []
 			SQL0.execute(Query)
 			for (rec) in SQL0:
 				if flush(ctx,rec,recs):
 					print "FLUSH", len(recs)
-					cb( recs )
+					cb( recs, res )
 					recs = []
 				recs.append(rec)
 			print "FLUSH", len(recs)
-			cb( recs )
+			cb( recs, res )
 		else:
-			cb( [] )
+			cb( [], res )
 	else:
-		cb( [], "noport" )
+		cb( [], vars, res )
 `  					},
 					Job = ctx.Job || {},
 					flush = logic.flush[Job.flush |= ""] || logic.flush.all,
@@ -862,34 +867,42 @@ def FETCH(query):
 # record buffering logic
 ${flush}
 
-# data loading logic
-${logic.load}
-
 # data saving logic
 ${logic.save}
+
+# data loading logic
+${logic.load}
 
 # engine and port logic
 ${code}
 
-def loadcb(recs,port):
+PORTS = ${ports}
+
+def loadcb(recs,vars,res):
+	print "in loadcb"
+	print "vars=",vars
+	port = vars['PORT']
+	ports = vars['PORTS']
+	ctx = vars['CTX']
+	#tau = vars['TAU']
 	print "loadcb recs=", recs
 	print "port=", port
-	#print "ctx=", CTX
-	DATA = recs
-	PORTS=${ports}
-	print "ports=", PORTS
-	if PORT:
-		if PORT in PORTS:
-			ERR = PORTS[PORT](TAU,CTX.ports[PORT])
+	print "ctx=", ctx
+	print "ports=", ports
+	print "res=", res
+	plugin = vars['${Thread.plugin}']
+	# vars['DATA'] = recs
+	if port:
+		if port in ports:
+			return ports[port](tau,ctx['ports'][port])
 		else:
-			ERR = 103
+			return 103
 	else:
-		save( ${Thread.plugin}(CTX) )
+		print "call plugin", plugin
+		plugin(ctx,res)
+		return 0
 
-DATA = [];
-print locals()
-print CTX
-load(CTX, loadcb)
+load(CTX, locals(), loadcb, save)
 ` }
 				
 				if (gen.db) { script += `
