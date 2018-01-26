@@ -720,7 +720,7 @@ var
 			
 		gen: {  // controls code generation during init
 			debug: false,
-			trace: true,
+			trace: false,
 			dbcon: {
 				user: ENV.DB_USER,
 				name: ENV.DB_NAME,
