@@ -103,6 +103,8 @@ var
 					sql.query("INSERT INTO openv.matlab SET ?", {
 						queue: qname,
 						script: script
+					}, function (err) {
+						Log("matlab queue", err);
 					});
 					sql.release();
 				});
@@ -1134,31 +1136,8 @@ load(CTX, function (req) {
 					func = thread.replace(/\./g,"_"),
 					agent = ENGINE.matlab.path.agent,
 					path = ENGINE.matlab.path.save + func + ".m",
-					script = "",
-					gen = ENGINE.gen;
-
-				if (gen.code) { script += `
-function ws = ${func}( )
-	ws.set = @set;
-	ws.get = @get;
-	ws.step = @step;
-	ws.save = @save;
-	ws.load = @load;
-
-	if false % ${gen.db}
-		ws.db = database('${gen.dbcon.name}','${gen.dbcon.user}','${gen.dbcon.pass}');
-	else
-		ws.db = 0;
-	end
-
-	function set(key,val)
-		ws.(key) = val;
-	end
-
-	function val = get(key)
-		val = ws.(key);
-	end
-
+					logic = {
+						save: `
 	function save(query, data)
 		if length(query)>1
 			if endsWith(query, ".jpg")   % save jpeg file
@@ -1180,8 +1159,9 @@ function ws = ${func}( )
 			webread( '${agent}?save=${func}' );
 
 		end
-	end
+	end `,
 
+						load: `
 	function data = load(ctx)
 		query = ctx.Load;
 
@@ -1211,16 +1191,46 @@ function ws = ${func}( )
 			data = [];
 		end
 
-	end
-
+	end `, 
+						
+						step: `
 	function step(ctx)
-		DATA = load(ctx);
+		%DATA = load(ctx);
 
-		save( ctx.Dump, ${func}(ctx)  );
+		save( ctx.Dump, ${Thread.plugin}(ctx)  );
 
 		% engine logic and ports
 		${code}	
+	end `
+					},						
+					script = "",
+					gen = ENGINE.gen;
+
+				if (gen.code) { script += `
+function ws = ${func}( )
+	ws.set = @set;
+	ws.get = @get;
+	ws.step = @step;
+	ws.save = @save;
+	ws.load = @load;
+
+	if false % ${gen.db}
+		ws.db = database('${gen.dbcon.name}','${gen.dbcon.user}','${gen.dbcon.pass}');
+	else
+		ws.db = 0;
 	end
+
+	function set(key,val)
+		ws.(key) = val;
+	end
+
+	function val = get(key)
+		val = ws.(key);
+	end
+
+	${logic.load}
+	${logic.save}
+	${logic.step}
 
 end`;  };
 
