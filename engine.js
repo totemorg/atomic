@@ -741,7 +741,7 @@ var
 					});
 
 					return "{" + ports.join(",") + "}";
-				}					
+				}
 					
 				var 
 					Thread = thread.split("."),
@@ -749,7 +749,7 @@ var
 						case: Thread.pop(),
 						plugin: Thread.pop(),
 						client: Thread.pop()
-					},								
+					},
 					script = "", 
 					gen = ENGINE.gen,
 					ports = portsDict( ctx.ports || {} ),
@@ -1050,7 +1050,7 @@ SQL1.close()
 								else {
 									var recs = [];
 
-									SQL.getRecord( "BUFFER", Query , [], function (rec) {
+									SQL.each( "BUFFER", Query , [], function (rec) {
 										if ( flush(ctx, rec, recs) ) {
 											Log("FLUSH ", recs.length);
 											cb( recs );
