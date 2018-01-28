@@ -61,13 +61,13 @@ var
 		*/
 		nextcore: 0,
 		
-		matlab: {
-			path: {
+		matlab: {  //< support for matlab engines
+			path: {  //< file and service paths
 				save: "./public/matlab/",
 				agent: "http://totem.west.ile.nga.ic.gov:8080/matlab"
 			},
 				
-			flush: function (sql,qname) {
+			flush: function (sql,qname) {  //<  flush jobs in qname=init|step|... queue
 				var
 					agent = ENGINE.matlab.path.agent,
 					func = qname,
@@ -97,7 +97,7 @@ var
 				
 			},
 			
-			queue: function (qname, script) {
+			queue: function (qname, script) { //< append script job to qname=init|step|... queue
 				
 				ENGINE.thread( function (sql) {
 					sql.query("INSERT INTO openv.matlab SET ?", {
@@ -108,8 +108,7 @@ var
 					});
 					sql.release();
 				});
-			}
-			
+			}		
 		},
 			
 		/**
@@ -118,7 +117,7 @@ var
 		@member ENGINE
 		Configure are start the engine interface, estblish worker core connections
 		*/
-		config: function (opts) {  // configure with options
+		config: function (opts) {  //< configure with options
 	
 			Trace(`CONFIG ENGINES`);
 
@@ -224,9 +223,10 @@ var
 		},
 			
 		context: {},  // engine contexts
+		
 		vm: {},  // js-machines
 			
-		tau: function (job) { // default event token sent to and produced by engines in workflows
+		tau: function (job) { // default source/sink event tokens when engine in stateful workflows
 			return new Object({
 				job: job || "", // Current job thread N.N... 
 				work: 0, 		// Anticipated/delivered data volume (dims, bits, etc)
@@ -239,7 +239,7 @@ var
 			 });
 		},
 
-		program: function (sql, ctx, cb) {  //< callback cb(ctx) with programed engine context or null if error
+		program: function (sql, ctx, cb) {  //< program engine with callback cb(ctx) or cb(null) if error
 			var runctx = ctx.req.query;
 			
 			if ( initEngine = ctx.init )
@@ -260,10 +260,10 @@ var
 				cb( null );
 		},
 			
-		run: function (req, cb) {  // callback cb(ctx, step) with its engine context and stepper, or with nulls if error. 
+		run: function (req, cb) {  //< run engine on its worker with callback cb(context, stepper) or cb(null) if error
 			
 		/*
-		Request must contain:
+		Request contains:
 		
 				req = { group, table, client, query, body, action, state }
 
@@ -297,7 +297,6 @@ var
 		This method will callback cb(core) with the requested engine core; null if the core could not
 		 be located or allocated.
 		*/
-			
 			var
 				sql = req.sql,
 				query = req.query,
@@ -493,12 +492,9 @@ var
 				}
 			});
 		},
-		
-		returns: function (context) {  //< legacy
-		/**
-		 * @method returns
-		 * Return tau parameters in matrix format
-		 * */
+
+		/*
+		returns: function (context) {  //< legacy  Return tau parameters in matrix format
 			var tau = context.tau || [];
 
 			return tau;
@@ -527,7 +523,7 @@ var
 			else
 				return [{tau: JSON.stringify(tau)}];
 
-		},
+		}, */
 			
 		/**
 		 @method insert(step)
@@ -538,7 +534,7 @@ var
 		 Provides engine CRUD interface: step/insert/POST, compile/update/PUT, run/select/GET, and 
 		 free/delete/DELETE.
 		*/
-		insert: function (req,res) {	// step a stateful engine
+		insert: function (req,res) {	//< step a stateful engine
 			ENGINE.run(req, function (ctx,step) {
 //Log(">step ",ctx);
 				if ( ctx ) 
@@ -549,7 +545,7 @@ var
 			});
 		},
 			
-		delete: function (req,res) {	// free a stateful engine
+		delete: function (req,res) {	//< free a stateful engine
 			ENGINE.run(req, function (ctx,step) {
 //Log(">kill ",ctx);
 
@@ -557,11 +553,11 @@ var
 			});
 		},
 			
-		select: function (req,res) {	// run a stateless engine 
-			ENGINE.run( req, function (ctx, step) {
+		select: function (req,res) {	//< run a stateless engine callback res(context) or res(error)
+			ENGINE.run( req, function (ctx, step) {  // get engine stepper and its context
 //Log(">run", ctx);
 				
-				if (ctx) 
+				if (ctx)   // step engine
 					step( res );
 				
 				else
@@ -569,7 +565,7 @@ var
 			});
 		},
 			
-		update: function (req,res) {	// compile a stateful engine
+		update: function (req,res) {	//< compile a stateful engine
 			ENGINE.run( req, function (ctx,step) {
 //console.log(">init",ctx);
 
@@ -690,47 +686,38 @@ var
 					Enabled: true
 			}], function (eng) {
 				
-				/*
-				if (err) 
-					cb( null );
-				
-				else
-				if ( isEmpty = engs.each() )
-					cb( null );
-				
-				else
-					*/
 				if (eng)
-					try {  // return full engine context
-						//var eng = engs[0];
+					try {  // define and return engine context
 						cb( Copy({
-							req: {  // http request 
+							req: {  // http request to get and prime engine context
 								group: req.group,
 								table: req.table,
 								client: req.client,
-								query: JSON.parse(eng.State || "null") || {},
+								query: Copy( // passed querey keys override engine state context
+									req.query, 
+									JSON.parse(eng.State || "null") || {} ),
 								body: req.body,
 								action: req.action
 							},
-							type: eng.Type, 
-							code: eng.Code,
-							init: ENGINE.init[ eng.Type ],
-							step: ENGINE.step[ eng.Type ]
+							type: eng.Type,   // engine type: js, py, etc
+							code: eng.Code, // engine code
+							init: ENGINE.init[ eng.Type ],  // method to initialize/program the engine
+							step: ENGINE.step[ eng.Type ]  // method to advance the engine
 						}, ctx) );
 					}
 
-					catch (err) {
+					catch (err) {  // failed
 						cb( null );
 					}
 				
 				else
-					res( null );
+					cb( null );
 			});
 		},
 			
-		gen: {  // controls code generation during init
+		gen: {  //< controls code generation when engine initialized/programed
 			debug: false,
-			trace: true,
+			trace: false,
 			dbcon: {
 				user: ENV.DB_USER,
 				name: ENV.DB_NAME,
@@ -741,7 +728,7 @@ var
 			code: true
 		},
 				
-		init: {  // program engines on given thread with flush-load-save-script logic
+		init: {  //< initalize/program engine on given thread=case.plugin.client with callback cb(ctx) or ctx(null)
 			py: function pyInit(thread,code,ctx,cb)  {
 				function portsDict(portsHash) {
 					var ports = Object.keys( portsHash );
@@ -763,7 +750,7 @@ var
 					script = "", 
 					gen = ENGINE.gen,
 					ports = portsDict( ctx.ports || {} ),
-					logic = {
+					logic = {  // flush-load-save-code logic
 						flush: {
 							all: `
 def flush(ctx,rec,recs):
@@ -1007,7 +994,7 @@ if ( CTX )
 	else  // stateless processing
 		ERR = ${Thread.plugin}(CTX, function (ctx) {
 			if (ctx) 
-				PUT(ctx, RES);
+				PUT("", ctx, RES);
 			else
 				RES( null );
 		});
@@ -1171,7 +1158,7 @@ ws_${func}.save( "", "Queued" );` );
 			}
 		},
 			
-		step: {  // step engines on given thread 
+		step: {  //< step engines on given thread with callback cb(ctx) or cb(null) if error
 			py: function pyStep(thread,port,ctx,cb) {
 				
 				if ( err = ENGINE.python(thread,port,ctx) ) {
