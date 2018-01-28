@@ -682,12 +682,15 @@ var
 				group = req.group,
 				name = req.table;
 			
-			sql.query(
-				"SELECT * FROM ??.engines WHERE least(?) LIMIT 0,1", [ group, {
+			//Log("eng get",name);
+			sql.first(
+				"ENG",
+				"SELECT * FROM ??.engines WHERE least(?) LIMIT 1", [ group, {
 					Name: name,
 					Enabled: true
-			}], function (err, engs) {
+			}], function (eng) {
 				
+				/*
 				if (err) 
 					cb( null );
 				
@@ -696,8 +699,10 @@ var
 					cb( null );
 				
 				else
+					*/
+				if (eng)
 					try {  // return full engine context
-						var eng = engs[0];
+						//var eng = engs[0];
 						cb( Copy({
 							req: {  // http request 
 								group: req.group,
@@ -717,12 +722,15 @@ var
 					catch (err) {
 						cb( null );
 					}
+				
+				else
+					res( null );
 			});
 		},
 			
 		gen: {  // controls code generation during init
 			debug: false,
-			trace: false,
+			trace: true,
 			dbcon: {
 				user: ENV.DB_USER,
 				name: ENV.DB_NAME,
@@ -831,15 +839,26 @@ def load(ctx, os, cb):  #load jpg/json/event dataset
 			cb( 0, os )
 	else:
 		cb( 0, os )
-`  					},
+`  ,
+				
+				step: `
+	os = locals()
+	print "os", os  # why is this dump required to make sql connector visibile to plugin ?
+	load(CTX, os, loadcb)
+`					
+					},
 					Job = ctx.Job || {},
 					flush = logic.flush[Job.flush |= ""] || logic.flush.all,
 					script = "";
 				
 				Job.buffer |= 0;
 				
-				if (gen.libs) { script += `
+				script += `
 if INIT:
+	INIT = 0
+`;
+				
+				if (gen.libs) { script += `
 	#import modules
 	#import caffe as CAFFE		#caffe interface
 	import mysql.connector as SQLC		#db connector interface
@@ -849,13 +868,12 @@ if INIT:
 ` }
 				
 				if (gen.db) { script += `
-if INIT:
 	#connect to db
 	SQL = SQLC.connect(user='${gen.dbcon.user}', password='${gen.dbcon.pass}', database='${gen.dbcon.name}')
 ` }
 				
 				if (gen.debug) { script += `
-#trace engine context
+	#trace engine context
 	print 'py>locals', locals()
 	print 'py>sys', SYS.path, SYS.version
 	#print 'py>caffe',CAFFE
@@ -879,16 +897,16 @@ ${code}
 
 PORTS = ${ports}
 
-def loadcb(req, os):
+def loadcb(data, os):
 	#print "loadcb", os['SQL']
 	port = os['PORT']
 	ports = os['PORTS']
 	ctx = os['CTX']
 	plugin = os['${Thread.plugin}']
-	os['REQ'] = req
+	os['Data'] = data
 	if port:
 		if port in ports:
-			return ports[port](req,ctx['ports'][port])
+			return ports[port]( ctx['tau'], ctx['ports'][port] )
 		else:
 			return 103
 	else:
@@ -896,12 +914,8 @@ def loadcb(req, os):
 		save(ctx)
 		return 0
 
-if INIT:
-	INIT = 0;
-else:
-	os = locals()
-	print "os", os  # why is this dump required to make sql connector visibile to plugin ?
-	load(CTX, os, loadcb)
+if not INIT:
+	${logic.step}
 ` }
 				
 				if (false) { script += `
@@ -971,151 +985,32 @@ SQL1.close()
 					},				
 					gen = ENGINE.gen,
 					script = "",
-					logic = {
-						flush: {
-							all: function flush(ctx,rec,recs) { 
-								return false;
-							},
-							
-							none: function flush(ctx,rec,recs) { 
-								return true;
-							},
-
-							byTime: function flush(ctx,rec,recs) { 
-								return recs.length ? (rec.t - recs[0].t) > ctx.Job.buffer : false;
-							},
-							
-							byDepth: function flush(ctx,rec,recs) {
-								return recs.length < ctx.Job.buffer;
-							}
-						},
-						
-						save: function save(ctx, cb) {
-							var Data = ctx.Save;
-
-							if ( Query = ctx.Dump ) {  // the RES was already issued so save results to db w/o RES
-								if ( Query.endsWith(".json") )
-									FS.writeFile( Query, JSON.stringify(Data) );
-
-								else
-								if ( Query.endsWith(".jpg") )
-									LWIP.write( Query, Data );
-
-								else
-									SQL.query( Query, Data, function (err, info) {
-									});
-							}
-							else
-								cb(ctx);
-						},
-						
-						load: function load(ctx, cb) {  // prime global dataset request
-
-							if ( Query = ctx.Load )
-								if ( Query.endsWith(".json") )
-									FS.readFile( Query, function (err, buf) {
-										try {
-											cb( JSON.parse( buf ) );
-										}
-										catch (err) {
-											cb( null );
-										}
-									});
-
-								else
-								if ( Query.endsWith(".jpg") ) 
-									LWIP.open( Query , function (err, data) {
-										cb( err ? null : data );
-									});
-
-								else
-								if ( Query.startsWith("/") )
-									FETCH( Query, function (recs) {
-										if ( recs) {
-											recs.each( function (n,rec) {
-												if ( flush(ctx, rec, recs) ) {
-													Log("FLUSH ", recs.length);
-													cb( recs );
-													recs.length = 0;
-												}
-
-												recs.push(rec);
-											});
-
-											if ( recs.length ) {
-												Log("FLUSH ", recs.length);
-												cb( recs );	
-											}
-										}
-									});
-
-								else {
-									var recs = [];
-
-									SQL.each( "BUFFER", Query , [], function (rec) {
-										if ( flush(ctx, rec, recs) ) {
-											Log("FLUSH ", recs.length);
-											cb( recs );
-											recs.length = 0;
-										}
-
-										recs.push(rec);
-									})
-									.on("end", function () {
-										if ( recs.length ) {
-											Log("FLUSH ", recs.length);
-											cb( recs );
-										}
-									});
-								}
-
-							else 
-								cb( null );
-						}						
-					},
 					plugins = ENGINE.plugins,
 					vm = ENGINE.vm[thread] = {
 						ctx: VM.createContext( gen.libs ? plugins : {} ),
 						code: ""
-					},
-					Job = ctx.Job || {},
-					flush = logic.flush[Job.flush |= ""] || logic.flush.all,
-					script = "";
+					};
 
-				Job.buffer |= 0;
-				
 				if (gen.debug) { script += `
 // trace engine context
 LOG("js>ctx", CTX);
 ` }
 
 				if (gen.code) { script += `
-// record buffering logic
-${flush+""}
-
-// data loading logic
-${logic.load+""}
-
-// data saving logic
-${logic.save+""}
-
-// engine and port logic
+// engine logic
 ${code}
 
-load(CTX, function (req) {
-	REQ = req; 
-
+if ( CTX )
 	if ( port = PORTS[PORT] )   // stateful port processing
-		ERR = port(REQ, CTX.ports[PORT]);
+		ERR = port(CTX.tau, CTX.ports[PORT]);
 
 	else  // stateless processing
 		ERR = ${Thread.plugin}(CTX, function (ctx) {
 			if (ctx) 
-				save(ctx, RES);
+				PUT(ctx, RES);
 			else
-				RES(null);
+				RES( null );
 		});
-}); 
 ` }
 
 				if (gen.trace) Log(script);
@@ -1138,23 +1033,25 @@ load(CTX, function (req) {
 					path = ENGINE.matlab.path.save + func + ".m",
 					logic = {
 						save: `
-	function save(query, data)
+	function save(ctx)
+		query = ctx.Dump;
+
 		if length(query)>1
 			if endsWith(query, ".jpg")   % save jpeg file
-				imwrite(data, query);
+				imwrite(ctx.Save, query);
 
 			elseif endsWith(query, ".json")  % use file system as json db
 				fid = fopen(query, 'wt');
-				fprintf(fid, '%s', jsonencode(data) );
+				fprintf(fid, '%s', jsonencode(ctx.Save) );
 				fclose(fid);
 
 			elseif ws.db		% db provided
-				update( ws.db, '${Thread.plugin}', {'Save'}, jsonencode(data), 'where ID=${Thread.ID}' );
+				update( ws.db, '${Thread.plugin}', {'Save'}, jsonencode(ctx.Save), 'where ID=${Thread.ID}' );
 			end
 
 		else
 			fid = fopen('${func}.out', 'wt');
-			fprintf(fid, '%s', jsonencode(data) );
+			fprintf(fid, '%s', jsonencode(ctx.Save) );
 			fclose(fid);
 			webread( '${agent}?save=${func}' );
 
@@ -1162,42 +1059,37 @@ load(CTX, function (req) {
 	end `,
 
 						load: `
-	function data = load(ctx)
+	function load(ctx, cb)
 		query = ctx.Load;
+		ctx.Data = 0;
 
 		try
 			if length(query)>1
 				if endsWith(query, '.jpg')
-					data = imread(query);
+					ctx.Data = imread(query);
 
 				elseif endsWith(query, '.json')
 					fid = fopen(query, 'rt');
-					data = jsondecode(getl( fid ));
+					ctx.Data = jsondecode(getl( fid ));
 					fclose(fid);
 
 				else
 					if isstruct(ws.db)   % db provided
-						data = select(ws.db, query);
-					else
-						data = [];
+						ctx.Data = select(ws.db, query);
 					end	
 				end
 
-			else
-				data = [];
 			end
 		
 		catch 
-			data = [];
 		end
 
+		cb(ctx,save);
 	end `, 
 						
 						step: `
 	function step(ctx)
-		%DATA = load(ctx);
-
-		save( ctx.Dump, ${Thread.plugin}(ctx)  );
+		load(ctx, @${Thread.plugin});
 
 		% engine logic and ports
 		${code}	
@@ -1311,9 +1203,11 @@ ws_${func}.save( "", "Queued" );` );
 			js: function jsStep(thread,port,ctx,cb) {
 				//Log("step thread",thread, ENGINE.vm[thread] ? "has thread" : " no thread");
 
+				var plugins = ENGINE.plugins;
+				
 				if ( vm = ENGINE.vm[thread] ) 
 					ENGINE.thread( function (sql) {
-						Copy( {RES: cb, FETCH: ENGINE.fetcher, REQ: null, SQL: sql, CTX: ctx, PORT: port, PORTS: vm.ctx}, vm.ctx );
+						Copy( {RES: cb, LIBS: plugins, SQL: sql, CTX: ctx, PORT: port, PORTS: vm.ctx}, vm.ctx );
 						
 						VM.runInContext(vm.code,vm.ctx);
 						
