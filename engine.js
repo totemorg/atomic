@@ -1020,6 +1020,13 @@ if ( CTX )
 					path = ENGINE.matlab.path.save + func + ".m",
 					logic = {
 						save: `
+	function send(res)
+		fid = fopen('${func}.out', 'wt');
+		fprintf(fid, '%s', jsonencode(res) );
+		fclose(fid);
+		webread( '${agent}?save=${func}' );
+	end
+
 	function save(ctx)
 		query = ctx.Dump;
 
@@ -1046,7 +1053,7 @@ if ( CTX )
 	end `,
 
 						load: `
-	function load(ctx, cb)
+	function load(ctx, res)
 		query = ctx.Load;
 		ctx.Data = 0;
 
@@ -1071,12 +1078,12 @@ if ( CTX )
 		catch 
 		end
 
-		cb(ctx,save);
+		send(res);
 	end `, 
 						
 						step: `
 	function step(ctx)
-		load(ctx, @${Thread.plugin});
+		load(ctx, ${Thread.plugin}(ctx));
 
 		% engine logic and ports
 		${code}	
@@ -1092,6 +1099,7 @@ function ws = ${func}( )
 	ws.step = @step;
 	ws.save = @save;
 	ws.load = @load;
+	ws.send = @send;
 
 	if false % ${gen.db}
 		ws.db = database('${gen.dbcon.name}','${gen.dbcon.user}','${gen.dbcon.pass}');
@@ -1118,7 +1126,7 @@ end`;  };
 
 				ENGINE.matlab.queue( "init_queue", `
 ws_${func} = ${func}; 
-ws_${func}.save( "", "Queued" );` );
+ws_${func}.send( "Queued" );` );
 				
 				cb(null,ctx);
 			},
