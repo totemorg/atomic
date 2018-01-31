@@ -1054,7 +1054,7 @@ if ( CTX )
 
 						load: `
 	function load(ctx, res)
-		query = ctx.Load;
+		query = ctx._Load;
 		ctx.Data = 0;
 
 		try
@@ -1241,10 +1241,10 @@ ws_${func}.send( "Queued" );` );
 				var 
 					func = thread.replace(/\./g,"_");
 				
-				ctx.Load = ctx.Load || "";
-				ctx.Dump = ctx.Dump || "";
+				ctx._Load = ctx._Load || "";
+				ctx._Dump = ctx._Dump || "";
 				
-				if ( !ctx.Load ) cb(0);   // detach thread and set default responce
+				if ( !ctx._Load ) cb(0);   // detach thread and set default responce
 				
 				ENGINE.matlab.queue( "step_queue", `ws_${func}.step( ${arglist(ctx)} );` );
 				
