@@ -1,17 +1,17 @@
 /**
-@class ENGINE 	
+@class ATOMIC 	
 	[SourceForge](https://sourceforge.net) 
 	[github](https://github.com/acmesds/engine.git) 
 	[geointapps](https://git.geointapps.org/acmesds/engine)
 	[gitlab](https://gitlab.weat.nga.ic.gov/acmesds/engine.git)
 
-# ENGINE
+# ATOMIC
 
-ENGINE implements hyperthreaded workflows to both [stateless and stateful engines](/api.view) of TYPE
+ATOMIC implements hyperthreaded workflows to both [stateless and stateful engines](/api.view) of TYPE
 
-	py | js | sh | opencv | mat | csh | r | octave
+	py | js | sh | cv | ma | sh | r | octave
 
-at ENGINE[TYPE].  Engines are controlled via the following methods (restful http endpoints):
+at ATOMIC[TYPE].  Engines are controlled via the following methods (restful http endpoints):
 
 	POST advance/setp/insert a stateful engine
 	PUT	compile/init/update a stateful engine
@@ -62,7 +62,7 @@ the config parameters:
 Clone from one of the repos.  
 	
 ## Use
-ENGINE is configured and started like this:
+ATOMIC is configured and started like this:
 
 	var TOTEM = require("../dsvar").config({
 			key: value, 						// set key
@@ -83,12 +83,12 @@ The examples below are provided in TOTEM's test.js unit tester.
 
 ### E1 - Totem and Engine interfaces
 
-	var ENGINE = require("../engine");
+	var ATOMIC = require("../engine");
 	var TOTEM = require("../totem");
 
 	Trace( "A Totem+Engine client has been created", {
-		a_tau_template: ENGINE.tau("somejob.pdf"),
-		engine_errors: ENGINE.error,
+		a_tau_template: ATOMIC.tau("somejob.pdf"),
+		engine_errors: ATOMIC.error,
 		get_endpts: TOTEM.reader,
 		my_paths: TOTEM.paths
 	});
@@ -102,7 +102,7 @@ The examples below are provided in TOTEM's test.js unit tester.
 		TOTEM.stop();
 	});
 
-	var ENGINE = require("../engine").config({
+	var ATOMIC = require("../engine").config({
 		thread: TOTEM.thread
 	});
 
@@ -123,7 +123,7 @@ The examples below are provided in TOTEM's test.js unit tester.
 
 	});
 
-	var ENGINE = require("../engine").config({
+	var ATOMIC = require("../engine").config({
 		thread: TOTEM.thread
 	});
 
@@ -133,8 +133,8 @@ The examples below are provided in TOTEM's test.js unit tester.
 			"byType.": {
 				test: function Chipper(req,res) {
 					
-					var itau = [ENGINE.tau()];
-					var otau = [ENGINE.tau()];
+					var itau = [ATOMIC.tau()];
+					var otau = [ATOMIC.tau()];
 
 					switch (req.query.config) {
 						case "cv": // program and step haar opencv machine 
@@ -150,13 +150,13 @@ The examples below are provided in TOTEM's test.js unit tester.
 							console.log(parm);
 
 							for (var n=0,N=1;n<N;n++)  // program N>1 to test reprogram
-								console.log(`INIT[${n}] = `, ENGINE.opencv("opencv.Me.Thread1","setup",parm));
+								console.log(`INIT[${n}] = `, ATOMIC.opencv("opencv.Me.Thread1","setup",parm));
 
 							for (var n=0,N=5;n<N;n++) // step N>1 to test multistep
-								console.log(`STEP[${n}] = `, ENGINE.opencv("opencv.Me.Thread1","frame",itau));
+								console.log(`STEP[${n}] = `, ATOMIC.opencv("opencv.Me.Thread1","frame",itau));
 
 							// returns badStep if the cascades were undefined at the program step
-							console.log("STEP = ", ENGINE.opencv("opencv.Me.Thread1","helipads",otau));
+							console.log("STEP = ", ATOMIC.opencv("opencv.Me.Thread1","helipads",otau));
 							console.log(otau);
 							break;
 
@@ -176,7 +176,7 @@ The examples below are provided in TOTEM's test.js unit tester.
 							// By default python attempts to connect to mysql.  
 							// So, if mysql service not running or mysql.connector module not found, this will not run.
 							console.log({py:pgm, ctx: parm});
-							console.log("INIT = ", ENGINE.python("py1.thread",pgm,parm));
+							console.log("INIT = ", ATOMIC.python("py1.thread",pgm,parm));
 							console.log(parm.tau);
 							break;
 
@@ -203,14 +203,14 @@ The examples below are provided in TOTEM's test.js unit tester.
 									return -103
 								`;		
 							console.log({py:pgm, ctx: parm});
-							console.log("INIT = ", ENGINE.python("py2.Me.Thread1",pgm,parm));
+							console.log("INIT = ", ATOMIC.python("py2.Me.Thread1",pgm,parm));
 							// reprogramming ignored
-							//console.log("INIT = ", ENGINE.python("py2.Me.Thread1",pgm,parm));
+							//console.log("INIT = ", ATOMIC.python("py2.Me.Thread1",pgm,parm));
 
 							for (var n=0,N=1; n<N; n++)
-								console.log(`STEP[${n}] = `, ENGINE.python("py2.Me.Thread1","frame",itau));
+								console.log(`STEP[${n}] = `, ATOMIC.python("py2.Me.Thread1","frame",itau));
 
-							console.log("STEP = ", ENGINE.python("py2.Me.Thread1","helipads",otau));
+							console.log("STEP = ", ATOMIC.python("py2.Me.Thread1","helipads",otau));
 							break;
 
 						case "py3": // program and step python machine string with reinit along the way
@@ -237,11 +237,11 @@ The examples below are provided in TOTEM's test.js unit tester.
 								`;
 
 							console.log({py:pgm, ctx: parm});
-							console.log("INIT = ", ENGINE.python("py3",pgm,parm));
-							console.log("STEP = ", ENGINE.python("py3","frame",itau));
+							console.log("INIT = ", ATOMIC.python("py3",pgm,parm));
+							console.log("STEP = ", ATOMIC.python("py3","frame",itau));
 							// reprogramming ignored
-							//console.log("REINIT = ", ENGINE.python("py3",pgm,parm));
-							//console.log("STEP = ", ENGINE.python("py3","frame",itau));
+							//console.log("REINIT = ", ATOMIC.python("py3",pgm,parm));
+							//console.log("STEP = ", ATOMIC.python("py3","frame",itau));
 							console.log(otau);
 							break;
 
@@ -269,12 +269,12 @@ The examples below are provided in TOTEM's test.js unit tester.
 								`;
 
 							console.log({py:pgm, ctx: parm});
-							console.log("INIT = ", ENGINE.js("mytest",pgm,parm));
+							console.log("INIT = ", ATOMIC.js("mytest",pgm,parm));
 							// frame should return a 0 = null noerror
-							console.log("STEP = ", ENGINE.js("mytest","frame",itau));
+							console.log("STEP = ", ATOMIC.js("mytest","frame",itau));
 							console.log(itau);
 							// helipads should return a 101 = badload error
-							console.log("STEP = ", ENGINE.js("mytest","helipads",otau));
+							console.log("STEP = ", ATOMIC.js("mytest","helipads",otau));
 							console.log(otau);
 							break;	
 					}
@@ -293,7 +293,7 @@ The examples below are provided in TOTEM's test.js unit tester.
 			Trace( "Unit test my engines with /test?config=cv | py1 | py2 | py3 | js" );
 		});
 
-		var ENGINE = require("../engine").config({
+		var ATOMIC = require("../engine").config({
 			thread: TOTEM.thread
 		});
 	
