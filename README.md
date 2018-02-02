@@ -1,13 +1,14 @@
 /**
 @class ATOMIC 	
 	[SourceForge](https://sourceforge.net) 
-	[github](https://github.com/acmesds/engine.git) 
-	[geointapps](https://git.geointapps.org/acmesds/engine)
-	[gitlab](https://gitlab.weat.nga.ic.gov/acmesds/engine.git)
+	[github](https://github.com/acmesds/atomic.git) 
+	[geointapps](https://git.geointapps.org/acmesds/atomic)
+	[gitlab](https://gitlab.west.nga.ic.gov/acmesds/atomic.git)
 
 # ATOMIC
 
-ATOMIC implements hyperthreaded workflows to both [stateless and stateful engines](/api.view) of TYPE
+ATOMIC implements hyperthreaded, cloud-based workflows to 
+[stateless and stateful engines](/api.view) of TYPE
 
 	py | js | sh | cv | ma | sh | r | octave
 
@@ -64,7 +65,7 @@ Clone from one of the repos.
 ## Use
 ATOMIC is configured and started like this:
 
-	var TOTEM = require("../dsvar").config({
+	var ATOMIC = require("atomic").config({
 			key: value, 						// set key
 			"key.key": value, 					// indexed set
 			"key.key.": value,					// indexed append
@@ -76,14 +77,14 @@ ATOMIC is configured and started like this:
 		console.log( err ? "something evil happended" : "Im running");
 	});
 
-where its configuration keys follow the [ENUM copy()](https://github.com/acmesds/enum) conventions and
-are described in its [PRM](/shares/prm/engine/index.html).
+where its configuration keys follow the [ENUM copy()](https://github.com/acmesds/enum) conventions 
+described in its [PRM](/shares/prm/engine/index.html).
 
 The examples below are provided in TOTEM's test.js unit tester.
 
-### E1 - Totem and Engine interfaces
+### E1 - Totem and Atomic Engine interfaces
 
-	var ATOMIC = require("../engine");
+	var ATOMIC = require("../atomic");
 	var TOTEM = require("../totem");
 
 	Trace( "A Totem+Engine client has been created", {
@@ -293,7 +294,7 @@ The examples below are provided in TOTEM's test.js unit tester.
 			Trace( "Unit test my engines with /test?config=cv | py1 | py2 | py3 | js" );
 		});
 
-		var ATOMIC = require("../engine").config({
+		var ATOMIC = require("../atomic").config({
 			thread: TOTEM.thread
 		});
 	
