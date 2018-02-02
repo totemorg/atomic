@@ -1,12 +1,11 @@
 // UNCLASSIFIED
 
 /**
- * @class ENGINE
+ * @class ATOM
  * @requires child_process
  * @requires fs
  * @requires engineIF
  * @requires enum
- * @requires jslab
  * @requires vm
  */
 
@@ -25,13 +24,13 @@ var 														// Totem modules
 	ENV = process.env;
 	
 var
-	ENGINE = module.exports = Copy( //< extend the engineIF built by node-gyp
+	ATOM = module.exports = Copy( //< extend the engineIF built by node-gyp
 		require("./ifs/build/Release/engineIF"), {
 		
 		/**
 		@cfg {Object}
 		@private
-		@member ENGINE
+		@member ATOM
 		Paths to various things.
 		*/
 		paths: {
@@ -41,7 +40,7 @@ var
 		/**
 		@cfg {Function}
 		@private
-		@member ENGINE
+		@member ATOM
 		@method thread
 		Start a sql thread
 		*/
@@ -49,7 +48,7 @@ var
 		
 		/**
 		@cfg {Number}
-		@member ENGINE
+		@member ATOM
 		Number of worker cores (aka threads) to provide in the cluster.  0 cores provides only the master.
 		*/
 		cores: 0,  //< number if cores: 0 master on port 8080; >0 master on 8081, workers on 8080
@@ -69,9 +68,9 @@ var
 				
 			flush: function (sql,qname) {  //<  flush jobs in qname=init|step|... queue
 				var
-					agent = ENGINE.matlab.path.agent,
+					agent = ATOM.matlab.path.agent,
 					func = qname,
-					path = ENGINE.matlab.path.save + func + ".m",
+					path = ATOM.matlab.path.save + func + ".m",
 					script = `disp(webread('${agent}?flush=${qname}'));` ;
 								
 				Trace("FLUSH MATLAB");
@@ -99,7 +98,7 @@ var
 			
 			queue: function (qname, script) { //< append script job to qname=init|step|... queue
 				
-				ENGINE.thread( function (sql) {
+				ATOM.thread( function (sql) {
 					sql.query("INSERT INTO openv.matlab SET ?", {
 						queue: qname,
 						script: script
@@ -114,14 +113,14 @@ var
 		/**
 		@cfg {Object}
 		@method config
-		@member ENGINE
+		@member ATOM
 		Configure are start the engine interface, estblish worker core connections
 		*/
 		config: function (opts) {  //< configure with options
 	
-			Trace(`CONFIG ENGINES`);
+			Trace(`CONFIG ATOMS`);
 
-			if (opts) Copy(opts,ENGINE);
+			if (opts) Copy(opts,ATOM);
 
 			if (CLUSTER.isMaster) {
 				/*var ipcsrv = NET.createServer( function (c) {
@@ -138,7 +137,7 @@ var
 				ipcsrv.listen("/tmp/totem.sock");*/
 				
 				/*
-				var sock = ENGINE.ipcsocket = NET.createConnection("/tmp/totem.sock", function () {
+				var sock = ATOM.ipcsocket = NET.createConnection("/tmp/totem.sock", function () {
 					console.log("connected?");
 				});
 				sock.on("error", function (err) {
@@ -149,11 +148,11 @@ var
 				}); */
 			}
 			
-			if (thread = ENGINE.thread)
+			if (thread = ATOM.thread)
 				thread( function (sql) { // compile engines defined in engines DB
 
-					ENGINE.matlab.flush(sql, "init_queue");
-					ENGINE.matlab.flush(sql, "step_queue");
+					ATOM.matlab.flush(sql, "init_queue");
+					ATOM.matlab.flush(sql, "step_queue");
 
 					// Using https generates a TypeError("Listener must be a function") at runtime.
 
@@ -163,8 +162,8 @@ var
 							if (CLUSTER.isWorker) {
 								console.log("CORE"+CLUSTER.worker.id+" GRABBING "+req.action);
 	//console.log(req);							
-								if ( route = ENGINE[req.action] ) 
-									ENGINE.thread( function (sql) {
+								if ( route = ATOM[req.action] ) 
+									ATOM.thread( function (sql) {
 										req.sql = sql;  
 										//delete req.socket;
 										route( req, function (tau) {
@@ -175,7 +174,7 @@ var
 									});
 
 								else
-									socket.end( ENGINE.errors.badRequest+"" );  
+									socket.end( ATOM.errors.badRequest+"" );  
 							}
 							
 							else {
@@ -185,14 +184,14 @@ var
 					});
 				});
 
-			return ENGINE;
+			return ATOM;
 		},
 
 		flex: null,
 		
 		/**
 		@cfg {Object}
-		@member ENGINE
+		@member ATOM
 		Modules to share accross all js-engines
 		*/
 		plugins: {  // js-engine plugins 
@@ -201,7 +200,7 @@ var
 		/**
 		@cfg {Object}
 		@private
-		@member ENGINE
+		@member ATOM
 		Error messages
 		*/
 		errors: {  // error messages
@@ -243,7 +242,7 @@ var
 			var runctx = ctx.req.query;
 			
 			if ( initEngine = ctx.init )
-				ENGINE.prime(sql, runctx, function (runctx) {  // mixin sql vars into engine query
+				ATOM.prime(sql, runctx, function (runctx) {  // mixin sql vars into engine query
 					//Log("eng prime", ctx.thread, runctx);
 					
 					if (runctx) 
@@ -307,8 +306,8 @@ var
 			
 			function CONTEXT (thread) {  // engine context constructor for specified thread 
 				this.worker = CLUSTER.isMaster
-					? ENGINE.cores  
-							? CLUSTER.workers[ Math.floor(Math.random() * ENGINE.cores) ]   // assign a worker
+					? ATOM.cores  
+							? CLUSTER.workers[ Math.floor(Math.random() * ATOM.cores) ]   // assign a worker
 							: 0  // assign to master
 					: CLUSTER.worker;  // use this worker
 				
@@ -336,11 +335,11 @@ var
 				cb( runctx, function (res) {  // callback engine using this stepper
 
 					if ( stepEngine = ctx.step )
-						ENGINE.prime(sql, runctx, function (runctx) {  // mixin sql vars into engine query
+						ATOM.prime(sql, runctx, function (runctx) {  // mixin sql vars into engine query
 							//Log("prime ctx", runctx);
 							
 							try {  	// step the engine then return an error if it failed or null if it worked
-								return ENGINE.errors[ stepEngine(ctx.thread, port, runctx, res) ] || ENGINE.badError;
+								return ATOM.errors[ stepEngine(ctx.thread, port, runctx, res) ] || ATOM.badError;
 							}
 
 							catch (err) {
@@ -350,7 +349,7 @@ var
 						});
 					
 					else 
-						return ENGINE.errors.badEngine;
+						return ATOM.errors.badEngine;
 
 				});
 			}
@@ -383,11 +382,11 @@ var
 				
 				//Log("eng init",req.query);
 				
-				ENGINE.getEngine(req, ctx, function (ctx) {
+				ATOM.getEngine(req, ctx, function (ctx) {
 					//Log("get eng", ctx);
 					
 					if (ctx) 
-						ENGINE.program(sql, ctx, function (ctx) {	// program/initialize the engine
+						ATOM.program(sql, ctx, function (ctx) {	// program/initialize the engine
 							
 							//Log("pgm eng", ctx);
 							if (ctx) // all went well so execute it
@@ -402,11 +401,11 @@ var
 				});
 			}				
 
-			Log("eng thread", thread, CLUSTER.isMaster ? "on master" : "on worker", ENGINE.context[thread] ? "has ctx":"needs ctx");
+			Log("eng thread", thread, CLUSTER.isMaster ? "on master" : "on worker", ATOM.context[thread] ? "has ctx":"needs ctx");
 			
 			if ( CLUSTER.isMaster )  { // on master so handoff to worker or execute 
-				if ( ctx = ENGINE.context[thread] ) // get context
-					if (ENGINE.cores) // handoff to worker
+				if ( ctx = ATOM.context[thread] ) // get context
+					if (ATOM.cores) // handoff to worker
 						handoff( ctx, cb );
 			
 					else
@@ -417,8 +416,8 @@ var
 						cb( null );
 
 				else { // assign a worker to new context then handoff or initialize
-					var ctx = ENGINE.context[thread] = new CONTEXT(thread);
-					if (ENGINE.cores) 
+					var ctx = ATOM.context[thread] = new CONTEXT(thread);
+					if (ATOM.cores) 
 						handoff( ctx, cb );
 					
 					else
@@ -427,7 +426,7 @@ var
 			}
 			
 			else { // on worker 
-				if ( ctx = ENGINE.context[thread] ) {  // run it if worker has an initialized context
+				if ( ctx = ATOM.context[thread] ) {  // run it if worker has an initialized context
 					Trace( `RUN core-${ctx.worker.id} FOR ${ctx.thread}`, sql );
 					if ( ctx.req )  // was sucessfullyl initialized so can execute it
 						execute( ctx, cb );
@@ -437,7 +436,7 @@ var
 				}
 
 				else { // worker must initialize its context, then run it
-					var ctx = ENGINE.context[thread] = new CONTEXT(thread);
+					var ctx = ATOM.context[thread] = new CONTEXT(thread);
 					Trace( `INIT core-${ctx.worker.id} FOR ${ctx.thread}` );
 					initialize( ctx, cb );
 				}
@@ -448,7 +447,7 @@ var
 		save: function (sql,taus,port,engine,saves) {
 		/**
 		 * @method save
-		 * @member ENGINE
+		 * @member ATOM
 		 * 
 		 * Save tau job files.
 		*/
@@ -535,41 +534,41 @@ var
 		 free/delete/DELETE.
 		*/
 		insert: function (req,res) {	//< step a stateful engine
-			ENGINE.run(req, function (ctx,step) {
+			ATOM.run(req, function (ctx,step) {
 //Log(">step ",ctx);
 				if ( ctx ) 
 					step( res );
 				
 				else
-					res( ENGINE.errors.badThread );
+					res( ATOM.errors.badThread );
 			});
 		},
 			
 		delete: function (req,res) {	//< free a stateful engine
-			ENGINE.run(req, function (ctx,step) {
+			ATOM.run(req, function (ctx,step) {
 //Log(">kill ",ctx);
 
-				res( ctx ? "" : ENGINE.errors.badThread );				
+				res( ctx ? "" : ATOM.errors.badThread );				
 			});
 		},
 			
 		select: function (req,res) {	//< run a stateless engine callback res(context) or res(error)
-			ENGINE.run( req, function (ctx, step) {  // get engine stepper and its context
+			ATOM.run( req, function (ctx, step) {  // get engine stepper and its context
 //Log(">run", ctx);
 				
 				if (ctx)   // step engine
 					step( res );
 				
 				else
-					res( ENGINE.errors.badEngine );
+					res( ATOM.errors.badEngine );
 			});
 		},
 			
 		update: function (req,res) {	//< compile a stateful engine
-			ENGINE.run( req, function (ctx,step) {
+			ATOM.run( req, function (ctx,step) {
 //console.log(">init",ctx);
 
-				res( ctx ? "" : ENGINE.errors.badThread );
+				res( ctx ? "" : ATOM.errors.badThread );
 			});
 		},
 			
@@ -632,7 +631,7 @@ var
 							else { 								// exporting matrix
 							}					
 
-						ENGINE.prime(sql,ctx,cb);
+						ATOM.prime(sql,ctx,cb);
 					});
 				}
 				
@@ -644,7 +643,7 @@ var
 						var sqls = ctx.sqls = ctx.exit;
 						var keys = ctx.keys = []; for (var n in sqls) keys.push(n);
 
-						ENGINE.prime(sql,ctx);
+						ATOM.prime(sql,ctx);
 					}
 				}
 			}
@@ -664,7 +663,7 @@ var
 					for (var key in sqls) keys.push(key);
 				}
 
-				ENGINE.prime(sql, ctx, cb);
+				ATOM.prime(sql, ctx, cb);
 			}
 			
 			else
@@ -701,8 +700,8 @@ var
 							},
 							type: eng.Type,   // engine type: js, py, etc
 							code: eng.Code, // engine code
-							init: ENGINE.init[ eng.Type ],  // method to initialize/program the engine
-							step: ENGINE.step[ eng.Type ]  // method to advance the engine
+							init: ATOM.init[ eng.Type ],  // method to initialize/program the engine
+							step: ATOM.step[ eng.Type ]  // method to advance the engine
 						}, ctx) );
 					}
 
@@ -748,7 +747,7 @@ var
 						client: Thread.pop()
 					},
 					script = "", 
-					gen = ENGINE.gen,
+					gen = ATOM.gen,
 					ports = portsDict( ctx.ports || {} ),
 					logic = {  // flush-load-save-code logic
 						flush: {
@@ -930,7 +929,7 @@ SQL1.close()
  			
 				if (gen.trace) Log(script);
 
-				cb( ENGINE.python(thread,script,ctx), ctx );
+				cb( ATOM.python(thread,script,ctx), ctx );
 			},
 			
 			cv: function cvInit(thread,code,ctx,cb)  {
@@ -941,7 +940,7 @@ SQL1.close()
 						plugin: Thread.pop(),
 						client: Thread.pop()
 					},				
-					gen = ENGINE.gen,
+					gen = ATOM.gen,
 					script = "",
 					logic = {
 						flush: "",						
@@ -952,14 +951,14 @@ SQL1.close()
 					};
 
 				if ( ctx.frame && ctx.detector )
-					if ( err = ENGINE.opencv(thread,code,ctx) )
+					if ( err = ATOM.opencv(thread,code,ctx) )
 						cb( null, ctx );
 				
 					else
 						cb( null, ctx );
 				
 				else
-					cb( ENGINE.errors.badContext, ctx );
+					cb( ATOM.errors.badContext, ctx );
 			},
 			
 			js: function jsInit(thread,code,ctx,cb)  {
@@ -970,10 +969,10 @@ SQL1.close()
 						plugin: Thread.pop(),
 						client: Thread.pop()
 					},				
-					gen = ENGINE.gen,
+					gen = ATOM.gen,
 					script = "",
-					plugins = ENGINE.plugins,
-					vm = ENGINE.vm[thread] = {
+					plugins = ATOM.plugins,
+					vm = ATOM.vm[thread] = {
 						ctx: VM.createContext( gen.libs ? plugins : {} ),
 						code: ""
 					};
@@ -1016,8 +1015,8 @@ if ( CTX )
 						client: Thread.pop()
 					},
 					func = thread.replace(/\./g,"_"),
-					agent = ENGINE.matlab.path.agent,
-					path = ENGINE.matlab.path.save + func + ".m",
+					agent = ATOM.matlab.path.agent,
+					path = ATOM.matlab.path.save + func + ".m",
 					logic = {
 						save: `
 	function send(res)
@@ -1090,7 +1089,7 @@ if ( CTX )
 	end `
 					},						
 					script = "",
-					gen = ENGINE.gen;
+					gen = ATOM.gen;
 
 				if (gen.code) { script += `
 function ws = ${func}( )
@@ -1124,7 +1123,7 @@ end`;  };
 				if (gen.trace) Log(script);
 				FS.writeFile( path, script, "utf8" );
 
-				ENGINE.matlab.queue( "init_queue", `
+				ATOM.matlab.queue( "init_queue", `
 ws_${func} = ${func}; 
 ws_${func}.send( "Queued" );` );
 				
@@ -1134,19 +1133,19 @@ ws_${func}.send( "Queued" );` );
 			/*
 			em: function emInit(thread,code,ctx,cb) {
 
-				Copy(ENGINE.plugins, ctx);
+				Copy(ATOM.plugins, ctx);
 				
 				if (ctx.require) 
-					ENGINE.plugins.MATH.import( ctx.require );
+					ATOM.plugins.MATH.import( ctx.require );
 
-				ENGINE.plugins.MATH.eval(code,ctx);
+				ATOM.plugins.MATH.eval(code,ctx);
 
 				cb( null, ctx );
 			},
 			*/
 			
 			sq:  function sqInit(thread,code,ctx,cb) {
-				ENGINE.thread( function (sql) {
+				ATOM.thread( function (sql) {
 					ctx.SQL[ctx.action](sql, [], function (recs) {
 						//ctx.Save = [1,2,3];  // cant work as no cb exists
 					});
@@ -1169,9 +1168,9 @@ ws_${func}.send( "Queued" );` );
 		step: {  //< step engines on given thread with callback cb(ctx) or cb(null) if error
 			py: function pyStep(thread,port,ctx,cb) {
 				
-				if ( err = ENGINE.python(thread,port,ctx) ) {
+				if ( err = ATOM.python(thread,port,ctx) ) {
 					cb( null );
-					return ENGINE.errors[err] || ENGINE.errors.badError;
+					return ATOM.errors[err] || ATOM.errors.badError;
 				}
 				else {
 					cb( ctx );
@@ -1181,9 +1180,9 @@ ws_${func}.send( "Queued" );` );
 			
 			cv: function cvStep(thread,port,ctx,cb) {
 				if ( ctx.frame && ctx.detector )
-					if ( err = ENGINE.opencv(thread,code,ctx) ) {
+					if ( err = ATOM.opencv(thread,code,ctx) ) {
 						cb(null);
-						return ENGINE.errors[err] || ENGINE.errors.badError;
+						return ATOM.errors[err] || ATOM.errors.badError;
 					}
 					
 					else  {
@@ -1192,16 +1191,16 @@ ws_${func}.send( "Queued" );` );
 					}
 				
 				else
-					return ENGINE.errors.badContext;
+					return ATOM.errors.badContext;
 			},
 			
 			js: function jsStep(thread,port,ctx,cb) {
-				//Log("step thread",thread, ENGINE.vm[thread] ? "has thread" : " no thread");
+				//Log("step thread",thread, ATOM.vm[thread] ? "has thread" : " no thread");
 
-				var plugins = ENGINE.plugins;
+				var plugins = ATOM.plugins;
 				
-				if ( vm = ENGINE.vm[thread] ) 
-					ENGINE.thread( function (sql) {
+				if ( vm = ATOM.vm[thread] ) 
+					ATOM.thread( function (sql) {
 						Copy( {RES: cb, LIBS: plugins, SQL: sql, CTX: ctx, PORT: port, PORTS: vm.ctx}, vm.ctx );
 						
 						VM.runInContext(vm.code,vm.ctx);
@@ -1210,7 +1209,7 @@ ws_${func}.send( "Queued" );` );
 					});
 				
 				else 
-					return ENGINE.errors.lostContext;
+					return ATOM.errors.lostContext;
 			},
 			
 			ma: function maStep(thread,port,ctx,cb) {
@@ -1246,23 +1245,23 @@ ws_${func}.send( "Queued" );` );
 				
 				if ( !ctx._Load ) cb(0);   // detach thread and set default responce
 				
-				ENGINE.matlab.queue( "step_queue", `ws_${func}.step( ${arglist(ctx)} );` );
+				ATOM.matlab.queue( "step_queue", `ws_${func}.step( ${arglist(ctx)} );` );
 				
 				return null;
 			},
 			
 			/*
 			em: function meStep(thread,code,ctx) {
-				if ( vm = ENGINE.vm[thread] )
-					ENGINE.thread( function (sql) {
+				if ( vm = ATOM.vm[thread] )
+					ATOM.thread( function (sql) {
 						Copy( {SQL: sql, CTX: ctx, DATA: [], RES: [], PORT: port, PORTS: vm.ctx}, vm.ctx );
 						
-						ENGINE.plugins.MATH.eval(vm.code,vm.ctx);
+						ATOM.plugins.MATH.eval(vm.code,vm.ctx);
 						return null;
 					});
 				
 				else
-					return ENGINE.errors.lostContext;					
+					return ATOM.errors.lostContext;					
 			},
 			*/
 			
@@ -1273,10 +1272,10 @@ ws_${func}.send( "Queued" );` );
 
 				VM.runInContext(code,ctx);
 
-				ENGINE.app.select[thread] = function (req,cb) { ctx.SQL.select(req.sql,[],function (recs) {cb(recs);}); }
-				ENGINE.app.insert[thread] = function (req,cb) { ctx.SQL.insert(req.sql,[],function (recs) {cb(recs);}); }
-				ENGINE.app.delete[thread] = function (req,cb) { ctx.SQL.delete(req.sql,[],function (recs) {cb(recs);}); }
-				ENGINE.app.update[thread] = function (req,cb) { ctx.SQL.update(req.sql,[],function (recs) {cb(recs);}); }
+				ATOM.app.select[thread] = function (req,cb) { ctx.SQL.select(req.sql,[],function (recs) {cb(recs);}); }
+				ATOM.app.insert[thread] = function (req,cb) { ctx.SQL.insert(req.sql,[],function (recs) {cb(recs);}); }
+				ATOM.app.delete[thread] = function (req,cb) { ctx.SQL.delete(req.sql,[],function (recs) {cb(recs);}); }
+				ATOM.app.update[thread] = function (req,cb) { ctx.SQL.update(req.sql,[],function (recs) {cb(recs);}); }
 
 				return null;	
 			},

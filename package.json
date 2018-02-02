@@ -1,14 +1,14 @@
 {
-  "name": "engine",
+  "name": "atomic",
   "version": "1.0.0",
   "description": "Interface to language agnost machines",
-  "main": "engine.js",
+  "main": "atomic.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git@git.geointapps.org:acme/engine.git"
+    "url": "git@git.geointapps.org:acme/atomic.git"
   },
   "keywords": [
     "machines",
