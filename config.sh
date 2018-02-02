@@ -23,7 +23,7 @@ export PATH=$CONDA/bin:$INCLUDE/python:$PATH
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIB/python
 
 # Engines
-export ENGINES=$SRV/engine/ifs
+export ENGINES=$SRV/atomic/ifs
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ENGINES/python/build/Release:$ENGINES/opencv/build/Release:$ENGINES/mac/build/Release
 #export JOBS=$HERE/jobs
 #export PATH=$PATH:/usr/lib/qt-3.3/bin:$OPENCV/bin
