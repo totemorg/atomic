@@ -678,7 +678,7 @@ var
 				name = req.table;
 			
 			//Log("eng get",name);
-			sql.first(
+			sql.getFirst(
 				"ENG",
 				"SELECT * FROM ??.engines WHERE least(?) LIMIT 1", [ group, {
 					Name: name,
