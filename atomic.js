@@ -1293,6 +1293,20 @@ ws_${func}.send( "Queued" );` );
 			
 	});
 
+Array.prototype.joinify = function (sep,cb) {
+	
+	if (cb) {
+		var rtn = [];
+		this.each( function (n,rec) {
+			rtn.push( cb(rec) );
+		});
+		return rtn.join(sep);
+	}
+
+	else
+		return this.join(sep);
+}
+
 function Trace(msg,sql) {
 	ENUM.trace("E>",msg,sql);
 }
