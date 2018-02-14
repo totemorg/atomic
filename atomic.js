@@ -104,8 +104,8 @@ var
 						script: script
 					}, function (err) {
 						Log("matlab queue", err);
-					});
-					sql.release();
+					}).end();
+					//sql.release();
 				});
 			}		
 		},
@@ -678,7 +678,7 @@ var
 				name = req.table;
 			
 			//Log("eng get",name);
-			sql.getFirst(
+			sql.forFirst(
 				"ENG",
 				"SELECT * FROM ??.engines WHERE least(?) LIMIT 1", [ group, {
 					Name: name,
