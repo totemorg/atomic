@@ -991,12 +991,7 @@ if ( CTX )
 		ERR = port(CTX.tau, CTX.ports[PORT]);
 
 	else  // stateless processing
-		ERR = ${Thread.plugin}(CTX, function (ctx) {
-			if (ctx) 
-				PUT("", ctx, RES);
-			else
-				RES( null );
-		});
+		ERR = ${Thread.plugin}(CTX, RES);
 ` }
 
 				if (gen.trace) Log(script);
@@ -1027,28 +1022,10 @@ if ( CTX )
 	end
 
 	function save(ctx)
-		query = ctx.Dump;
-
-		if length(query)>1
-			if endsWith(query, ".jpg")   % save jpeg file
-				imwrite(ctx.Save, query);
-
-			elseif endsWith(query, ".json")  % use file system as json db
-				fid = fopen(query, 'wt');
-				fprintf(fid, '%s', jsonencode(ctx.Save) );
-				fclose(fid);
-
-			elseif ws.db		% db provided
-				update( ws.db, '${Thread.plugin}', {'Save'}, jsonencode(ctx.Save), 'where ID=${Thread.ID}' );
-			end
-
-		else
-			fid = fopen('${func}.out', 'wt');
-			fprintf(fid, '%s', jsonencode(ctx.Save) );
-			fclose(fid);
-			webread( '${agent}?save=${func}' );
-
-		end
+		fid = fopen('${func}.out', 'wt');
+		fprintf(fid, '%s', jsonencode(ctx.Save) );
+		fclose(fid);
+		webread( '${agent}?save=${func}' );
 	end `,
 
 						load: `
@@ -1058,20 +1035,7 @@ if ( CTX )
 
 		try
 			if length(query)>1
-				if endsWith(query, '.jpg')
-					ctx.Data = imread(query);
-
-				elseif endsWith(query, '.json')
-					fid = fopen(query, 'rt');
-					ctx.Data = jsondecode(getl( fid ));
-					fclose(fid);
-
-				else
-					if isstruct(ws.db)   % db provided
-						ctx.Data = select(ws.db, query);
-					end	
-				end
-
+				ctx.Data = select(ws.db, query);
 			end
 		
 		catch 
@@ -1241,7 +1205,6 @@ ws_${func}.send( "Queued" );` );
 					func = thread.replace(/\./g,"_");
 				
 				ctx._Load = ctx._Load || "";
-				ctx._Dump = ctx._Dump || "";
 				
 				if ( !ctx._Load ) cb(0);   // detach thread and set default responce
 				
