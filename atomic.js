@@ -772,10 +772,10 @@ def flush(ctx,rec,recs):
 						},
 
 						save: `
-def save(ctx):  #save jpg/json/event results
+def save(ctx):  #save results
 	if ctx:
-		if 'Dump' in ctx:
-			Query = ctx['Dump']
+		if '_Dump' in ctx:
+			Query = ctx['_Dump']
 			if 'Save' in ctx:
 				Data = ctx['Save']
 				if Query.endswith(".jpg"):
@@ -789,18 +789,14 @@ def save(ctx):  #save jpg/json/event results
 `,
 						
 						load: `
-def load(ctx, os, cb):  #load jpg/json/event dataset
+def load(ctx, os, cb):  #load dataset
 	SQL = os['SQL']
 	os['SQL0'] = SQL.cursor(buffered=True)
 	os['SQL1'] = SQL.cursor(buffered=True)
 
 	if 'Load' in ctx:
 		Query = ctx['Load']
-		if Query.endswith(".jpg"):
-			cb( LWIP.open(Query), os )
-		elif Query.endswith(".json"):
-			cb( JSON.loads(Query), os )
-		elif Query.startswith("/"):
+		if Query.startswith("/"):
 			recs = []
 			for (rec) in FETCH(query):
 				if flush(ctx,rec,recs):
