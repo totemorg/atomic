@@ -1,7 +1,7 @@
 // UNCLASSIFIED
 
 /**
- * @class ATOM
+ * @class ATOMIC
  * @requires child_process
  * @requires fs
  * @requires engineIF
@@ -104,7 +104,7 @@ var
 						script: script
 					}, function (err) {
 						Log("matlab queue", err);
-					}).end();
+					}).onEnd();
 					//sql.release();
 				});
 			}		
@@ -1161,7 +1161,7 @@ ws_${func}.send( "Queued" );` );
 				
 				if ( vm = ATOM.vm[thread] ) 
 					ATOM.thread( function (sql) {
-						Copy( {RES: cb, LIBS: plugins, SQL: sql, CTX: ctx, PORT: port, PORTS: vm.ctx}, vm.ctx );
+						Copy( {RES: cb, TOS: plugins, SQL: sql, CTX: ctx, PORT: port, PORTS: vm.ctx}, vm.ctx );
 						
 						VM.runInContext(vm.code,vm.ctx);
 						
