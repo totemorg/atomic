@@ -1161,7 +1161,7 @@ ws_${func}.send( "Queued" );` );
 				
 				if ( vm = ATOM.vm[thread] ) 
 					ATOM.thread( function (sql) {
-						Copy( {RES: cb, TOS: plugins, SQL: sql, CTX: ctx, PORT: port, PORTS: vm.ctx}, vm.ctx );
+						Copy( {RES: cb, LIBS: plugins, SQL: sql, CTX: ctx, PORT: port, PORTS: vm.ctx}, vm.ctx );
 						
 						VM.runInContext(vm.code,vm.ctx);
 						
@@ -1252,6 +1252,7 @@ ws_${func}.send( "Queued" );` );
 			
 	});
 
+/*
 Array.prototype.joinify = function (sep,cb) {
 	
 	if (cb) {
@@ -1265,6 +1266,7 @@ Array.prototype.joinify = function (sep,cb) {
 	else
 		return this.join(sep);
 }
+*/
 
 function Trace(msg,sql) {
 	ENUM.trace("E>",msg,sql);
