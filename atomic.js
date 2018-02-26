@@ -750,95 +750,103 @@ var
 					gen = ATOM.gen,
 					ports = portsDict( ctx.ports || {} ),
 					logic = {  // flush-load-save-code logic
-						flush: {
-							all: `
-def flush(ctx,rec,recs):
-	return False`,
-							
-							none:`
-def flush(ctx,rec,recs):
-	return True`,
+						flush: `
+def FLUSH_bulk(ctx,rec,recs):
+	return False
 
-							byTime: `
-def flush(ctx,rec,recs):
+def FLUSH_discard(ctx,rec,recs):
+	return True
+
+def FLUSH_byStep(ctx,rec,recs):
 	if len(recs):
-		return (rec[ 't' ] -recs[0][ 't' ] ) > ctx.Job.buffer
+		return (rec[ 't' ] -recs[0][ 't' ] ) > 1
 	else:
-		return False`,
+		return False
 
-							byDepth: `
-def flush(ctx,rec,recs):
-	return len(recs) < ctx.Job.buffer`
-						},
+def FLUSH_byDepth(ctx,rec,recs):
+	return len(recs) < 1
+`,
 
 						save: `
 def save(ctx):  #save results
-	if ctx:
-		if '_Dump' in ctx:
-			Query = ctx['_Dump']
-			if 'Save' in ctx:
-				Data = ctx['Save']
-				if Query.endswith(".jpg"):
-					Data.save(Query, "jpg")
-				elif Query.endswith(".json"):
-					fid = open(Query, "w")
-					fid.write( JSON.dumps( Data ) )
-					fid.close()
-				elif Query:
-					SQL0.execute(Query,Data)
-`,
-						
-						load: `
-def load(ctx, os, cb):  #load dataset
-	SQL = os['SQL']
-	os['SQL0'] = SQL.cursor(buffered=True)
-	os['SQL1'] = SQL.cursor(buffered=True)
+	print "saving", ctx['Save']
+`, 
 
+						load: `
+def GET_load(flush, ctx, cb):  #load dataset
 	if 'Load' in ctx:
 		Query = ctx['Load']
 		if Query.startswith("/"):
 			recs = []
 			for (rec) in FETCH(query):
-				if flush(ctx,rec,recs):
+				if flush_byStep(ctx,rec,recs):
 					print "FLUSH", len(recs)
-					cb( recs, os )
+					cb( recs )
 					recs = []
 				recs.append(rec)
-			print "FLUSH", len(recs)
-			cb( recs, os )
+			if len(recs):
+				cb( recs )
+			else:
+				cb( 0 )
 		elif Query:
 			recs = []
 			SQL0.execute(Query)
 			for (rec) in SQL0:
-				if flush(ctx,rec,recs):
+				if flush_byStep(ctx,rec,recs):
 					print "FLUSH", len(recs)
-					cb( recs, os )
+					cb( recs )
 					recs = []
 				recs.append(rec)
 			print "FLUSH", len(recs)
-			cb( recs, os )
+			if len(recs):
+				cb( recs )
+			else:
+				cb( 0 )
 		else:
-			cb( 0, os )
+			cb( 0 )
 	else:
-		cb( 0, os )
+		cb( 0 )
+
+def GET_bulk(ctx, cb):
+	GET_load( FLUSH_bulk, ctx, cb )
+
+def GET_discard(ctx, cb):
+	GET_load( FLUSH_discard, ctx, cb )
+
+def GET_byStep(ctx, cb):
+	GET_load( FLUSH_byStep, ctx, cb )
+
+def GET_byDepth(ctx, cb):
+	GET_load( FLUSH_byDepth, ctx, cb )
 `  ,
 				
 				step: `
 	os = locals()
-	print "os", os  # why is this dump required to make sql connector visibile to plugin ?
-	load(CTX, os, loadcb)
-`					
+	#print "OS", os  # why is this dump required to make sql connector visibile to plugin ?
+	plugin = os['${Thread.plugin}']
+	ctx = os['CTX']
+	port = os['PORT']
+	ports = os['PORTS']
+	#SQL0 = os['SQL0']
+	#SQL1 = os['SQL1']
+	if port:
+		if port in ports:
+			ports[port]( ctx['tau'], ctx['ports'][port] )
+			ERR = 0
+		else:
+			ERR = 103
+	else:
+		plugin(ctx, save, os)
+		ERR = 0 `					
 					},
 					Job = ctx.Job || {},
-					flush = logic.flush[Job.flush |= ""] || logic.flush.all,
 					script = "";
 				
 				Job.buffer |= 0;
 				
 				script += `
 if INIT:
-	INIT = 0
-`;
+	INIT = 0 `;
 				
 				if (gen.libs) { script += `
 	#import modules
@@ -846,13 +854,13 @@ if INIT:
 	import mysql.connector as SQLC		#db connector interface
 	from PIL import Image as LWIP		#jpeg image interface
 	import json as JSON			#json interface
-	import sys as SYS			#system info
-` }
+	import sys as SYS			#system info` }
 				
 				if (gen.db) { script += `
 	#connect to db
 	SQL = SQLC.connect(user='${gen.dbcon.user}', password='${gen.dbcon.pass}', database='${gen.dbcon.name}')
-` }
+	SQL0 = SQL.cursor(buffered=True)
+	SQL1 = SQL.cursor(buffered=True)` }
 				
 				if (gen.debug) { script += `
 	#trace engine context
@@ -860,44 +868,22 @@ if INIT:
 	print 'py>sys', SYS.path, SYS.version
 	#print 'py>caffe',CAFFE
 	#print 'py>sql', SQL
-	print 'py>ctx',CTX
-	print 'py>port',PORT
-` }
+	#print 'py>ctx',CTX
+	#print 'py>port',PORT` }
 
 				if (gen.code) { script += `
-# record buffering logic
-${flush}
+# record buffering logic ${logic.flush}
 
-# data saving logic
-${logic.save}
+# data saving logic ${logic.save}
 
-# data loading logic
-${logic.load}
+# data loading logic ${logic.load}
 
 # engine and port logic
 ${code}
 
 PORTS = ${ports}
 
-def loadcb(data, os):
-	#print "loadcb", os['SQL']
-	port = os['PORT']
-	ports = os['PORTS']
-	ctx = os['CTX']
-	plugin = os['${Thread.plugin}']
-	os['Data'] = data
-	if port:
-		if port in ports:
-			return ports[port]( ctx['tau'], ctx['ports'][port] )
-		else:
-			return 103
-	else:
-		plugin(ctx,os)
-		save(ctx)
-		return 0
-
-if not INIT:
-	${logic.step}
+if not INIT:	${logic.step} 
 ` }
 				
 				if (false) { script += `
@@ -1161,7 +1147,7 @@ ws_${func}.send( "Queued" );` );
 				
 				if ( vm = ATOM.vm[thread] ) 
 					ATOM.thread( function (sql) {
-						Copy( {RES: cb, LIBS: plugins, SQL: sql, CTX: ctx, PORT: port, PORTS: vm.ctx}, vm.ctx );
+						Copy( {RES: cb, SQL: sql, CTX: ctx, PORT: port, PORTS: vm.ctx}, vm.ctx );
 						
 						VM.runInContext(vm.code,vm.ctx);
 						
