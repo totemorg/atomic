@@ -58,6 +58,7 @@ using namespace std;
 #define PYCTX "CTX"		// engine context during stateless call
 #define PYTAU "TAU"		// port events during stateful call
 #define PYINIT "INIT" 		// initialize flag
+#define PYOS "OS" 		// OS dictionary
 
 /*
 #define PYPORTS "ports"		// py hash of port hashes
@@ -406,6 +407,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 					// Create global dictonary object (reserved)
 					pMain = PyImport_AddModule("__main__");
 					pGlobals = PyModule_GetDict(pMain);	
+					PyDict_SetItemString(pGlobals, PYOS, PyModule_GetDict(pModule));
 //printf(TRACE "globals=%p\n",pGlobals);
 					
 					/*

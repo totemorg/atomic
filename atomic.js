@@ -822,13 +822,11 @@ def GET_byDepth(ctx, cb):
 				
 				step: `
 	os = locals()
-	#print "OS", os  # why is this dump required to make sql connector visibile to plugin ?
+	#print "os", os  # why is this dump required to make sql connector visibile to plugin ?
 	plugin = os['${Thread.plugin}']
 	ctx = os['CTX']
 	port = os['PORT']
 	ports = os['PORTS']
-	#SQL0 = os['SQL0']
-	#SQL1 = os['SQL1']
 	if port:
 		if port in ports:
 			ports[port]( ctx['tau'], ctx['ports'][port] )
@@ -836,7 +834,7 @@ def GET_byDepth(ctx, cb):
 		else:
 			ERR = 103
 	else:
-		plugin(ctx, save, os)
+		plugin(ctx, save)
 		ERR = 0 `					
 					},
 					Job = ctx.Job || {},
@@ -846,8 +844,8 @@ def GET_byDepth(ctx, cb):
 				
 				script += `
 if INIT:
-	INIT = 0 `;
-				
+	INIT = 0  `;
+
 				if (gen.libs) { script += `
 	#import modules
 	#import caffe as CAFFE		#caffe interface
@@ -860,7 +858,7 @@ if INIT:
 	#connect to db
 	SQL = SQLC.connect(user='${gen.dbcon.user}', password='${gen.dbcon.pass}', database='${gen.dbcon.name}')
 	SQL0 = SQL.cursor(buffered=True)
-	SQL1 = SQL.cursor(buffered=True)` }
+	SQL1 = SQL.cursor(buffered=True) ` }
 				
 				if (gen.debug) { script += `
 	#trace engine context
