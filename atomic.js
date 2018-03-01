@@ -980,7 +980,7 @@ if ( CTX )
 				cb( null, ctx );
 			},
 			
-			ma: function maInit(thread,code,ctx,cb) {
+			m: function mInit(thread,code,ctx,cb) {
 				
 				var 
 					Thread = thread.split("."),
@@ -1156,7 +1156,7 @@ ws_${func}.send( "Queued" );` );
 					return ATOM.errors.lostContext;
 			},
 			
-			ma: function maStep(thread,port,ctx,cb) {
+			m: function mStep(thread,port,ctx,cb) {
 				function arglist(x) {
 					var rtn = [], q = "'";
 					Each(x, function (key,val) {
