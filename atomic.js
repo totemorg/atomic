@@ -34,13 +34,13 @@ var
 				task = body.task,
 				dom = body.domain,
 				rtns = [],
-				ctx = {SQL: sql, $: plugins},
-				plugins = ATOM.plugins;
+				ctx = Copy( ATOM.plugins || {}, {});
+			
+			body.worker = CLUSTER.isWorker ? CLUSTER.worker.id : 0;
 			
 			if ( task ) {
 				dom.forEach( function (index) {
-					var vmctx = VM.createContext( Copy(index, ctx) );
-					rtns.push( VM.runInContext( `(${task})()`, vmctx) );
+					rtns.push( VM.runInContext( `(${task})(body)`, VM.createContext( Copy(index, ctx) )) );
 				});
 				res( rtns );
 			}
@@ -87,7 +87,8 @@ var
 					
 					fetch( url, {
 						domain: dom,
-						task: task
+						task: task,
+						node: node
 					}, function (rtn) {
 						cb(rtn);
 					});
@@ -123,7 +124,8 @@ var
 					
 					fetch( url, {
 						domain: dom,
-						task: task+""
+						task: task,
+						node: node
 					}, function (rtn) {
 						rtns.push(rtn);
 						if (isLast) cb(rtns);
@@ -1061,9 +1063,8 @@ SQL1.close()
 					},				
 					gen = ATOM.gen,
 					script = "",
-					plugins = ATOM.plugins,
 					vm = ATOM.vm[thread] = {
-						ctx: VM.createContext( gen.libs ? plugins : {} ),
+						ctx: VM.createContext( gen.libs ? Copy( ATOM.plugins, {} ) : {} ),
 						code: ""
 					};
 
@@ -1251,8 +1252,6 @@ ws_${func}.send( "Queued" );` );
 			js: function jsStep(thread,port,ctx,cb) {
 				//Log("step thread",thread, ATOM.vm[thread] ? "has thread" : " no thread");
 
-				var plugins = ATOM.plugins;
-				
 				if ( vm = ATOM.vm[thread] ) 
 					ATOM.thread( function (sql) {
 						Copy( {RES: cb, SQL: sql, CTX: ctx, PORT: port, PORTS: vm.ctx}, vm.ctx );

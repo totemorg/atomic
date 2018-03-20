@@ -87,4 +87,10 @@ else
 	export HASCAFFE=0
 fi
 
+# define node urls
+export NODE0=http://localhost:8080
+export NODE1=http://192.1.1.2:8080
+export NODE2=http://192.1.1.3:8080
+export NODE3=http://192.1.1.4:8080
+
 # UNCLASSIFIED when IP addresses and passwords are undefined
