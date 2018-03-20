@@ -26,7 +26,117 @@ var 														// Totem modules
 var
 	ATOM = module.exports = Copy( //< extend the engineIF built by node-gyp
 		require("./ifs/build/Release/engineIF"), {
-		
+		 
+		exe: function (req,res) {
+			var 
+				body = req.body,
+				sql = req.sql,
+				task = body.task,
+				dom = body.domain,
+				rtns = [],
+				ctx = {SQL: sql, $: plugins},
+				plugins = ATOM.plugins;
+			
+			if ( task ) {
+				dom.forEach( function (index) {
+					var vmctx = VM.createContext( Copy(index, ctx) );
+					rtns.push( VM.runInContext( `(${task})()`, vmctx) );
+				});
+				res( rtns );
+			}
+			
+			else
+				res( null );
+		},
+			
+		domain: function (depth, keys, opts, index, cb) {
+			if (depth == keys.length) 
+				cb( index );
+			
+			else {
+				var
+					key = keys[depth],
+					idxs = opts[key];
+				
+				idxs.forEach( function (idx) {
+					index[key] = idx;
+					ATOM.domain(depth+1, keys, opts, index, cb);
+				});
+			}
+		},
+			
+		forEach: function (opts, cb) {
+			var 
+				dom = [], 
+				fetches = 0, 
+				node = 0,
+				url = ENV["NODE_"+node],
+				keys = opts.keys || "",
+				task = opts.task + "",
+				cores = opts.cores || opts.workers || 10,
+				shards = opts.shards || 100,
+				nodes = opts.nodes || opts.locales || 1;
+				
+			ATOM.domain(0, keys.split(","), opts, {}, function (index, isLast) {
+				if ( isLast || dom.length == shards ) {
+					if ( ++fetches > cores ) {
+						if ( node == nodes) node = 0;
+						fetches = 0;
+						url = ENV["NODE_"+node];
+					}
+					
+					fetch( url, {
+						domain: dom,
+						task: task
+					}, function (rtn) {
+						cb(rtn);
+					});
+					
+					dom.length = 0;
+				}
+				
+				else
+					dom.push( index );
+			});
+		},
+			
+		forAll: function (opts, cb) {
+			var 
+				rtns = [],
+				dom = [], 
+				fetches = 0, 
+				node = 0,
+				url = ENV["NODE_"+node],
+				keys = opts.keys || "",
+				task = opts.task + "",
+				cores = opts.cores || opts.workers || 10,
+				shards = opts.shards || 100,
+				nodes = opts.nodes || opts.locales || 1;
+				
+			ATOM.domain(0, keys.split(","), opts, {}, function (index, isLast) {
+				if ( isLast || dom.length == shards ) {
+					if ( ++fetches > cores ) {
+						if ( node == nodes) node = 0;
+						fetches = 0;
+						url = ENV["NODE_"+node];
+					}
+					
+					fetch( url, {
+						domain: dom,
+						task: task+""
+					}, function (rtn) {
+						rtns.push(rtn);
+						if (isLast) cb(rtns);
+					});
+					
+					dom.length = 0;
+				}
+				
+				else
+					dom.push( index );
+			});
+		},
+			
 		/**
 		@cfg {Object}
 		@private
