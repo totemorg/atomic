@@ -33,20 +33,19 @@ var
 				sql = req.sql,
 				task = body.task,
 				dom = body.domain,
-				rtns = [],
+				cb = body.cb,
 				ctx = Copy( ATOM.plugins || {}, {});
 			
+			res( null );
 			body.worker = CLUSTER.isWorker ? CLUSTER.worker.id : 0;
+			body.node = process.env.HOSTNAME;
 			
-			if ( task ) {
+			if ( task ) 
 				dom.forEach( function (index) {
-					rtns.push( VM.runInContext( `(${task})(body)`, VM.createContext( Copy(index, ctx) )) );
+					var msg = VM.runInContext( `(${task})(body)`, VM.createContext( Copy(index, ctx) ));
+					if (cb)		
+						VM.runInContext( `(${cb})(msg)`, VM.createContext( {} ) );
 				});
-				res( rtns );
-			}
-			
-			else
-				res( null );
 		},
 			
 		domain: function (depth, keys, opts, index, cb) {
@@ -65,14 +64,13 @@ var
 			}
 		},
 			
-		forEach: function (opts, cb) {
+		forEach: function (opts, task, cb) {
 			var 
 				dom = [], 
 				fetches = 0, 
 				node = 0,
-				url = ENV["NODE_"+node],
+				url = ENV["NODE"+node],
 				keys = opts.keys || "",
-				task = opts.task + "",
 				cores = opts.cores || opts.workers || 10,
 				shards = opts.shards || 100,
 				nodes = opts.nodes || opts.locales || 1;
@@ -82,55 +80,33 @@ var
 					if ( ++fetches > cores ) {
 						if ( node == nodes) node = 0;
 						fetches = 0;
-						url = ENV["NODE_"+node];
+						url = ENV["NODE"+node];
 					}
 					
-					fetch( url, {
-						domain: dom,
-						task: task,
-						node: node
-					}, function (rtn) {
-						cb(rtn);
-					});
+					if (task) 
+						if (task.constructor == Array)
+							task.forEach( function (task) {
+								fetch( url, {
+									domain: dom,
+									task: task+"",
+									cb: cb+""
+								}, function (err) {
+									if (err) Log(err);
+								});
+							});
 					
-					dom.length = 0;
-				}
-				
-				else
-					dom.push( index );
-			});
-		},
-			
-		forAll: function (opts, cb) {
-			var 
-				rtns = [],
-				dom = [], 
-				fetches = 0, 
-				node = 0,
-				url = ENV["NODE_"+node],
-				keys = opts.keys || "",
-				task = opts.task + "",
-				cores = opts.cores || opts.workers || 10,
-				shards = opts.shards || 100,
-				nodes = opts.nodes || opts.locales || 1;
-				
-			ATOM.domain(0, keys.split(","), opts, {}, function (index, isLast) {
-				if ( isLast || dom.length == shards ) {
-					if ( ++fetches > cores ) {
-						if ( node == nodes) node = 0;
-						fetches = 0;
-						url = ENV["NODE_"+node];
-					}
+						else
+							fetch( url, {
+								domain: dom,
+								task: task+"",
+								cb: cb+""
+							}, function (err) {
+								if (err) Log(err);
+							});
 					
-					fetch( url, {
-						domain: dom,
-						task: task,
-						node: node
-					}, function (rtn) {
-						rtns.push(rtn);
-						if (isLast) cb(rtns);
-					});
-					
+					else
+						dom.forEach( cb );
+
 					dom.length = 0;
 				}
 				
