@@ -30,7 +30,7 @@ var
 		/**
 		@cfg {Object}
 		@private
-		@member ATOM
+		@member ATOMIC
 		Paths to various things.
 		*/
 		paths: {
@@ -40,15 +40,15 @@ var
 		/**
 		@cfg {Function}
 		@private
-		@member ATOM
+		@member ATOMIC
 		@method thread
 		Start a sql thread
 		*/
-		thread: null,
+		thread: () => { Trace("sql thread not configured"); },  //< sql threader
 		
 		/**
 		@cfg {Number}
-		@member ATOM
+		@member ATOMIC
 		Number of worker cores (aka threads) to provide in the cluster.  0 cores provides only the master.
 		*/
 		cores: 0,  //< number if cores: 0 master on port 8080; >0 master on 8081, workers on 8080
@@ -113,12 +113,12 @@ var
 		/**
 		@cfg {Object}
 		@method config
-		@member ATOM
+		@member ATOMIC
 		Configure are start the engine interface, estblish worker core connections
 		*/
 		config: function (opts) {  //< configure with options
 	
-			Trace(`CONFIG ATOMS`);
+			Trace(`CONFIG ATOMIC`);
 
 			if (opts) Copy(opts,ATOM);
 
@@ -191,7 +191,7 @@ var
 		
 		/**
 		@cfg {Object}
-		@member ATOM
+		@member ATOMIC
 		Modules to share accross all js-engines
 		*/
 		plugins: {  // js-engine plugins 
@@ -200,7 +200,7 @@ var
 		/**
 		@cfg {Object}
 		@private
-		@member ATOM
+		@member ATOMIC
 		Error messages
 		*/
 		errors: {  // error messages
@@ -259,10 +259,12 @@ var
 				cb( null );
 		},
 			
-		run: function (req, cb) {  //< run engine on its worker with callback cb(context, stepper) or cb(null) if error
-			
-		/*
-		Request contains:
+		run: function (req, cb) {  //< run engine on its worker with callback cb(context, stepper) or cb(null) if error			
+		/**
+		@method run
+		@member ATOMIC
+		
+		A run engine request contains:
 		
 				req = { group, table, client, query, body, action, state }
 
@@ -446,10 +448,9 @@ var
 
 		save: function (sql,taus,port,engine,saves) {
 		/**
-		 * @method save
-		 * @member ATOM
-		 * 
-		 * Save tau job files.
+		@method save
+		@member ATOMIC
+		Save tau job files.
 		*/
 			
 			var t = new Date();
@@ -492,48 +493,13 @@ var
 			});
 		},
 
-		/*
-		returns: function (context) {  //< legacy  Return tau parameters in matrix format
-			var tau = context.tau || [];
-
-			return tau;
-
-			if (tau.constructor == Array) {
-				for (var n=0,N=tau.length; n<N; n++)
-					switch ( tau[n].constructor ) {
-						case Array:
-							var fix = {};
-							for (var m=0,M=tau[n].length; m<M; m++)
-								fix['tau'+m] = tau[n][m];
-
-							tau[n] = fix;
-							break;
-
-						case Object:
-							break;
-
-						default:
-							tau[n] = {tau: JSON.stringify(tau[n])};
-					}
-
-				return tau;
-			}
-			
-			else
-				return [{tau: JSON.stringify(tau)}];
-
-		}, */
-			
+		insert: function (req,res) {	//< step a stateful engine
 		/**
 		 @method insert(step)
-		 @method delete(kill)
-		 @method select(read)
-		 @method update(init)
-		  
+		 @member ATOMIC
 		 Provides engine CRUD interface: step/insert/POST, compile/update/PUT, run/select/GET, and 
 		 free/delete/DELETE.
 		*/
-		insert: function (req,res) {	//< step a stateful engine
 			ATOM.run(req, function (ctx,step) {
 //Log(">step ",ctx);
 				if ( ctx ) 
@@ -545,6 +511,12 @@ var
 		},
 			
 		delete: function (req,res) {	//< free a stateful engine
+		/**
+		 @method delete(kill)
+		 @member ATOMIC
+		 Provides engine CRUD interface: step/insert/POST, compile/update/PUT, run/select/GET, and 
+		 free/delete/DELETE.
+		*/
 			ATOM.run(req, function (ctx,step) {
 //Log(">kill ",ctx);
 
@@ -553,6 +525,12 @@ var
 		},
 			
 		select: function (req,res) {	//< run a stateless engine callback res(context) or res(error)
+		/**
+		 @method select(read)
+		 @member ATOMIC
+		 Provides engine CRUD interface: step/insert/POST, compile/update/PUT, run/select/GET, and 
+		 free/delete/DELETE.
+		*/
 			ATOM.run( req, function (ctx, step) {  // get engine stepper and its context
 //Log(">run", ctx);
 				
@@ -565,6 +543,12 @@ var
 		},
 			
 		update: function (req,res) {	//< compile a stateful engine
+		/**
+		 @method update(init)
+		 @member ATOMIC		  
+		 Provides engine CRUD interface: step/insert/POST, compile/update/PUT, run/select/GET, and 
+		 free/delete/DELETE.
+		*/
 			ATOM.run( req, function (ctx,step) {
 //console.log(">init",ctx);
 
@@ -575,6 +559,7 @@ var
 		prime: function (sql, ctx, cb) {  //< callback cb(ctx) with ctx primed by sql ctx.entry and ctx.exit queries
 		/**
 		@method prime
+		@member ATOMIC
 
 		Callback engine cb(ctx) with its state ctx primed with state from its ctx.entry, then export its 
 		ctx state specified by its ctx.exit.
@@ -1233,24 +1218,8 @@ ws_${func}.send( "Queued" );` );
 			
 	});
 
-/*
-Array.prototype.joinify = function (sep,cb) {
-	
-	if (cb) {
-		var rtn = [];
-		this.each( function (n,rec) {
-			rtn.push( cb(rec) );
-		});
-		return rtn.join(sep);
-	}
-
-	else
-		return this.join(sep);
-}
-*/
-
 function Trace(msg,sql) {
-	ENUM.trace("E>",msg,sql);
+	ENUM.trace("A>",msg,sql);
 }
 	
 // UNCLASSIFIED
