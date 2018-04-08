@@ -9,6 +9,12 @@
  * @requires vm
  */
 
+/* 
+To Do:
++ add comments to config and methods
++ review and correct README.md
+*/
+
 var 														// NodeJS modules
 	CP = require("child_process"),
 	FS = require("fs"),	

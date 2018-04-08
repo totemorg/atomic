@@ -7,19 +7,19 @@
 
 # ATOMIC
 
-ATOMIC implements hyperthreaded, cloud-based workflows to 
-[stateless and stateful engines](/api.view) of TYPE
+ATOMIC provides hyperthreaded, cloud-based, stateless and stateful [engines](/api.view) of TYPE
 
 	py | js | sh | cv | ma | sh | r | octave
 
-at ATOMIC[TYPE].  Engines are controlled via the following methods (restful http endpoints):
+at the ATOMIC[TYPE] interface.  Engines are accessed via the following endpoints:
 
 	POST advance/setp/insert a stateful engine
 	PUT	compile/init/update a stateful engine
 	DELETE deallocate/kill/delete a stateful engine
 	GET execute/read/select a stateless engines
 
-Stateful engines are supported by the step, init and kill methods, and are passed TAU event tokens:
+Stateful engines are supported by the step, init and kill methods, and are typically passed 
+TAU event tokens:
 
 	TAU.i = [{tau}, ...] = events arriving to engine's input port
 	TAU.o = [{tau}, ...] = events departing from engine's output port
@@ -78,7 +78,7 @@ ATOMIC is configured and started like this:
 	});
 
 where its configuration keys follow the [ENUM copy()](https://github.com/acmesds/enum) conventions 
-described in its [PRM](/shares/prm/engine/index.html).
+described in its [PRM](/shares/prm/atomic/index.html).
 
 The examples below are provided in TOTEM's test.js unit tester.
 
