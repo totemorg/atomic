@@ -166,14 +166,14 @@ var
 
 						if (req.action) { 		// process only our messages (ignores sockets, etc)
 							if (CLUSTER.isWorker) {
-								console.log("CORE"+CLUSTER.worker.id+" GRABBING "+req.action);
+								Trace("CORE"+CLUSTER.worker.id+" GRABBING "+req.action);
 	//console.log(req);							
 								if ( route = ATOM[req.action] ) 
 									ATOM.thread( function (sql) {
 										req.sql = sql;  
 										//delete req.socket;
 										route( req, function (tau) {
-											console.log( "sending " + JSON.stringify(tau));
+											Trace( "ipc sending " + JSON.stringify(tau));
 											sql.release();
 											socket.end( JSON.stringify(tau) );
 										});
@@ -338,7 +338,7 @@ var
 					port = body.port || "",
 					runctx = body.tau || Copy( req.query, query);
 				
-				//Log("exe ctx",runctx);
+				Log("exe ctx",runctx);
 				
 				cb( runctx, function (res) {  // callback engine using this stepper
 
@@ -538,7 +538,7 @@ var
 		 free/delete/DELETE.
 		*/
 			ATOM.run( req, function (ctx, step) {  // get engine stepper and its context
-//Log(">run", ctx);
+Log(">run", ctx);
 				
 				if (ctx)   // step engine
 					step( res );
