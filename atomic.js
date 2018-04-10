@@ -338,7 +338,7 @@ var
 					port = body.port || "",
 					runctx = body.tau || Copy( req.query, query);
 				
-				Log("exe ctx",runctx);
+				//Log("exe ctx",runctx);
 				
 				cb( runctx, function (res) {  // callback engine using this stepper
 
@@ -538,7 +538,7 @@ var
 		 free/delete/DELETE.
 		*/
 			ATOM.run( req, function (ctx, step) {  // get engine stepper and its context
-Log(">run", ctx);
+//Log(">run", ctx);
 				
 				if (ctx)   // step engine
 					step( res );
