@@ -166,14 +166,14 @@ var
 
 						if (req.action) { 		// process only our messages (ignores sockets, etc)
 							if (CLUSTER.isWorker) {
-								Trace("CORE"+CLUSTER.worker.id+" GRABBING "+req.action);
-	//console.log(req);							
+								Trace("IPC grabbing on "+CLUSTER.worker.id+"/"+req.action);
+//console.log(req);	
 								if ( route = ATOM[req.action] ) 
 									ATOM.thread( function (sql) {
 										req.sql = sql;  
 										//delete req.socket;
 										route( req, function (tau) {
-											Trace( "ipc sending " + JSON.stringify(tau));
+											Trace( "IPC responding ");
 											sql.release();
 											socket.end( JSON.stringify(tau) );
 										});
