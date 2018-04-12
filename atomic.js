@@ -333,17 +333,16 @@ var
 			function execute(ctx, cb) {  //< callback cb(ctx,stepcb) with revised engine ctx and stepper
 				var 
 					sql = req.sql,
-					query = ctx.req.query,
 					body = ctx.req.body,
 					port = body.port || "",
-					runctx = body.tau || Copy( req.query, query);
+					runctx = body.tau || Copy( req.query, ctx.req.query);
 				
-				//Log("exe ctx",runctx);
+				Log("exe ctx",runctx);
 				
 				cb( runctx, function (res) {  // callback engine using this stepper
 
 					if ( stepEngine = ctx.step )
-						ATOM.prime(sql, runctx, function (runctx) {  // mixin sql vars into engine query
+						ATOM.prime(sql, runctx, function (runctx) {  // mixin sql primed keys into engine ctx
 							//Log("prime ctx", runctx);
 							
 							try {  	// step the engine then return an error if it failed or null if it worked
@@ -668,6 +667,15 @@ var
 				group = req.group,
 				name = req.table;
 			
+			function getState(str, def) {
+				try {
+					return def ? Copy(JSON.parse(str),def) : JSON.parse(str);
+				}
+				catch (err) {
+					return def;
+				}
+			}
+
 			//Log("eng get",name);
 			sql.forFirst(
 				"ENG",
@@ -677,28 +685,22 @@ var
 			}], function (eng) {
 				
 				if (eng)
-					try {  // define and return engine context
-						cb( Copy({
-							req: {  // http request to get and prime engine context
-								group: req.group,
-								table: req.table,
-								client: req.client,
-								query: Copy( // passed querey keys override engine state context
-									req.query, 
-									JSON.parse(eng.State || "null") || {} ),
-								body: req.body,
-								action: req.action
-							},
-							type: eng.Type,   // engine type: js, py, etc
-							code: eng.Code, // engine code
-							init: ATOM.init[ eng.Type ],  // method to initialize/program the engine
-							step: ATOM.step[ eng.Type ]  // method to advance the engine
-						}, ctx) );
-					}
-
-					catch (err) {  // failed
-						cb( null );
-					}
+					cb( Copy({
+						req: {  // http request to get and prime engine context
+							group: req.group,
+							table: req.table,
+							client: req.client,
+							query: Copy( // passed query keys override engine state context
+								req.query,
+								getState(eng.State, {_Host: name})),
+							body: req.body,
+							action: req.action
+						},
+						type: eng.Type,   // engine type: js, py, etc
+						code: eng.Code, // engine code
+						init: ATOM.init[ eng.Type ],  // method to initialize/program the engine
+						step: ATOM.step[ eng.Type ]  // method to advance the engine
+					}, ctx) );
 				
 				else
 					cb( null );
