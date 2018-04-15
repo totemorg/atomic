@@ -16,18 +16,14 @@ To Do:
 */
 
 var 														// NodeJS modules
+	ENV = process.env,
 	CP = require("child_process"),
 	FS = require("fs"),	
 	CLUSTER = require("cluster"),
 	NET = require("net"),
 	VM = require("vm");
 	
-var 														// Totem modules
-	ENUM = require("enum"),
-	Copy = ENUM.copy,
-	Each = ENUM.each,
-	Log = console.log,
-	ENV = process.env;
+const { Copy,Each,Log } = require("enum");
 	
 var
 	ATOM = module.exports = Copy( //< extend the engineIF built by node-gyp
@@ -1227,7 +1223,7 @@ ws_${func}.send( "Queued" );` );
 	});
 
 function Trace(msg,sql) {
-	ENUM.trace("A>",msg,sql);
+	msg.trace("A>",sql);
 }
 	
 // UNCLASSIFIED
