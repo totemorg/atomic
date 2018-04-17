@@ -333,7 +333,7 @@ var
 					port = body.port || "",
 					runctx = body.tau || Copy( req.query, ctx.req.query);
 				
-				Log("exe ctx",runctx);
+				//Log("exe ctx",runctx);
 				
 				cb( runctx, function (res) {  // callback engine using this stepper
 
