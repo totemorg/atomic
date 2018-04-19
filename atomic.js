@@ -688,7 +688,7 @@ var
 							client: req.client,
 							query: Copy( // passed query keys override engine state context
 								req.query,
-								getState(eng.State, {_Host: name})),
+								getState(eng.State, {})),
 							body: req.body,
 							action: req.action
 						},
