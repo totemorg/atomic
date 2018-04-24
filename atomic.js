@@ -2,7 +2,7 @@
 
 /**
  * @class ATOMIC
- * @requires child_process
+ * @requires child_processby
  * @requires fs
  * @requires engineIF
  * @requires enum
@@ -740,19 +740,19 @@ var
 					ports = portsDict( ctx.ports || {} ),
 					logic = {  // flush-load-save-code logic
 						flush: `
-def FLUSH_bulk(ctx,rec,recs):
+def FLUSH_forAll(ctx,rec,recs):
 	return False
 
-def FLUSH_discard(ctx,rec,recs):
+def FLUSH_forDrop(ctx,rec,recs):
 	return True
 
-def FLUSH_byStep(ctx,rec,recs):
+def FLUSH_forBatch(ctx,rec,recs):
 	if len(recs):
 		return (rec[ 't' ] -recs[0][ 't' ] ) > 1
 	else:
 		return False
 
-def FLUSH_byDepth(ctx,rec,recs):
+def FLUSH_forEach(ctx,rec,recs):
 	return len(recs) < 1
 `,
 
@@ -768,7 +768,7 @@ def GET_load(flush, ctx, cb):  #load dataset
 		if Query.startswith("/"):
 			recs = []
 			for (rec) in FETCH(query):
-				if flush_byStep(ctx,rec,recs):
+				if flush_forBatch(ctx,rec,recs):
 					print "FLUSH", len(recs)
 					cb( recs )
 					recs = []
@@ -781,7 +781,7 @@ def GET_load(flush, ctx, cb):  #load dataset
 			recs = []
 			SQL0.execute(Query)
 			for (rec) in SQL0:
-				if flush_byStep(ctx,rec,recs):
+				if flush_forBatch(ctx,rec,recs):
 					print "FLUSH", len(recs)
 					cb( recs )
 					recs = []
@@ -796,17 +796,17 @@ def GET_load(flush, ctx, cb):  #load dataset
 	else:
 		cb( 0 )
 
-def GET_bulk(ctx, cb):
-	GET_load( FLUSH_bulk, ctx, cb )
+def GET_forAll(ctx, cb):
+	GET_load( FLUSH_forAll, ctx, cb )t
 
-def GET_discard(ctx, cb):
-	GET_load( FLUSH_discard, ctx, cb )
+def GET_forDrop(ctx, cb):
+	GET_load( FLUSH_forDrop, ctx, cb )
 
-def GET_byStep(ctx, cb):
-	GET_load( FLUSH_byStep, ctx, cb )
+def GET_forBatch(ctx, cb):
+	GET_load( FLUSH_forBatch, ctx, cb )
 
-def GET_byDepth(ctx, cb):
-	GET_load( FLUSH_byDepth, ctx, cb )
+def GET_forEach(ctx, cb):
+	GET_load( FLUSH_forEach, ctx, cb )
 `  ,
 				
 				step: `
