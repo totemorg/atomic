@@ -73,10 +73,10 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIB/cuda:$LIB/cuDNN:$LIB/caffe:$LIB/pro
 #export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CAFFE/build/lib:$DNN/lib64:$CONDA/lib
 
 #python sql access
-export DB_PASS=$MYSQL_PASS
-export DB_USER=$MYSQL_USER
-export DB_NAME=$MYSQL_NAME
-export DB_HOST=$MYSQL_HOST
+#export DB_PASS=$MYSQL_PASS
+#export DB_USER=$MYSQL_USER
+#export DB_NAME=$MYSQL_NAME
+#export DB_HOST=$MYSQL_HOST
 
 # engine compile switches
 if [ "`hostname`" == "$GPUHOST" ]; then

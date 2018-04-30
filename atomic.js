@@ -63,6 +63,8 @@ var
 		nextcore: 0,
 		
 		matlab: {  //< support for matlab engines
+			odbc: true,
+			
 			path: {  //< file and service paths
 				save: "./public/matlab/",
 				agent: "http://totem.west.ile.nga.ic.gov:8080/matlab"
@@ -70,31 +72,43 @@ var
 				
 			flush: function (sql,qname) {  //<  flush jobs in qname=init|step|... queue
 				var
-					agent = ATOM.matlab.path.agent,
+					matlab = ATOM.matlab,
+					agent = matlab.path.agent,
 					func = qname,
-					path = ATOM.matlab.path.save + func + ".m",
-					script = `disp(webread('${agent}?flush=${qname}'));` ;
+					path = matlab.path.save + func + ".m",
+					script =  `disp(webread('${agent}?flush=${qname}'));` ;
 								
 				Trace("FLUSH MATLAB");
 				
-				sql.query("INSERT INTO openv.matlab SET ?", {
-					queue: qname,
-					script: script
-				}, function (err) {
+				if (matlab.odbc) {
+					FS.writeFile( path, `
+ex = select(odbc, 'SELECT * FROM openv.matlab WHERE queue="${qname}"');
+exec(odbc, 'DELETE FROM openv.matlab WHERE queue="${qname}"');
+for n=1:height(ex)
+	eval(ex.script{n});
+end
+`);
+				}
+				
+				else
+					sql.query("INSERT INTO openv.matlab SET ?", {
+						queue: qname,
+						script: script
+					}, function (err) {
 
-					sql.query("SELECT * FROM openv.matlab WHERE ? ORDER BY ID", {
-						queue: qname
-					}, function (err,recs) {
-
-						FS.writeFile( path, recs.joinify("\n", function (rec) {
-							return rec.script;
-						}), "utf8" );
-
-						sql.query("DELETE FROM openv.matlab WHERE ?", {
+						sql.query("SELECT * FROM openv.matlab WHERE ? ORDER BY ID", {
 							queue: qname
+						}, function (err,recs) {
+
+							FS.writeFile( path, recs.joinify("\n", function (rec) {
+								return rec.script;
+							}), "utf8" );
+
+							sql.query("DELETE FROM openv.matlab WHERE ?", {
+								queue: qname
+							});
 						});
 					});
-				});
 				
 			},
 			
@@ -106,8 +120,8 @@ var
 						script: script
 					}, function (err) {
 						Log("matlab queue", err);
-					}).onEnd();
-					//sql.release();
+					}); 
+					sql.release();
 				});
 			}		
 		},
@@ -706,12 +720,19 @@ var
 		gen: {  //< controls code generation when engine initialized/programed
 			debug: false,
 			trace: false,
-			dbcon: {
-				user: ENV.DB_USER,
-				name: ENV.DB_NAME,
-				pass: ENV.DB_PASS
-			},				
-			db: true,
+			db: {
+				use: true,
+				odbc: {  // connecting via non-host machine
+					user: ENV.ODBC_USER,
+					name: ENV.ODBC_NAME,
+					pass: ENV.ODBC_PASS
+				},
+				host: { // connecting on host machine
+					user: ENV.MYSQL_USER,
+					name: ENV.MYSQL_NAME,
+					pass: ENV.MYSQL_PASS
+				}
+			},
 			libs: true,
 			code: true
 		},
@@ -843,9 +864,9 @@ if INIT:
 	import json as JSON			#json interface
 	import sys as SYS			#system info` }
 				
-				if (gen.db) { script += `
+				if (gen.db.use) { script += `
 	#connect to db
-	SQL = SQLC.connect(user='${gen.dbcon.user}', password='${gen.dbcon.pass}', database='${gen.dbcon.name}')
+	SQL = SQLC.connect(user='${gen.db.host.user}', password='${gen.db.host.pass}', database='${gen.db.host.name}')
 	SQL0 = SQL.cursor(buffered=True)
 	SQL1 = SQL.cursor(buffered=True) ` }
 				
@@ -981,7 +1002,7 @@ if ( CTX )
 					agent = ATOM.matlab.path.agent,
 					path = ATOM.matlab.path.save + func + ".m",
 					logic = {
-						save: `
+						/*save: `
 	function send(res)
 		fid = fopen('${func}.out', 'wt');
 		fprintf(fid, '%s', jsonencode(res) );
@@ -994,32 +1015,43 @@ if ( CTX )
 		fprintf(fid, '%s', jsonencode(ctx.Save) );
 		fclose(fid);
 		webread( '${agent}?save=${func}' );
-	end `,
+	end `, */
 
 						load: `
-	function load(ctx, res)
-		query = ctx._Load;
-		ctx.Data = 0;
-
+	function load(ctx, cb)
 		try
-			if length(query)>1
-				ctx.Data = select(ws.db, query);
+			if length(ctx.Events)>1
+				ctx.Data = select(ws.db, ctx.Events);
 			end
 		
 		catch 
+				ctx.Data = []
 		end
 
-		send(res);
+		%send(res);
+		res = cb(ctx);
+		disp({ 'cbres', res });
+
+		if ws.db
+			update(ws.db, '${Thread.plugin}', {'Save'}, res, 'where Name="${Thread.case}"');
+
+		else
+			fid = fopen('${func}.out', 'wt');
+			fprintf(fid, '%s', jsonencode(res) );
+			fclose(fid);
+			webread( '${agent}?save=${func}' );
+		end
 	end `, 
 						
 						step: `
 	function step(ctx)
-		load(ctx, ${Thread.plugin}(ctx));
+		%load(ctx, ${Thread.plugin}(ctx));
+		load(ctx, @${Thread.plugin});
 
 		% engine logic and ports
 		${code}	
 	end `
-					},						
+					},	
 					script = "",
 					gen = ATOM.gen;
 
@@ -1030,10 +1062,10 @@ function ws = ${func}( )
 	ws.step = @step;
 	ws.save = @save;
 	ws.load = @load;
-	ws.send = @send;
+	%ws.send = @send;
 
-	if false % ${gen.db}
-		ws.db = database('${gen.dbcon.name}','${gen.dbcon.user}','${gen.dbcon.pass}');
+	if ${gen.db.use ? 1 : 0}
+		ws.db = database('${gen.db.odbc.name}','${gen.db.odbc.user}','${gen.db.odbc.pass}');
 	else
 		ws.db = 0;
 	end
@@ -1047,17 +1079,15 @@ function ws = ${func}( )
 	end
 
 	${logic.load}
-	${logic.save}
+	%${logic.save}
 	${logic.step}
 
 end`;  };
 
-				if (gen.trace) Log(script);
+				if (true) Log(script);
 				FS.writeFile( path, script, "utf8" );
 
-				ATOM.matlab.queue( "init_queue", `
-ws_${func} = ${func}; 
-ws_${func}.send( "Queued" );` );
+				ATOM.matlab.queue( "init_queue", `ws_${func} = ${func};  %ws_${func}.send( "Queued" );` );
 				
 				cb(null,ctx);
 			},
@@ -1170,9 +1200,9 @@ ws_${func}.send( "Queued" );` );
 				var 
 					func = thread.replace(/\./g,"_");
 				
-				ctx._Load = ctx._Load || "";
+				ctx.Events = ctx._Events || "";
 				
-				if ( !ctx._Load ) cb(0);   // detach thread and set default responce
+				//if ( !ctx.Events ) cb(0);   // detach thread and set default response
 				
 				ATOM.matlab.queue( "step_queue", `ws_${func}.step( ${arglist(ctx)} );` );
 				
