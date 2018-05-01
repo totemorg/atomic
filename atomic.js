@@ -61,9 +61,22 @@ var
 		Next available core
 		*/
 		nextcore: 0,
-		
+
+		db: { // db connections for each engine tech
+			python: { //< support for python engines
+				user: ENV.MYSQL_USER,
+				name: ENV.MYSQL_NAME,
+				pass: ENV.MYSQL_PASS
+			},
+			
+			matlab: {  // connecting via non-host machine
+				user: ENV.ODBC_USER,
+				name: ENV.ODBC_NAME,
+				pass: ENV.ODBC_PASS
+			}
+		},
+			
 		matlab: {  //< support for matlab engines
-			odbc: true,
 			
 			path: {  //< file and service paths
 				save: "./public/matlab/",
@@ -80,7 +93,7 @@ var
 								
 				Trace("FLUSH MATLAB");
 				
-				if (matlab.odbc) {
+				if (matlab.db) {
 					FS.writeFile( path, `
 ex = select(odbc, 'SELECT * FROM openv.matlab WHERE queue="${qname}"');
 exec(odbc, 'DELETE FROM openv.matlab WHERE queue="${qname}"');
@@ -719,20 +732,7 @@ end
 			
 		gen: {  //< controls code generation when engine initialized/programed
 			debug: false,
-			trace: false,
-			db: {
-				use: true,
-				odbc: {  // connecting via non-host machine
-					user: ENV.ODBC_USER,
-					name: ENV.ODBC_NAME,
-					pass: ENV.ODBC_PASS
-				},
-				host: { // connecting on host machine
-					user: ENV.MYSQL_USER,
-					name: ENV.MYSQL_NAME,
-					pass: ENV.MYSQL_PASS
-				}
-			},
+			trace: true,
 			libs: true,
 			code: true
 		},
@@ -758,6 +758,7 @@ end
 					},
 					script = "", 
 					gen = ATOM.gen,
+					db = ATOM.db.python,
 					ports = portsDict( ctx.ports || {} ),
 					logic = {  // flush-load-save-code logic
 						flush: `
@@ -864,9 +865,9 @@ if INIT:
 	import json as JSON			#json interface
 	import sys as SYS			#system info` }
 				
-				if (gen.db.use) { script += `
+				if (db) { script += `
 	#connect to db
-	SQL = SQLC.connect(user='${gen.db.host.user}', password='${gen.db.host.pass}', database='${gen.db.host.name}')
+	SQL = SQLC.connect(user='${db.user}', password='${db.pass}', database='${db.name}')
 	SQL0 = SQL.cursor(buffered=True)
 	SQL1 = SQL.cursor(buffered=True) ` }
 				
@@ -999,8 +1000,11 @@ if ( CTX )
 						client: Thread.pop()
 					},
 					func = thread.replace(/\./g,"_"),
-					agent = ATOM.matlab.path.agent,
-					path = ATOM.matlab.path.save + func + ".m",
+					matlab = ATOM.matlab,
+					agent = matlab.path.agent,
+					db = ATOM.db.matlab,
+					usedb = db ? true : false,
+					path = matlab.path.save + func + ".m",
 					logic = {
 						/*save: `
 	function send(res)
@@ -1028,7 +1032,6 @@ if ( CTX )
 				ctx.Data = []
 		end
 
-		%send(res);
 		res = cb(ctx);
 		disp({ 'cbres', res });
 
@@ -1045,7 +1048,6 @@ if ( CTX )
 						
 						step: `
 	function step(ctx)
-		%load(ctx, ${Thread.plugin}(ctx));
 		load(ctx, @${Thread.plugin});
 
 		% engine logic and ports
@@ -1062,10 +1064,9 @@ function ws = ${func}( )
 	ws.step = @step;
 	ws.save = @save;
 	ws.load = @load;
-	%ws.send = @send;
 
-	if ${gen.db.use ? 1 : 0}
-		ws.db = database('${gen.db.odbc.name}','${gen.db.odbc.user}','${gen.db.odbc.pass}');
+	if ${usedb}
+		ws.db = database('${db.name}', '${db.user}', '${db.pass}');
 	else
 		ws.db = 0;
 	end
@@ -1079,15 +1080,14 @@ function ws = ${func}( )
 	end
 
 	${logic.load}
-	%${logic.save}
 	${logic.step}
 
 end`;  };
 
-				if (true) Log(script);
+				if (gen.trace) Log(script);
 				FS.writeFile( path, script, "utf8" );
 
-				ATOM.matlab.queue( "init_queue", `ws_${func} = ${func};  %ws_${func}.send( "Queued" );` );
+				matlab.queue( "init_queue", `ws_${func} = ${func}; ` );
 				
 				cb(null,ctx);
 			},
@@ -1198,13 +1198,14 @@ end`;  };
 				}
 
 				var 
+					matlab = ATOM.matlab,
 					func = thread.replace(/\./g,"_");
 				
-				ctx.Events = ctx._Events || "";
+				ctx.Events = ctx.Events || "";
 				
 				//if ( !ctx.Events ) cb(0);   // detach thread and set default response
 				
-				ATOM.matlab.queue( "step_queue", `ws_${func}.step( ${arglist(ctx)} );` );
+				matlab.queue( "step_queue", `ws_${func}.step( ${arglist(ctx)} );` );
 				
 				return null;
 			},
