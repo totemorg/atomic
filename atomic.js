@@ -86,6 +86,7 @@ var
 			flush: function (sql,qname) {  //<  flush jobs in qname=init|step|... queue
 				var
 					matlab = ATOM.matlab,
+					db = ATOM.db.matlab,
 					agent = matlab.path.agent,
 					func = qname,
 					path = matlab.path.save + func + ".m",
@@ -93,10 +94,10 @@ var
 								
 				Trace("FLUSH MATLAB");
 				
-				if (matlab.db) {
+				if (db) {
 					FS.writeFile( path, `
 ex = select(odbc, 'SELECT * FROM openv.matlab WHERE queue="${qname}"');
-exec(odbc, 'DELETE FROM openv.matlab WHERE queue="${qname}"');
+close(exec(odbc, 'DELETE FROM openv.matlab WHERE queue="${qname}"'));
 for n=1:height(ex)
 	eval(ex.script{n});
 end
@@ -1003,7 +1004,7 @@ if ( CTX )
 					matlab = ATOM.matlab,
 					agent = matlab.path.agent,
 					db = ATOM.db.matlab,
-					usedb = db ? true : false,
+					usedb = db ? 1 : 0,
 					path = matlab.path.save + func + ".m",
 					logic = {
 						/*save: `
@@ -1033,10 +1034,12 @@ if ( CTX )
 		end
 
 		res = cb(ctx);
-		disp({ 'cbres', res });
 
-		if ws.db
-			update(ws.db, '${Thread.plugin}', {'Save'}, res, 'where Name="${Thread.case}"');
+		if ${usedb}
+			disp({'${Thread.plugin}', 'where ID=${Thread.case}', res});
+			%update(ws.db, 'app.${Thread.plugin}', {'Save'}, {jsonencode(res)}, 'where ID=${Thread.case}');
+			json = jsonencode(res);
+			close(exec( `UPDATE app.${Thread.plugin} SET Save=${json} WHERE ID=${Thread.case}` ));
 
 		else
 			fid = fopen('${func}.out', 'wt');
