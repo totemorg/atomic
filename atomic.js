@@ -1031,8 +1031,7 @@ if ( CTX )
 
 		if ${usedb}
 			disp({'${Thread.plugin}', 'where ID=${Thread.case}', res});
-			%update(ws.db, 'app.${Thread.plugin}', {'Save'}, {jsonencode(res)}, 'where ID=${Thread.case}');
-			close(exec( ['UPDATE app.${Thread.plugin} SET Save=',  jsonencode(res), ' WHERE ID=${Thread.case}'] ));
+			close(exec( ws.db, "UPDATE app.${Thread.plugin} SET Save='" +  jsonencode(res) + "' WHERE ID=${Thread.case}" ));
 
 		else
 			fid = fopen('${func}.out', 'wt');
