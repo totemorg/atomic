@@ -9,12 +9,6 @@
  * @requires vm
  */
 
-/* 
-To Do:
-+ add comments to config and methods
-+ review and correct README.md
-*/
-
 var 														// NodeJS modules
 	ENV = process.env,
 	CP = require("child_process"),
@@ -79,7 +73,7 @@ var
 		matlab: {  //< support for matlab engines
 			
 			path: {  //< file and service paths
-				save: "./public/matlab/",
+				save: "./public/m/",
 				agent: "http://totem.west.ile.nga.ic.gov:8080/matlab"
 			},
 				
@@ -354,7 +348,7 @@ end
 				
 			}
 
-			function execute(ctx, cb) {  //< callback cb(ctx,stepcb) with revised engine ctx and stepper
+			function execute(ctx, cb) {  //< callback cb(ctx,stepper) with primed engine ctx and stepper
 				var 
 					sql = req.sql,
 					body = ctx.req.body,
@@ -363,7 +357,7 @@ end
 				
 				//Log("exe ctx",runctx);
 				
-				cb( runctx, function (res) {  // callback engine using this stepper
+				cb( runctx, function stepper(res) {  // callback using this stepper
 
 					if ( stepEngine = ctx.step )
 						ATOM.prime(sql, runctx, function (runctx) {  // mixin sql primed keys into engine ctx
@@ -407,7 +401,7 @@ end
 					cb( null );
 			}
 			
-			function initialize(ctx, cb) {  //< initialize engine then callback cb(ctx,stepper) or cb(null) if failed
+			function initialize(ctx, cb) {  //< initialize engine then callback cb(ctx, stepper) or cb(null) if failed
 				var
 					sql = req.sql;
 				
@@ -585,15 +579,15 @@ end
 			});
 		},
 			
-		prime: function (sql, ctx, cb) {  //< callback cb(ctx) with ctx primed by sql ctx.entry and ctx.exit queries
+		prime: function (sql, ctx, cb) {  //< callback cb(ctx) with ctx primed by sql ctx.Entry and ctx.Exit queries
 		/**
 		@method prime
 		@member ATOMIC
 
-		Callback engine cb(ctx) with its state ctx primed with state from its ctx.entry, then export its 
-		ctx state specified by its ctx.exit.
-		The ctx.sqls = {var:"query...", ...} || "query..." enumerates the engine's ctx.entry (to import 
-		state into its ctx before the engine is run), and enumerates the engine's ctx.exit (to export 
+		Callback engine cb(ctx) with its state ctx primed with state from its ctx.Entry, then export its 
+		ctx state specified by its ctx.Exit.
+		The ctx.sqls = {var:"query...", ...} || "query..." enumerates the engine's ctx.Entry (to import 
+		state into its ctx before the engine is run), and enumerates the engine's ctx.Exit (to export 
 		state from its ctx after the engine is run).  If an sqls entry/exit exists, this will cause the 
 		ctx.req = [var, ...] list to be built to synchronously import/export the state into/from the 
 		engine's context.
@@ -613,7 +607,7 @@ end
 
 		//Trace([key,query]);
 
-					if (ctx.sqls == ctx.entry) {  	// importing this var into the ctx
+					if (ctx.sqls == ctx.Entry) {  	// importing this var into the ctx
 						var data = ctx[key] = [];
 						var args = ctx.query;
 					}
@@ -635,7 +629,7 @@ end
 						}
 						
 						else 
-							if (ctx.sqls == ctx.entry)   // importing matrix
+							if (ctx.sqls == ctx.Entry)   // importing matrix
 								recs.each( function (n,rec) {
 									var vec = [];
 									data.push( vec );
@@ -653,8 +647,8 @@ end
 				if (cb) {				// run engine in its ctx
 					cb(ctx);
 
-					if (ctx.exit) {	// save selected engine ctx keys
-						var sqls = ctx.sqls = ctx.exit;
+					if (ctx.Exit) {	// save selected engine ctx keys
+						var sqls = ctx.sqls = ctx.Exit;
 						var keys = ctx.keys = []; for (var n in sqls) keys.push(n);
 
 						ATOM.prime(sql,ctx);
@@ -663,8 +657,8 @@ end
 			}
 			
 			else
-			if (ctx.entry) {  // build ctx.keys from the ctx.entry sqls
-				var sqls = ctx.sqls = ctx.entry;
+			if (ctx.Entry) {  // build ctx.keys from the ctx.Entry sqls
+				var sqls = ctx.sqls = ctx.Entry;
 				
 				if (sqls.constructor == String)   // load entire ctx
 					sql.query(sqls)
@@ -978,7 +972,7 @@ LOG("js>ctx", CTX);
 ${code}
 
 if ( CTX )
-	if ( port = PORTS[PORT] )   // stateful port processing
+	if ( port = PORTS[PORT] )   // stateful processing
 		ERR = port(CTX.tau, CTX.ports[PORT]);
 
 	else  // stateless processing
@@ -1094,9 +1088,9 @@ end`;  };
 				cb(null,ctx);
 			},
 
-			/*
-			em: function emInit(thread,code,ctx,cb) {
+			me: function meInit(thread,code,ctx,cb) {
 
+				/*
 				Copy(ATOM.plugins, ctx);
 				
 				if (ctx.require) 
@@ -1104,9 +1098,17 @@ end`;  };
 
 				ATOM.plugins.MATH.eval(code,ctx);
 
-				cb( null, ctx );
+				cb( null, ctx ); 
+				*/
+
+				ATOM.vm[thread] = {
+					ctx: {
+					},
+					code: code
+				};
+				
+				cb( null, ctx ); 
 			},
-			*/
 			
 			sq:  function sqInit(thread,code,ctx,cb) {
 				ATOM.thread( function (sql) {
@@ -1212,8 +1214,22 @@ end`;  };
 				return null;
 			},
 			
-			/*
-			em: function meStep(thread,code,ctx) {
+			me: function meStep(thread,port,ctx,cb) {
+				if ( vm = ATOM.vm[thread] )
+					ATOM.thread( function (sql) {
+						//Copy( {SQL: sql, CTX: ctx, DATA: [], RES: [], PORT: port, PORTS: vm.ctx}, vm.ctx );
+
+						ATOM.plugins.ME.exec( vm.code, Copy(ctx, vm.ctx), function (vmctx) {
+							//Log("vmctx", vmctx);
+							cb( vmctx );
+						});
+						return null;
+					});
+				
+				else
+					return ATOM.errors.lostContext;	
+				
+				/*
 				if ( vm = ATOM.vm[thread] )
 					ATOM.thread( function (sql) {
 						Copy( {SQL: sql, CTX: ctx, DATA: [], RES: [], PORT: port, PORTS: vm.ctx}, vm.ctx );
@@ -1223,9 +1239,9 @@ end`;  };
 					});
 				
 				else
-					return ATOM.errors.lostContext;					
+					return ATOM.errors.lostContext;	
+				*/
 			},
-			*/
 			
 			sq: function sqStep(thread,port,ctx,cb) {
 
