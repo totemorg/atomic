@@ -773,15 +773,15 @@ def FLUSH_forEach(ctx,rec,recs):
 	return len(recs) < 1
 `,
 
-						save: `
+						/*save: `
 def save(ctx):  #save results
 	print "saving", ctx['Save']
-`, 
+`,  */
 
 						load: `
 def GET_load(flush, ctx, cb):  #load dataset
-	if 'Load' in ctx:
-		Query = ctx['Load']
+	if 'Events' in ctx:
+		Query = ctx['Events']
 		if Query.startswith("/"):
 			recs = []
 			for (rec) in FETCH(query):
@@ -814,7 +814,7 @@ def GET_load(flush, ctx, cb):  #load dataset
 		cb( 0 )
 
 def GET_forAll(ctx, cb):
-	GET_load( FLUSH_forAll, ctx, cb )t
+	GET_load( FLUSH_forAll, ctx, cb )
 
 def GET_forDrop(ctx, cb):
 	GET_load( FLUSH_forDrop, ctx, cb )
@@ -829,7 +829,7 @@ def GET_forEach(ctx, cb):
 				step: `
 	os = locals()
 	#print "os", os  # why is this dump required to make sql connector visibile to plugin ?
-	plugin = os['${Thread.plugin}']
+	#plugin = os['${Thread.plugin}']
 	ctx = os['CTX']
 	port = os['PORT']
 	ports = os['PORTS']
@@ -840,8 +840,8 @@ def GET_forEach(ctx, cb):
 		else:
 			ERR = 103
 	else:
-		plugin(ctx, save)
-		ERR = 0 `					
+		ctx['Save'] = ${Thread.plugin}(ctx)
+		ERR = 0 `
 					},
 					Job = ctx.Job || {},
 					script = "";
@@ -877,8 +877,6 @@ if INIT:
 
 				if (gen.code) { script += `
 # record buffering logic ${logic.flush}
-
-# data saving logic ${logic.save}
 
 # data loading logic ${logic.load}
 
