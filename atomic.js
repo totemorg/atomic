@@ -727,7 +727,7 @@ end
 			
 		gen: {  //< controls code generation when engine initialized/programed
 			debug: false,
-			trace: true,
+			trace: false,
 			libs: true,
 			code: true
 		},
