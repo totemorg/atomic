@@ -1183,7 +1183,11 @@ end`;  };
 							switch ( val.constructor ) {
 								case Array:
 								case Object:
-									rtn.push( `jsondecode('${JSON.stringify(val)}')` ); break;
+									rtn.push( 
+										key.startsWith("Save")
+											? "jsondecode( '[]' )"
+											: `jsondecode( '${JSON.stringify(val)}' )` 
+									); break;
 									
 								case String: 
 									rtn.push( q + val + q ); break;
