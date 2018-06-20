@@ -1,12 +1,21 @@
 // UNCLASSIFIED
 
 /**
- * @class ATOMIC
- * @requires child_processby
- * @requires fs
- * @requires engineIF
- * @requires enum
- * @requires vm
+@class ATOMIC
+@requires child_processby
+@requires fs
+@requires engineIF
+@requires enum
+@requires vm
+ 
+Paths:
+MYSQL_USER = local DB login 
+MYSQL_NAME = local DB name
+MYSQL_PASS = local DB password
+ODBC_USER = remote DB login 
+ODBC_NAME = remote DB name
+ODBC_PASS = remote DB password
+SERVICE_MASTER_URL = url to master service
  */
 
 var 														// NodeJS modules
@@ -74,7 +83,7 @@ var
 			
 			path: {  //< file and service paths
 				save: "./public/m/",
-				agent: "http://totem.west.ile.nga.ic.gov:8080/matlab"
+				agent: ENV.SERVICE_MASTER_URL + "/matlab"
 			},
 				
 			flush: function (sql,qname) {  //<  flush jobs in qname=init|step|... queue
@@ -90,21 +99,22 @@ var
 				
 				if (db) {
 					FS.writeFile( path, `
-ex = select(odbc, 'SELECT * FROM openv.matlab WHERE queue="${qname}"');
-close(exec(odbc, 'DELETE FROM openv.matlab WHERE queue="${qname}"'));
+ex = select(odbc, 'SELECT * FROM openv.agents WHERE queue="${qname}"');
+close(exec(odbc, 'DELETE FROM openv.agents WHERE queue="${qname}"'));
 for n=1:height(ex)
+	disp(ex.script{n});
 	eval(ex.script{n});
 end
 `);
 				}
 				
 				else
-					sql.query("INSERT INTO openv.matlab SET ?", {
+					sql.query("INSERT INTO openv.agents SET ?", {
 						queue: qname,
 						script: script
 					}, function (err) {
 
-						sql.query("SELECT * FROM openv.matlab WHERE ? ORDER BY ID", {
+						sql.query("SELECT * FROM openv.agents WHERE ? ORDER BY ID", {
 							queue: qname
 						}, function (err,recs) {
 
@@ -112,7 +122,7 @@ end
 								return rec.script;
 							}), "utf8" );
 
-							sql.query("DELETE FROM openv.matlab WHERE ?", {
+							sql.query("DELETE FROM openv.agents WHERE ?", {
 								queue: qname
 							});
 						});
@@ -123,7 +133,7 @@ end
 			queue: function (qname, script) { //< append script job to qname=init|step|... queue
 				
 				ATOM.thread( function (sql) {
-					sql.query("INSERT INTO openv.matlab SET ?", {
+					sql.query("INSERT INTO openv.agents SET ?", {
 						queue: qname,
 						script: script
 					}, function (err) {
@@ -1029,13 +1039,15 @@ if ( CTX )
 
 		if ${usedb}
 			disp({'${Thread.plugin}', 'where ID=${Thread.case}', res});
-			close(exec( ws.db, "UPDATE app.${Thread.plugin} SET Save='" +  jsonencode(res) + "' WHERE ID=${Thread.case}" ));
+			%close(exec( ws.db, "UPDATE app.${Thread.plugin} SET Save='" +  jsonencode(res) + "' WHERE ID=${Thread.case}" ));
+			close(exec( ws.db, "INSERT INTO openv.agents SET Script='" +  jsonencode(res) + ", queue='${thread}' " ));
+			webread( '${agent}?save=${thread}' );
 
 		else
 			fid = fopen('${func}.out', 'wt');
 			fprintf(fid, '%s', jsonencode(res) );
 			fclose(fid);
-			webread( '${agent}?save=${func}' );
+			webread( '${agent}?load=${func}' );
 		end
 	end `, 
 						
