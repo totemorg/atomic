@@ -1040,7 +1040,10 @@ if ( CTX )
 		if ${usedb}
 			disp({'${Thread.plugin}', 'where ID=${Thread.case}', res});
 			%close(exec( ws.db, "UPDATE app.${Thread.plugin} SET Save='" +  jsonencode(res) + "' WHERE ID=${Thread.case}" ));
-			close(exec( ws.db, "INSERT INTO openv.agents SET Script='" +  jsonencode(res) + ", queue='${thread}' " ));
+			q = "INSERT INTO openv.agents SET Script='" +  jsonencode(res) + "', queue='${thread}' " ;
+			disp(q);
+			h = exec( ws.db, q );
+			close(h);
 			webread( '${agent}?save=${thread}' );
 
 		else
