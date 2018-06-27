@@ -1290,6 +1290,224 @@ end`;  };
 function Trace(msg,sql) {
 	msg.trace("A>",sql);
 }
-	
+
+switch (process.argv[2]) {
+	case "A1": 
+		var ATOM = require("../atomic");
+		var TOTEM = require("../totem");
+
+		Trace({
+			msg: "A Totem+Engine client has been created", 
+			a_tau_template: ATOM.tau("somejob.pdf"),
+			engine_errors: ATOM.error,
+			get_endpts: TOTEM.byTable,
+			my_paths: TOTEM.paths
+		});
+		break;
+		
+	case "A2": 
+		var TOTEM = require("../totem");
+
+		TOTEM.config({}, function (err) {
+			Trace( err || "Started but I will now power down" );
+			TOTEM.stop();
+		});
+
+		var ATOM = require("../atomic").config({
+			thread: TOTEM.thread
+		});
+		break;
+		
+	case "A3": 
+		var TOTEM = require("../totem").config({
+			"byTable.": {
+				chipper: function Chipper(req,res) {				
+					res( 123 );
+				}
+			},
+
+			mysql: {
+				host: ENV.MYSQL_HOST,
+				user: ENV.MYSQL_USER,
+				pass: ENV.MYSQL_PASS
+			}
+
+		});
+
+		var ATOM = require("../atomic").config({
+			thread: TOTEM.thread
+		});
+		
+	case "A4": 
+		var TOTEM = require("../totem").config({
+			"byTable.": {
+				test: function Chipper(req,res) {
+
+					var itau = [ATOM.tau()];
+					var otau = [ATOM.tau()];
+
+					switch (req.query.config) {
+						case "cv": // program and step haar opencv machine 
+							parm =	{
+								tau: [], 
+								ports: {
+									frame:	 {},
+									helipads: {scale:0.05,dim:100,delta:0.1,hits:10,cascade:["c1/cascade"]},
+									faces:	 {scale:0.05,dim:100,delta:0.1,hits:10,cascade:["haarcascade_frontalface_alt","haarcascade_eye_tree_eyeglasses"]}
+							}};
+
+							itau[0].job = "test.jpg";
+							console.log(parm);
+
+							for (var n=0,N=1;n<N;n++)  // program N>1 to test reprogram
+								console.log(`INIT[${n}] = `, ATOM.opencv("opencv.Me.Thread1","setup",parm));
+
+							for (var n=0,N=5;n<N;n++) // step N>1 to test multistep
+								console.log(`STEP[${n}] = `, ATOM.opencv("opencv.Me.Thread1","frame",itau));
+
+							// returns badStep if the cascades were undefined at the program step
+							console.log("STEP = ", ATOM.opencv("opencv.Me.Thread1","helipads",otau));
+							console.log(otau);
+							break;
+
+						// python machines fail with "cant find forkpty" if "import cv2" attempted
+
+						case "py1": // program python machine
+							parm =	{ 
+								tau:	[{job:"redefine on run"}],
+								ports: {	
+							}};
+							pgm = `
+print 'Look mom - Im running python!'
+print tau
+tau = [{'x':[11,12],'y':[21,22]}]
+`;
+
+							// By default python attempts to connect to mysql.  
+							// So, if mysql service not running or mysql.connector module not found, this will not run.
+							console.log({py:pgm, ctx: parm});
+							console.log("INIT = ", ATOM.python("py1.thread",pgm,parm));
+							console.log(parm.tau);
+							break;
+
+						case "py2": // program and step python machine 
+							parm =	{ 
+								tau:	[{job:"redefine on run"}],
+								ports: { 	
+									frame:	 {},
+									helipads:{scale:1.01,dim:100,delta:0.1,hits:10,cascade:["c1/cascade"]},
+									faces:	 {scale:1.01,dim:100,delta:0.1,hits:10,cascade:["haarcascade_frontalface_alt","haarcascade_eye_tree_eyeglasses"]}
+							}};
+
+							itau[0].job = "test.jpg";
+							pgm = `
+print 'Look mom - Im running python!'
+def frame(tau,parms):
+	print parms
+	return -101
+def helipads(tau,parms):
+	print parms
+	return -102
+def faces(tau,parms):
+	print parms
+	return -103
+`;		
+							console.log({py:pgm, ctx: parm});
+							console.log("INIT = ", ATOM.python("py2.Me.Thread1",pgm,parm));
+							// reprogramming ignored
+							//console.log("INIT = ", ATOM.python("py2.Me.Thread1",pgm,parm));
+
+							for (var n=0,N=1; n<N; n++)
+								console.log(`STEP[${n}] = `, ATOM.python("py2.Me.Thread1","frame",itau));
+
+							console.log("STEP = ", ATOM.python("py2.Me.Thread1","helipads",otau));
+							break;
+
+						case "py3": // program and step python machine string with reinit along the way
+							parm =	{ 
+								tau:	[{job:"redefine on run"}],
+								ports: {	
+									frame:	 {},
+									helipads:{scale:1.01,dim:100,delta:0.1,hits:10,cascade:["c1/cascade"]},
+									faces:	 {scale:1.01,dim:100,delta:0.1,hits:10,cascade:["haarcascade_frontalface_alt","haarcascade_eye_tree_eyeglasses"]}
+							}};
+
+							itau[0].job = "test.jpg";
+							pgm = `
+print 'Look mom - Im running python!'
+def frame(tau,parms):
+	print parms
+	return -101
+def helipads(tau,parms):
+	print parms
+	return -102
+def faces(tau,parms):
+	print parms
+	return -103
+`;
+
+							console.log({py:pgm, ctx: parm});
+							console.log("INIT = ", ATOM.python("py3",pgm,parm));
+							console.log("STEP = ", ATOM.python("py3","frame",itau));
+							// reprogramming ignored
+							//console.log("REINIT = ", ATOM.python("py3",pgm,parm));
+							//console.log("STEP = ", ATOM.python("py3","frame",itau));
+							console.log(otau);
+							break;
+
+						case "js": // program and step a js machine string
+							parm =	{ 
+								ports: {	
+									frame:	 {},
+									helipads:{scale:1.01,dim:100,delta:0.1,hits:10,cascade:["c1/cascade"]},
+									faces:	 {scale:1.01,dim:100,delta:0.1,hits:10,cascade:["haarcascade_frontalface_alt","haarcascade_eye_tree_eyeglasses"]}
+							}};
+
+							itau[0].job = "test.jpg";
+							pgm = `
+CON.log('Look mom - Im running javascript!');
+function frame(tau,parms) { 
+	CON.log("here I come to save the day");
+	tau[0].xyz=123; 
+	return 0; 
+}
+function helipads(tau,parms) { 
+	tau[0].results=666; 
+	return 101; 
+}
+function faces(tau,parms) { return 102; }
+`;
+
+							console.log({py:pgm, ctx: parm});
+							console.log("INIT = ", ATOM.js("mytest",pgm,parm));
+							// frame should return a 0 = null noerror
+							console.log("STEP = ", ATOM.js("mytest","frame",itau));
+							console.log(itau);
+							// helipads should return a 101 = badload error
+							console.log("STEP = ", ATOM.js("mytest","helipads",otau));
+							console.log(otau);
+							break;	
+					}
+
+					res( "thanks!" );
+				}
+			},
+
+			mysql: {
+				host: ENV.MYSQL_HOST,
+				user: ENV.MYSQL_USER,
+				pass: ENV.MYSQL_PASS
+			}
+
+		}, function (err) {
+			Trace( "Unit test my engines with /test?config=cv | py1 | py2 | py3 | js" );
+		});
+
+		var ATOM = require("../atomic").config({
+			thread: TOTEM.thread
+		});
+		break;
+}
+		
 // UNCLASSIFIED
 
