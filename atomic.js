@@ -18,8 +18,12 @@ ODBC_PASS = remote DB password
 SERVICE_MASTER_URL = url to master service
  */
 
-var 														// NodeJS modules
+var 														
+	// globals
 	ENV = process.env,
+	TRACE = "A>",
+	
+	// NodeJS modules
 	CP = require("child_process"),
 	FS = require("fs"),	
 	CLUSTER = require("cluster"),
@@ -706,7 +710,7 @@ end
 
 			//Log("eng get",name);
 			sql.forFirst(
-				"ENG",
+				TRACE,
 				"SELECT * FROM ??.engines WHERE least(?) LIMIT 1", [ group, {
 					Name: name,
 					Enabled: true
@@ -1288,7 +1292,7 @@ end`;  };
 	});
 
 function Trace(msg,sql) {
-	msg.trace("A>",sql);
+	TRACE.trace(msg,sql);
 }
 
 switch (process.argv[2]) {
