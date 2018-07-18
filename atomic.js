@@ -569,7 +569,7 @@ end
 		 free/delete/DELETE.
 		*/
 			ATOM.run( req, function (ctx, step) {  // get engine stepper and its context
-//Log(">run", ctx);
+Log(">run", ctx);
 				
 				if (ctx)   // step engine
 					step( res );
@@ -697,6 +697,7 @@ end
 			var
 				sql = req.sql,
 				group = req.group,
+				query = req.query,
 				name = req.table;
 			
 			function getState(str, def) {
@@ -708,35 +709,40 @@ end
 				}
 			}
 
-			//Log("eng get",name);
-			sql.forFirst(
-				TRACE,
-				"SELECT * FROM ??.engines WHERE least(?) LIMIT 1", [ group, {
-					Name: name,
-					Enabled: true
-			}], function (eng) {
-				
-				if (eng)
-					cb( Copy({
-						req: {  // http request to get and prime engine context
-							group: req.group,
-							table: req.table,
-							client: req.client,
-							query: Copy( // passed query keys override engine state context
-								req.query,
-								getState(eng.State, {})),
-							body: req.body,
-							action: req.action
-						},
-						type: eng.Type,   // engine type: js, py, etc
-						code: eng.Code, // engine code
-						init: ATOM.init[ eng.Type ],  // method to initialize/program the engine
-						step: ATOM.step[ eng.Type ]  // method to advance the engine
-					}, ctx) );
-				
-				else
-					cb( null );
-			});
+			//Log("eng get",name, req.query);
+			if ( name == "engines" )
+				cb( null );
+			
+			else
+				sql.forFirst(
+					TRACE,
+					"SELECT * FROM ??.engines WHERE least(?) LIMIT 1", 
+					[ group, {
+						Name: name,
+						Enabled: true
+					}], function (eng) {
+
+					if (eng)
+						cb( Copy({
+							req: {  // http request to get and prime engine context
+								group: req.group,
+								table: req.table,
+								client: req.client,
+								query: Copy( // passed query keys override engine state context
+									req.query,
+									getState(eng.State, {})),
+								body: req.body,
+								action: req.action
+							},
+							type: eng.Type,   // engine type: js, py, etc
+							code: eng.Code, // engine code
+							init: ATOM.init[ eng.Type ],  // method to initialize/program the engine
+							step: ATOM.step[ eng.Type ]  // method to advance the engine
+						}, ctx) );
+
+					else
+						cb( null );
+				});
 		},
 			
 		gen: {  //< controls code generation when engine initialized/programed
@@ -747,7 +753,7 @@ end
 		},
 				
 		init: {  //< initalize/program engine on given thread=case.plugin.client with callback cb(ctx) or ctx(null)
-			py: function pyInit(thread,code,ctx,cb)  {
+			py: function pyinit(thread,code,ctx,cb)  {
 				function portsDict(portsHash) {
 					var ports = Object.keys( portsHash );
 
