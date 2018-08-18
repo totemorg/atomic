@@ -374,17 +374,19 @@ end
 				cb( runctx, function stepper(res) {  // callback using this stepper
 
 					if ( stepEngine = ctx.step )
-						ATOM.prime(sql, runctx, function (runctx) {  // mixin sql primed keys into engine ctx
-							//Log("prime ctx", runctx);
-							
-							try {  	// step the engine then return an error if it failed or null if it worked
-								return ATOM.errors[ stepEngine(ctx.thread, port, runctx, res) ] || ATOM.badError;
-							}
+						ATOM.wrap( ctx.wrap, runctx, function (runctx) {
+							ATOM.prime(sql, runctx, function (runctx) {  // mixin sql primed keys into engine ctx
+								//Log("prime ctx", runctx);
 
-							catch (err) {
-								return err;
-							}
+								try {  	// step the engine then return an error if it failed or null if it worked
+									return ATOM.errors[ stepEngine(ctx.thread, port, runctx, res) ] || ATOM.badError;
+								}
 
+								catch (err) {
+									return err;
+								}
+
+							});
 						});
 					
 					else 
@@ -569,7 +571,7 @@ end
 		 free/delete/DELETE.
 		*/
 			ATOM.run( req, function (ctx, step) {  // get engine stepper and its context
-Log(">run", ctx);
+				// Log("run", ctx);
 				
 				if (ctx)   // step engine
 					step( res );
@@ -591,6 +593,18 @@ Log(">run", ctx);
 
 				res( ctx ? "" : ATOM.errors.badThread );
 			});
+		},
+		
+		wrap: function (wrap, ctx, cb) { 
+			if (wrap) {
+				VM.runInContext( wrap, VM.createContext({ 
+					ctx: ctx
+				}));
+				cb(ctx);
+			}
+			
+			else
+				cb( ctx );
 		},
 			
 		prime: function (sql, ctx, cb) {  //< callback cb(ctx) with ctx primed by sql ctx.Entry and ctx.Exit queries
@@ -736,6 +750,7 @@ Log(">run", ctx);
 							},
 							type: eng.Type,   // engine type: js, py, etc
 							code: eng.Code, // engine code
+							wrap: eng.Wrap, // js-code step wrapper
 							init: ATOM.init[ eng.Type ],  // method to initialize/program the engine
 							step: ATOM.step[ eng.Type ]  // method to advance the engine
 						}, ctx) );
