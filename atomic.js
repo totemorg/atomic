@@ -768,7 +768,7 @@ end
 		},
 				
 		init: {  //< initalize/program engine on given thread=case.plugin.client with callback cb(ctx) or ctx(null)
-			py: function pyinit(thread,code,ctx,cb)  {
+			py: function pyInit(thread,code,ctx,cb)  {
 				function portsDict(portsHash) {
 					var ports = Object.keys( portsHash );
 
