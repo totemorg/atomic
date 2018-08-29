@@ -790,94 +790,6 @@ end
 					gen = ATOM.gen,
 					db = ATOM.db.python,
 					ports = portsDict( ctx.ports || {} ),
-					logic = {  // flush-load-save-code logic
-						flush: `
-def FLUSH_forAll(ctx,rec,recs):
-	return False
-
-def FLUSH_forDrop(ctx,rec,recs):
-	return True
-
-def FLUSH_forBatch(ctx,rec,recs):
-	if len(recs):
-		return (rec[ 't' ] -recs[0][ 't' ] ) > 1
-	else:
-		return False
-
-def FLUSH_forEach(ctx,rec,recs):
-	return len(recs) < 1
-`,
-
-						/*save: `
-def save(ctx):  #save results
-	print "saving", ctx['Save']
-`,  */
-
-						load: `
-def GET_load(flush, ctx, cb):  #load dataset
-	if 'Events' in ctx:
-		Query = ctx['Events']
-		if Query.startswith("/"):
-			recs = []
-			for (rec) in FETCH(query):
-				if flush_forBatch(ctx,rec,recs):
-					print "FLUSH", len(recs)
-					cb( recs )
-					recs = []
-				recs.append(rec)
-			if len(recs):
-				cb( recs )
-			else:
-				cb( 0 )
-		elif Query:
-			recs = []
-			SQL0.execute(Query)
-			for (rec) in SQL0:
-				if flush_forBatch(ctx,rec,recs):
-					print "FLUSH", len(recs)
-					cb( recs )
-					recs = []
-				recs.append(rec)
-			print "FLUSH", len(recs)
-			if len(recs):
-				cb( recs )
-			else:
-				cb( 0 )
-		else:
-			cb( 0 )
-	else:
-		cb( 0 )
-
-def GET_forAll(ctx, cb):
-	GET_load( FLUSH_forAll, ctx, cb )
-
-def GET_forDrop(ctx, cb):
-	GET_load( FLUSH_forDrop, ctx, cb )
-
-def GET_forBatch(ctx, cb):
-	GET_load( FLUSH_forBatch, ctx, cb )
-
-def GET_forEach(ctx, cb):
-	GET_load( FLUSH_forEach, ctx, cb )
-`  ,
-				
-				step: `
-	#os = locals()
-	#print "os", os  # why is this dump required to make sql connector visibile to plugin ?
-	#plugin = os['${Thread.plugin}']
-	ctx = os['CTX']
-	port = os['PORT']
-	ports = os['PORTS']
-	if port:
-		if port in ports:
-			ports[port]( ctx['tau'], ctx['ports'][port] )
-			ERR = 0
-		else:
-			ERR = 103
-	else:
-		ctx['Save'] = ${Thread.plugin}(ctx)
-		ERR = 0 `
-					},
 					Job = ctx.Job || {},
 					script = "";
 				
@@ -914,31 +826,35 @@ print 'py>sys', SYS.path, SYS.version
 #print 'py>port',PORT` }
 
 				if (gen.code) { script += `
-# record buffering logic
-${logic.flush}
+from flow import *		# record buffering and loading logic
+${code}		# engine and port logic
 
-# data loading logic
-${logic.load}
+ports = ${ports}		# define ports
+os = locals()
 
-# engine and port logic
-${code}
+if not os['INIT']:		# already initialized so step engine
+	ctx = os['CTX']
+	port = os['PORT']
+	if port:
+		if port in ports:
+			ports[port]( ctx['tau'], ctx['ports'][port] )
+			ERR = 0
+		else:
+			ERR = 103
+	
+	else:
+		ctx['Save'] = ${Thread.plugin}(ctx, os)
+		ERR = 0 
 
-PORTS = ${ports}
-
-if 'os' in locals():
-	${logic.step} 
 else:
-	os = locals()
+	os['INIT'] = 0
 
+#exit code
+#SQL.commit()
+#SQL0.close()
+#SQL1.close()
 ` }
 				
-				if (false) { script += `
-#exit code
-SQL.commit()
-SQL0.close()
-SQL1.close()
-` }
-
 				/*
 					mysql connection notes:
 					install the python2.7 connector (rpm -Uvh mysql-conector-python-2.x.rpm)

@@ -420,7 +420,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 					);
 					*/
 
-printf(TRACE "compile=\n%s infile=%d\n",code,Py_file_input);
+//printf(TRACE "compile=\n%s infile=%d\n",code,Py_file_input);
 					// Uncomment if there is a need to define ctx at compile
 					//PyDict_SetItemString(pLocals, PYPORT, PyString_FromString( port ) );
 					//PyDict_SetItemString(pLocals, PYCTX, clone( ctx ));
@@ -438,7 +438,8 @@ printf(TRACE "compile=\n%s infile=%d\n",code,Py_file_input);
 						err = badCode;
 					}
 
-printf(TRACE "err=%d pcode=%s\n", err, (pCode ? "generated" : "missing"));
+					if (!pCode)
+					printf(TRACE "************** pythonIF failed to compile error=%d\n%s\n", err, code);
 
 					//return err;
 					//Py_Finalize(); // dont do this - will cause segment fault
@@ -474,7 +475,7 @@ printf(TRACE "err=%d pcode=%s\n", err, (pCode ? "generated" : "missing"));
 			
 			else 
 			if ( strlen(port) ) {		// Stateful step
-printf(TRACE "stateful step port=%s\n",port);
+//printf(TRACE "stateful step port=%s\n",port);
 				PyDict_SetItemString(pLocals, PYPORT, PyString_FromString(port) );
 				PyDict_SetItemString(pLocals, PYTAU, clone(tau) );
 
