@@ -420,7 +420,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 					);
 					*/
 
-//printf(TRACE "compile=\n%s infile=%d\n",code,Py_file_input);
+printf(TRACE "compile=\n%s infile=%d\n",code,Py_file_input);
 					// Uncomment if there is a need to define ctx at compile
 					//PyDict_SetItemString(pLocals, PYPORT, PyString_FromString( port ) );
 					//PyDict_SetItemString(pLocals, PYCTX, clone( ctx ));
@@ -438,7 +438,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 						err = badCode;
 					}
 
-//printf(TRACE "err=%d pcode=%s\n", err, (pCode ? "generated" : "missing"));
+printf(TRACE "err=%d pcode=%s\n", err, (pCode ? "generated" : "missing"));
 
 					//return err;
 					//Py_Finalize(); // dont do this - will cause segment fault

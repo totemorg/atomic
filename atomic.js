@@ -862,7 +862,7 @@ def GET_forEach(ctx, cb):
 `  ,
 				
 				step: `
-	os = locals()
+	#os = locals()
 	#print "os", os  # why is this dump required to make sql connector visibile to plugin ?
 	#plugin = os['${Thread.plugin}']
 	ctx = os['CTX']
@@ -882,45 +882,54 @@ def GET_forEach(ctx, cb):
 					script = "";
 				
 				Job.buffer |= 0;
-				
+
+				/*
 				script += `
 if INIT:
-	INIT = 0  `;
+	INIT = 0  
+
+`; */
 
 				if (gen.libs) { script += `
-	#import modules
-	#import caffe as CAFFE		#caffe interface
-	import mysql.connector as SQLC		#db connector interface
-	from PIL import Image as LWIP		#jpeg image interface
-	import json as JSON			#json interface
-	import sys as SYS			#system info` }
+#import modules
+#import caffe as CAFFE		#caffe interface
+import mysql.connector as SQLC		#db connector interface
+from PIL import Image as LWIP		#jpeg image interface
+import json as JSON			#json interface
+import sys as SYS			#system info` }
 				
 				if (db) { script += `
-	#connect to db
-	SQL = SQLC.connect(user='${db.user}', password='${db.pass}', database='${db.name}')
-	SQL0 = SQL.cursor(buffered=True)
-	SQL1 = SQL.cursor(buffered=True) ` }
+#connect to db
+SQL = SQLC.connect(user='${db.user}', password='${db.pass}', database='${db.name}')
+SQL0 = SQL.cursor(buffered=True)
+SQL1 = SQL.cursor(buffered=True) ` }
 				
 				if (gen.debug) { script += `
-	#trace engine context
-	print 'py>locals', locals()
-	print 'py>sys', SYS.path, SYS.version
-	#print 'py>caffe',CAFFE
-	#print 'py>sql', SQL
-	#print 'py>ctx',CTX
-	#print 'py>port',PORT` }
+#trace engine context
+print 'py>locals', locals()
+print 'py>sys', SYS.path, SYS.version
+#print 'py>caffe',CAFFE
+#print 'py>sql', SQL
+#print 'py>ctx',CTX
+#print 'py>port',PORT` }
 
 				if (gen.code) { script += `
-# record buffering logic ${logic.flush}
+# record buffering logic
+${logic.flush}
 
-# data loading logic ${logic.load}
+# data loading logic
+${logic.load}
 
 # engine and port logic
 ${code}
 
 PORTS = ${ports}
 
-if not INIT:	${logic.step} 
+if 'os' in locals():
+	${logic.step} 
+else:
+	os = locals()
+
 ` }
 				
 				if (false) { script += `
