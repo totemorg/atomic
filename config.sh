@@ -79,6 +79,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIB/cuda:$LIB/cuDNN:$LIB/caffe:$LIB/pro
 #export DB_HOST=$MYSQL_HOST
 
 # engine compile switches
+export GPUHOST=0.0.0.0
 if [ "`hostname`" == "$GPUHOST" ]; then
 	export HASGPU=1
 	export HASCAFFE=1

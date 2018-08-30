@@ -47,7 +47,8 @@
 		"libraries": [
 			# caffe shared libs (others must be placed on LD_LIBRARY_PATH)
 
-			"$(CAFFE)/build/lib/libcaffe.so",
+			##>> Manually uncomment if HASCAFFE=1 (need to make a test for this)
+			##>> "$(CAFFE)/build/lib/libcaffe.so",
 
 			# opencv shared libs
 

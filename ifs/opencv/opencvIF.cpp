@@ -117,8 +117,11 @@ using namespace v8;
 //=========================================================================
 // CNN support functions
 
-#include <caffe/caffe.hpp>
-using namespace caffe;  // NOLINT(build/namespaces)
+#if HASCAFFE
+	#include <caffe/caffe.hpp>
+	using namespace caffe;  // NOLINT(build/namespaces)
+#endif
+
 using std::string;
 
 /* Pair (label, confidence) representing a prediction. */
@@ -145,7 +148,9 @@ class Classifier {
                   std::vector<cv::Mat>* input_channels);
 
  private:
+#if HASCAFFE
   shared_ptr<Net<float> > net_;
+#endif
   cv::Size input_geometry_;
   int num_channels_;
   cv::Mat mean_;
