@@ -790,31 +790,24 @@ end
 					gen = ATOM.gen,
 					db = ATOM.db.python,
 					ports = portsDict( ctx.ports || {} ),
-					Job = ctx.Job || {},
 					script = "";
 				
-				Job.buffer |= 0;
-
-				/*
-				script += `
-if INIT:
-	INIT = 0  
-
-`; */
-
 				if (gen.libs) { script += `
 #import modules
 #import caffe as CAFFE		#caffe interface
 import mysql.connector as SQLC		#db connector interface
 from PIL import Image as LWIP		#jpeg image interface
 import json as JSON			#json interface
-import sys as SYS			#system info` }
-				
+import sys as SYS			#system info
+from flow import *		# record buffering and loading logic
+` }
+
 				if (db) { script += `
 #connect to db
 SQL = SQLC.connect(user='${db.user}', password='${db.pass}', database='${db.name}')
 SQL0 = SQL.cursor(buffered=True)
-SQL1 = SQL.cursor(buffered=True) ` }
+SQL1 = SQL.cursor(buffered=True) 
+` }
 				
 				if (gen.debug) { script += `
 #trace engine context
@@ -823,38 +816,32 @@ print 'py>sys', SYS.path, SYS.version
 #print 'py>caffe',CAFFE
 #print 'py>sql', SQL
 #print 'py>ctx',CTX
-#print 'py>port',PORT` }
+` }
 
 				if (gen.code) { script += `
-from flow import *		# record buffering and loading logic
-${code}		# engine and port logic
+PORTS = ${ports}		# define ports
+LOCALS = locals()			# engine OS context
+PORT = LOCALS['PORT']		# engine port to call
 
-ports = ${ports}		# define ports
-os = locals()
+if INIT:
+	INIT = 0
 
-if not os['INIT']:		# already initialized so step engine
-	ctx = os['CTX']
-	port = os['PORT']
-	if port:
-		if port in ports:
-			ports[port]( ctx['tau'], ctx['ports'][port] )
-			ERR = 0
-		else:
-			ERR = 103
-	
+elif PORT:
+	if PORT in PORTS:
+		PORTS[port]( CTX['tau'], CTX['ports'][PORT] )
+		ERR = 0
 	else:
-		ctx['Save'] = ${Thread.plugin}(ctx, os)
-		ERR = 0 
+		ERR = 103
 
 else:
-	os['INIT'] = 0
+	${code.replace(/\n/g,"\n\t")}		# engine and port logic
+	ERR = 0
 
 #exit code
 #SQL.commit()
 #SQL0.close()
 #SQL1.close()
 ` }
-				
 				/*
 					mysql connection notes:
 					install the python2.7 connector (rpm -Uvh mysql-conector-python-2.x.rpm)
