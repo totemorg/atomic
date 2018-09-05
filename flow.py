@@ -54,15 +54,15 @@ def FLOW_load(flush, ctx, cb):  #load dataset
 	else:
 		cb( 0 )
 
-def FLOW_forAll(ctx, cb):
+def getAll(ctx, cb):
 	FLOW_load( FLUSH_forAll, ctx, cb )
 
-def FLOW_forDrop(ctx, cb):
+def getDrop(ctx, cb):
 	FLOW_load( FLUSH_forDrop, ctx, cb )
 
-def FLOW_forBatch(ctx, cb):
+def getBatch(ctx, cb):
 	FLOW_load( FLUSH_forBatch, ctx, cb )
 
-def FLOW_forEach(ctx, cb):
+def getEach(ctx, cb):
 	FLOW_load( FLUSH_forEach, ctx, cb )
 	

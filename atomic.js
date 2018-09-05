@@ -83,7 +83,7 @@ var
 			}
 		},
 			
-		matlab: {  //< support for matlab engines
+		matlab: {  //< support for non-host matlab engines
 			
 			path: {  //< file and service paths
 				save: "./public/m/",
@@ -761,6 +761,8 @@ end
 		},
 			
 		gen: {  //< controls code generation when engine initialized/programed
+			hasgpu: ENV.HASGPU,
+			hascaffe: ENV.HASCAFFE,
 			debug: false,
 			trace: false,
 			libs: true,
@@ -770,6 +772,21 @@ end
 		init: {  //< initalize/program engine on given thread=case.plugin.client with callback cb(ctx) or ctx(null)
 			py: function pyInit(thread,code,ctx,cb)  {
 				function portsDict(portsHash) {
+				/*
+					mysql connection notes:
+					install the python2.7 connector (rpm -Uvh mysql-conector-python-2.x.rpm)
+					into /usr/local/lib/python2.7/site-packages/mysql, then copy
+					this mysql folder to the anaconda/lib/python2.7/site-packages.
+
+					import will fail with mysql-connector-python-X installed (rum or rpm installed as root using either
+					python 2.2 or python 2.7).  Will however import under python 2.6.  To fix, we must:
+
+							cp -r /usr/lib/python2.6/site-packages/mysql $CONDA/lib/python2.7/site-packages
+
+					after "rpm -i mysql-connector-python-2.X".
+					
+					For some versions of Anaconda, we can get the "pip install python-connector" to work.
+				*/
 					var ports = Object.keys( portsHash );
 
 					ports.each( function (n,port) {
@@ -799,7 +816,7 @@ import mysql.connector as SQLC		#db connector interface
 from PIL import Image as LWIP		#jpeg image interface
 import json as JSON			#json interface
 import sys as SYS			#system info
-from flow import *		# record buffering and loading logic
+import flow as FLOW		# record buffering and loading logic
 ` }
 
 				if (db) { script += `
@@ -842,21 +859,6 @@ else:
 #SQL0.close()
 #SQL1.close()
 ` }
-				/*
-					mysql connection notes:
-					install the python2.7 connector (rpm -Uvh mysql-conector-python-2.x.rpm)
-					into /usr/local/lib/python2.7/site-packages/mysql, then copy
-					this mysql folder to the anaconda/lib/python2.7/site-packages.
-
-					import will fail with mysql-connector-python-X installed (rum or rpm installed as root using either
-					python 2.2 or python 2.7).  Will however import under python 2.6.  To fix, we must:
-
-							cp -R /usr/lib/python2.6/site-packages/mysql $CONDA/lib/python2.7/site-packages
-
-					after "rpm -i mysql-connector-python-2.X".
-					
-					For some reaon, only two sql cursors are allowed.
-				*/
  			
 				if (gen.trace) Log(script);
 
@@ -1224,11 +1226,11 @@ end`;  };
 			
 	});
 
-function Trace(msg,sql) {
+function Trace(msg,sql) {  //< Execution tracing
 	TRACE.trace(msg,sql);
 }
 
-switch (process.argv[2]) {
+switch (process.argv[2]) {	//< unit testers
 	case "A1": 
 		var ATOM = require("../atomic");
 		var TOTEM = require("../totem");
