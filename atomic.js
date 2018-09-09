@@ -548,7 +548,7 @@ end
 					res( ATOM.errors.badThread );
 			});
 		},
-			
+
 		delete: function (req,res) {	//< free a stateful engine
 		/**
 		 @method delete(kill)
@@ -562,7 +562,7 @@ end
 				res( ctx ? "" : ATOM.errors.badThread );				
 			});
 		},
-			
+
 		select: function (req,res) {	//< run a stateless engine callback res(context) or res(error)
 		/**
 		 @method select(read)
@@ -580,7 +580,7 @@ end
 					res( ATOM.errors.badEngine );
 			});
 		},
-			
+
 		update: function (req,res) {	//< compile a stateful engine
 		/**
 		 @method update(init)
@@ -594,7 +594,7 @@ end
 				res( ctx ? "" : ATOM.errors.badThread );
 			});
 		},
-		
+
 		wrap: function (wrap, ctx, cb) { 
 			if (wrap) {
 				VM.runInContext( wrap, VM.createContext({ 
@@ -606,7 +606,7 @@ end
 			else
 				cb( ctx );
 		},
-			
+
 		prime: function (sql, ctx, cb) {  //< callback cb(ctx) with ctx primed by sql ctx.Entry and ctx.Exit queries
 		/**
 		@method prime
@@ -759,7 +759,7 @@ end
 						cb( null );
 				});
 		},
-			
+
 		gen: {  //< controls code generation when engine initialized/programed
 			hasgpu: ENV.HASGPU,
 			hascaffe: ENV.HASCAFFE,
@@ -768,7 +768,7 @@ end
 			libs: true,
 			code: true
 		},
-				
+
 		init: {  //< initalize/program engine on given thread=case.plugin.client with callback cb(ctx) or ctx(null)
 			py: function pyInit(thread,code,ctx,cb)  {
 				function portsDict(portsHash) {
@@ -1081,7 +1081,7 @@ end`;  };
 				return null;
 			}
 		},
-			
+
 		step: {  //< step engines on given thread with callback cb(ctx) or cb(null) if error
 			py: function pyStep(thread,port,ctx,cb) {
 				

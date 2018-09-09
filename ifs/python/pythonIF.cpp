@@ -350,6 +350,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 		int call(const V8STACK& args) { 			// Monitor/Program/Step machine	
 
 			err = setup(args);
+//printf(TRACE "setup err=%d init=%d pcode=%p\n", err, init, pCode);
 			
 			if (err) 
 				return err;
