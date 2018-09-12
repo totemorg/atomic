@@ -369,7 +369,7 @@ end
 					port = body.port || "",
 					runctx = body.tau || Copy( req.query, ctx.req.query);
 				
-				Log("exe ctx",runctx);
+				//Log("exe ctx",runctx);
 				
 				cb( runctx, function stepper(res) {  // callback using this stepper
 
@@ -429,7 +429,7 @@ end
 					if (ctx) 
 						ATOM.program(sql, ctx, function (ctx) {	// program/initialize the engine
 							
-							Log("pgm eng", ctx);
+							//Log("pgm ctx", ctx);
 							if (ctx) // all went well so execute it
 								execute( ctx, cb );
 
@@ -532,7 +532,7 @@ end
 			});
 		},
 
-		insert: function (req,res) {	//< step a stateful engine
+		insert: function (req,res) {	//< step a stateful engine with callback res(ctx || Error) 
 		/**
 		 @method insert(step)
 		 @member ATOMIC
@@ -541,15 +541,17 @@ end
 		*/
 			ATOM.run(req, function (ctx,step) {
 //Log(">step ",ctx);
-				if ( ctx ) 
-					step( res );
+				if ( ctx ) {
+					res( ctx );
+					for (var n=0, N=ctx.Runs||0; n<N; n++) step( res );
+				}
 				
 				else
-					res( ATOM.errors.badThread );
+					res( ATOM.errors.badEngine );
 			});
 		},
 
-		delete: function (req,res) {	//< free a stateful engine
+		delete: function (req,res) {	//< free a stateful engine with callback res(ctx || Error) 
 		/**
 		 @method delete(kill)
 		 @member ATOMIC
@@ -559,11 +561,11 @@ end
 			ATOM.run(req, function (ctx,step) {
 //Log(">kill ",ctx);
 
-				res( ctx ? "" : ATOM.errors.badThread );				
+				res( ctx ? ctx : ATOM.errors.badEngine );				
 			});
 		},
 
-		select: function (req,res) {	//< run a stateless engine callback res(context) or res(error)
+		select: function (req,res) {	//< run a stateless engine with callback res(ctx || Error) 
 		/**
 		 @method select(read)
 		 @member ATOMIC
@@ -571,17 +573,20 @@ end
 		 free/delete/DELETE.
 		*/
 			ATOM.run( req, function (ctx, step) {  // get engine stepper and its context
-				// Log("run", ctx);
-				
-				if (ctx)  {} // step engine
-					//step( res );
+Log(">run", ctx);
+				if ( ctx ) {
+					for (var n=0, N=ctx.Runs||1; n<N; n++) step( (ctx) => {
+						Log(">step", ctx);
+					});
+					res( ctx );
+				}
 				
 				else
 					res( ATOM.errors.badEngine );
 			});
 		},
 
-		update: function (req,res) {	//< compile a stateful engine
+		update: function (req,res) {	//< compile a stateful engine with callback res(ctx || Error)  
 		/**
 		 @method update(init)
 		 @member ATOMIC		  
@@ -589,9 +594,9 @@ end
 		 free/delete/DELETE.
 		*/
 			ATOM.run( req, function (ctx,step) {
-//console.log(">init",ctx);
+//Log(">init",ctx);
 
-				res( ctx ? "" : ATOM.errors.badThread );
+				res( ctx ? ctx : ATOM.errors.badEngine );
 			});
 		},
 
@@ -810,17 +815,19 @@ end
 					script = `
 PORTS = ${ports}		# define ports
 LOCALS = locals()			# engine OS context
-PORT = LOCALS['PORT']		# engine port for stateful calls
 
-if PORT:
+if 'PORT' in PORTS:
+	PORT = LOCALS['PORT']		# engine port for stateful calls
 	if PORT in PORTS:
 		PORTS[port]( CTX['tau'], CTX['ports'][PORT] )
 		ERR = 0
 	else:
 		ERR = 103
-
 else:
+	${code.replace(/\n/g,"\n\t")}		# engine and port logic
+
 	if INIT:	#import global modules and connect to sqldb
+		global LWIP, JSON, SYS, FLOW, SQL0, SQL1
 		#import caffe as CAFFE		#caffe interface
 		import mysql.connector as SQLC		#db connector interface
 		from PIL import Image as LWIP		#jpeg image interface
@@ -832,9 +839,11 @@ else:
 		SQL0 = SQL.cursor(buffered=True)
 		SQL1 = SQL.cursor(buffered=True) 
 
-	${code.replace(/\n/g,"\n\t")}		# engine and port logic
-	ERR = 0
-	INIT = 0
+		ERR = 0
+		INIT = 0
+		init(CTX)
+	else:
+		${Thread.plugin}(CTX)
 
 #exit code
 #SQL.commit()

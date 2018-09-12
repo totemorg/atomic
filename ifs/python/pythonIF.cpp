@@ -439,8 +439,8 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 						err = badCode;
 					}
 
-					if (!pCode)
-					printf(TRACE "************** pythonIF failed to compile error=%d\n%s\n", err, code);
+					//if (!pCode)
+					printf(TRACE "************** error=%d\n %s\n", err, code);
 
 					//return err;
 					//Py_Finalize(); // dont do this - will cause segment fault
