@@ -369,12 +369,12 @@ end
 					port = body.port || "",
 					runctx = body.tau || Copy( req.query, ctx.req.query);
 				
-				//Log("exe ctx",runctx);
+				Log("exe ctx",runctx);
 				
 				cb( runctx, function stepper(res) {  // callback using this stepper
 
 					if ( stepEngine = ctx.step )
-						ATOM.wrap( ctx.wrap, runctx, function (runctx) {
+						ATOM.wrap( ctx.wrap, runctx, function (runctx) {  // coerse engine ctx
 							ATOM.prime(sql, runctx, function (runctx) {  // mixin sql primed keys into engine ctx
 								//Log("prime ctx", runctx);
 
@@ -429,7 +429,7 @@ end
 					if (ctx) 
 						ATOM.program(sql, ctx, function (ctx) {	// program/initialize the engine
 							
-							//Log("pgm eng", ctx);
+							Log("pgm eng", ctx);
 							if (ctx) // all went well so execute it
 								execute( ctx, cb );
 
@@ -573,8 +573,8 @@ end
 			ATOM.run( req, function (ctx, step) {  // get engine stepper and its context
 				// Log("run", ctx);
 				
-				if (ctx)   // step engine
-					step( res );
+				if (ctx)  {} // step engine
+					//step( res );
 				
 				else
 					res( ATOM.errors.badEngine );
@@ -807,43 +807,12 @@ end
 					gen = ATOM.gen,
 					db = ATOM.db.python,
 					ports = portsDict( ctx.ports || {} ),
-					script = "";
-				
-				if (gen.libs) { script += `
-#import modules
-#import caffe as CAFFE		#caffe interface
-import mysql.connector as SQLC		#db connector interface
-from PIL import Image as LWIP		#jpeg image interface
-import json as JSON			#json interface
-import sys as SYS			#system info
-import flow as FLOW		# record buffering and loading logic
-` }
-
-				if (db) { script += `
-#connect to db
-SQL = SQLC.connect(user='${db.user}', password='${db.pass}', database='${db.name}')
-SQL0 = SQL.cursor(buffered=True)
-SQL1 = SQL.cursor(buffered=True) 
-` }
-				
-				if (gen.debug) { script += `
-#trace engine context
-print 'py>locals', locals()
-print 'py>sys', SYS.path, SYS.version
-#print 'py>caffe',CAFFE
-#print 'py>sql', SQL
-#print 'py>ctx',CTX
-` }
-
-				if (gen.code) { script += `
+					script = `
 PORTS = ${ports}		# define ports
 LOCALS = locals()			# engine OS context
-PORT = LOCALS['PORT']		# engine port to call
+PORT = LOCALS['PORT']		# engine port for stateful calls
 
-if INIT:
-	INIT = 0
-
-elif PORT:
+if PORT:
 	if PORT in PORTS:
 		PORTS[port]( CTX['tau'], CTX['ports'][PORT] )
 		ERR = 0
@@ -851,14 +820,27 @@ elif PORT:
 		ERR = 103
 
 else:
+	if INIT:	#import global modules and connect to sqldb
+		#import caffe as CAFFE		#caffe interface
+		import mysql.connector as SQLC		#db connector interface
+		from PIL import Image as LWIP		#jpeg image interface
+		import json as JSON			#json interface
+		import sys as SYS			#system info
+		import flow as FLOW		# record buffering and loading logic
+
+		SQL = SQLC.connect(user='${db.user}', password='${db.pass}', database='${db.name}')
+		SQL0 = SQL.cursor(buffered=True)
+		SQL1 = SQL.cursor(buffered=True) 
+
 	${code.replace(/\n/g,"\n\t")}		# engine and port logic
 	ERR = 0
+	INIT = 0
 
 #exit code
 #SQL.commit()
 #SQL0.close()
 #SQL1.close()
-` }
+` ;
  			
 				if (gen.trace) Log(script);
 
