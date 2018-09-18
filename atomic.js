@@ -573,10 +573,10 @@ end
 		*/
 			var sql = req.sql;
 			ATOM.run( req, function (ctx, step) {  // get engine stepper and its context
-Log(">run", ctx);
+//Log(">run", ctx);
 				if ( ctx ) {
 					step( (ctx) => {
-						Log(">step", ctx);
+						//Log(">step", ctx);
 					});
 					res( ctx );
 				}

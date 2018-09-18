@@ -278,6 +278,10 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 			if (PyString_Check(src)) 
 				return V8TOKEY(PyString_AsString(src));
 			
+			else
+			if (src == Py_None)
+				return V8TONUMBER(0.0);  // should return a V8NULL but not sure how to do this
+				
 			else 
 				return V8TONUMBER(0.0);
 		}
@@ -305,11 +309,11 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 				
 			else
 			if ( src->IsNull() )
-				return PyLong_FromVoidPtr(NULL);
+				return Py_None; //PyLong_FromVoidPtr(NULL);
 				
 			else
 			if ( src->IsFunction() )
-				return PyLong_FromVoidPtr(NULL);
+				return Py_None;  //PyLong_FromVoidPtr(NULL);
 				
 			else
 				return PyFloat_FromDouble( 0.0 );

@@ -29,7 +29,7 @@ def FLOW_load(flush, ctx, cb):  #load dataset
 			if len(recs):
 				cb( recs )
 			else:
-				cb( 0 )
+				cb( None )
 		
 		elif isinstance( Query, str ):
 			recs = []
@@ -46,13 +46,13 @@ def FLOW_load(flush, ctx, cb):  #load dataset
 			if len(recs):
 				cb( recs )
 			else:
-				cb( 0 )
+				cb( None )
 		
 		else:
-			cb( 0 )
+			cb( None )
 	
 	else:
-		cb( 0 )
+		cb( None )
 
 def getAll(ctx, cb):
 	FLOW_load( FLUSH_forAll, ctx, cb )
