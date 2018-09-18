@@ -359,7 +359,6 @@ end
 					console.log("thread",this.thread,"rx",d);
 				}); 
 				sock.write("hello there");*/
-				
 			}
 
 			function execute(ctx, cb) {  //< callback cb(ctx,stepper) with primed engine ctx and stepper
@@ -371,7 +370,7 @@ end
 				
 				//Log("exe ctx",runctx);
 				
-				cb( runctx, function stepper(res) {  // callback using this stepper
+				cb( runctx, function stepper(res) {  // provide this engine stepper to the callback
 
 					if ( stepEngine = ctx.step )
 						ATOM.wrap( ctx.wrap, runctx, function (runctx) {  // coerse engine ctx
@@ -442,13 +441,13 @@ end
 				});
 			}				
 
-			Log("eng thread", thread, CLUSTER.isMaster ? "on master" : "on worker", ATOM.context[thread] ? "has ctx":"needs ctx");
+			//Log("eng thread", thread, CLUSTER.isMaster ? "on master" : "on worker", ATOM.context[thread] ? "has ctx":"needs ctx");
 			
 			if ( CLUSTER.isMaster )  { // on master so handoff to worker or execute 
 				if ( ctx = ATOM.context[thread] ) // get context
 					if (ATOM.cores) // handoff to worker
 						handoff( ctx, cb );
-			
+
 					else
 					if ( ctx.req )  // was sucessfullly initialized so execute it
 						execute( ctx, cb );
@@ -468,7 +467,7 @@ end
 			
 			else { // on worker 
 				if ( ctx = ATOM.context[thread] ) {  // run it if worker has an initialized context
-					Trace( `RUN core-${ctx.worker.id} FOR ${ctx.thread}`, sql );
+					Trace( `RUN core${ctx.worker.id} FOR ${ctx.thread}`, sql );
 					if ( ctx.req )  // was sucessfullyl initialized so can execute it
 						execute( ctx, cb );
 
@@ -478,7 +477,7 @@ end
 
 				else { // worker must initialize its context, then run it
 					var ctx = ATOM.context[thread] = new CONTEXT(thread);
-					Trace( `INIT core-${ctx.worker.id} FOR ${ctx.thread}` );
+					Trace( `INIT core${ctx.worker.id} FOR ${ctx.thread}` );
 					initialize( ctx, cb );
 				}
 			}
@@ -572,10 +571,11 @@ end
 		 Provides engine CRUD interface: step/insert/POST, compile/update/PUT, run/select/GET, and 
 		 free/delete/DELETE.
 		*/
+			var sql = req.sql;
 			ATOM.run( req, function (ctx, step) {  // get engine stepper and its context
 Log(">run", ctx);
 				if ( ctx ) {
-					for (var n=0, N=ctx.Runs||1; n<N; n++) step( (ctx) => {
+					step( (ctx) => {
 						Log(">step", ctx);
 					});
 					res( ctx );
@@ -894,18 +894,14 @@ else:
 						client: Thread.pop()
 					},				
 					gen = ATOM.gen,
-					script = "",
 					vm = ATOM.vm[thread] = {
 						ctx: VM.createContext( gen.libs ? Copy( ATOM.plugins, {} ) : {} ),
 						code: ""
-					};
-
-				if (gen.debug) { script += `
+					},
+					script = `
 // trace engine context
-LOG("js>ctx", CTX);
-` }
+//LOG("js>ctx", CTX);
 
-				if (gen.code) { script += `
 // engine logic
 ${code}
 
@@ -915,7 +911,7 @@ if ( CTX )
 
 	else  // stateless processing
 		ERR = ${Thread.plugin}(CTX, RES);
-` }
+` ;
 
 				if (gen.trace) Log(script);
 				vm.code = script;
@@ -938,8 +934,8 @@ if ( CTX )
 					db = ATOM.db.matlab,
 					usedb = db ? 1 : 0,
 					path = matlab.path.save + func + ".m",
-					logic = {
-						/*save: `
+					gen = ATOM.gen,
+					/*save: `
 	function send(res)
 		fid = fopen('${func}.out', 'wt');
 		fprintf(fid, '%s', jsonencode(res) );
@@ -953,8 +949,28 @@ if ( CTX )
 		fclose(fid);
 		webread( '${agent}?save=${func}' );
 	end `, */
+					script = `
+function ws = ${func}( )
+	ws.set = @set;
+	ws.get = @get;
+	ws.step = @step;
+	ws.save = @save;
+	ws.load = @load;
 
-						load: `
+	if ${usedb}
+		ws.db = database('${db.name}', '${db.user}', '${db.pass}');
+	else
+		ws.db = 0;
+	end
+
+	function set(key,val)
+		ws.(key) = val;
+	end
+
+	function val = get(key)
+		val = ws.(key);
+	end
+
 	function load(ctx, cb)
 		try
 			if length(ctx.Events)>1
@@ -982,45 +998,15 @@ if ( CTX )
 			fclose(fid);
 			webread( '${agent}?load=${func}' );
 		end
-	end `, 
+	end 
 						
-						step: `
 	function step(ctx)
 		load(ctx, @${Thread.plugin});
 
 		% engine logic and ports
 		${code}	
-	end `
-					},	
-					script = "",
-					gen = ATOM.gen;
-
-				if (gen.code) { script += `
-function ws = ${func}( )
-	ws.set = @set;
-	ws.get = @get;
-	ws.step = @step;
-	ws.save = @save;
-	ws.load = @load;
-
-	if ${usedb}
-		ws.db = database('${db.name}', '${db.user}', '${db.pass}');
-	else
-		ws.db = 0;
-	end
-
-	function set(key,val)
-		ws.(key) = val;
-	end
-
-	function val = get(key)
-		val = ws.(key);
-	end
-
-	${logic.load}
-	${logic.step}
-
-end`;  };
+	end 
+end` ;
 
 				if (gen.trace) Log(script);
 				FS.writeFile( path, script, "utf8" );
