@@ -276,17 +276,17 @@ end
 			 });
 		},
 
-		program: function (sql, ctx, cb) {  //< program engine with callback cb(ctx) or cb(null) if error
-			var runctx = ctx.req.query;
+		program: function (sql, engctx, cb) {  //< program engine with callback cb(engctx || null) 
+			var runctx = engctx.req.query;
 			
-			if ( initEngine = ctx.init )
+			if ( initEngine = engctx.init )
 				ATOM.prime(sql, runctx, function (runctx) {  // mixin sql vars into engine query
-					//Log("eng prime", ctx.thread, runctx);
+					//Log("eng prime", engctx.thread, runctx);
 					
 					if (runctx) 
-						initEngine(ctx.thread, ctx.code || "", runctx, function (err) {
+						initEngine(engctx.thread, engctx.code || "", runctx, function (err) {
 							//Log("eng init", err);
-							cb( err ? null : ctx );
+							cb( err ? null : engctx );
 						});
 					
 					else
@@ -340,20 +340,22 @@ end
 				sql = req.sql,
 				query = req.query,
 				client = req.client.replace(".ic.gov","").replace(/\./g,"").replace("@",""),
-				thread = `${client}.${req.table}.${query.ID || 0}`;
+				thread = `${client}.${req.table}.${query.Name || query.ID || 0}.${query.Case || 0}`;
 
 			//Log("def eng thread", thread, req.query);
 			
-			function CONTEXT (thread) {  // engine context constructor for specified thread 
+			function CONTEXT (thread) {  // construct an engine context for specified thread 
 				this.worker = CLUSTER.isMaster
 					? ATOM.cores  
 							? CLUSTER.workers[ Math.floor(Math.random() * ATOM.cores) ]   // assign a worker
-							: 0  // assign to master
+							: { id: 0 }  // assign to master
+
 					: CLUSTER.worker;  // use this worker
 				
 				this.thread = thread;
-				this.req = null;
+				this.req = null;  // getEngine will prime the request (which contains the run context)
 				/*
+				// experimental NET sockets as alternative to sockets used here
 				var sock = this.socket = NET.connect("/tmp/totem."+thread+".sock");
 				sock.on("data", function (d) {
 					console.log("thread",this.thread,"rx",d);
@@ -361,24 +363,27 @@ end
 				sock.write("hello there");*/
 			}
 
-			function execute(ctx, cb) {  //< callback cb(ctx,stepper) with primed engine ctx and stepper
+			function execute(engctx, cb) {  //< callback cb(ctx,stepper) with primed engine ctx and stepper
 				var 
 					sql = req.sql,
-					body = ctx.req.body,
+					body = engctx.req.body,
 					port = body.port || "",
-					runctx = body.tau || Copy( req.query, ctx.req.query);
+					runctx = engctx.req.query; //body.tau || Copy( req.query, ctx.req.query);
 				
 				//Log("exe ctx",runctx);
+				Trace( `RUN ${engctx.thread} ON core${engctx.worker.id}`, sql );
+				//runctx.Thread = engctx.thread;
 				
 				cb( runctx, function stepper(res) {  // provide this engine stepper to the callback
 
-					if ( stepEngine = ctx.step )
-						ATOM.wrap( ctx.wrap, runctx, function (runctx) {  // coerse engine ctx
+					if ( stepEngine = engctx.step )
+						ATOM.wrap( engctx.wrap, runctx, function (runctx) {  // coerse engine ctx
 							ATOM.prime(sql, runctx, function (runctx) {  // mixin sql primed keys into engine ctx
 								//Log("prime ctx", runctx);
 
 								try {  	// step the engine then return an error if it failed or null if it worked
-									return ATOM.errors[ stepEngine(ctx.thread, port, runctx, res) ] || ATOM.badError;
+									//Log("step ", engctx.thread, runctx.Voxel.ID);
+									return ATOM.errors[ stepEngine(engctx.thread, port, runctx, res) ] || ATOM.badError;
 								}
 
 								catch (err) {
@@ -394,9 +399,9 @@ end
 				});
 			}
 
-			function handoff(ctx, cb) {  //< handoff ctx to worker or  cb(null) if handoff fails
+			function handoff(engctx, cb) {  //< handoff ctx to worker or  cb(null) if handoff fails
 				var 
-					ipcreq = {  // ipc request must not contain sql, socket, state etc
+					ipcreq = {  // an ipc request must not contain sql, socket, state etc
 						group: req.group,
 						table: req.table,
 						client: req.client,
@@ -409,28 +414,28 @@ end
 					process.send(ipcreq, req.resSocket() );
 
 				else
-				if ( worker = ctx.worker )  //handoff thread to worker 
+				if ( worker = engctx.worker )  //handoff thread to worker 
 					worker.send(ipcreq, req.resSocket() );
 				
 				else // cant handoff 
 					cb( null );
 			}
 			
-			function initialize(ctx, cb) {  //< initialize engine then callback cb(ctx, stepper) or cb(null) if failed
+			function initialize(engctx, cb) {  //< initialize engine then callback cb(ctx, stepper) or cb(null) if failed
 				var
 					sql = req.sql;
 				
-				//Log("eng init",req.query);
+				Trace( `INIT ${engctx.thread} ON core${engctx.worker.id}` );
 				
-				ATOM.getEngine(req, ctx, function (ctx) {
-					//Log("get eng", ctx);
+				ATOM.getEngine(req, engctx, function (engctx) {
+					//Log("get eng", engctx);
 					
-					if (ctx) 
-						ATOM.program(sql, ctx, function (ctx) {	// program/initialize the engine
+					if (engctx) 
+						ATOM.program(sql, engctx, function (engctx) {	// program/initialize the engine
 							
-							//Log("pgm ctx", ctx);
-							if (ctx) // all went well so execute it
-								execute( ctx, cb );
+							//Log("pgm eng", engctx);
+							if (engctx) // all went well so execute it
+								execute( engctx, cb );
 
 							else  // failed to compile
 								cb( null );
@@ -444,41 +449,39 @@ end
 			//Log("eng thread", thread, CLUSTER.isMaster ? "on master" : "on worker", ATOM.context[thread] ? "has ctx":"needs ctx");
 			
 			if ( CLUSTER.isMaster )  { // on master so handoff to worker or execute 
-				if ( ctx = ATOM.context[thread] ) // get context
+				if ( engctx = ATOM.context[thread] ) // get engine context
 					if (ATOM.cores) // handoff to worker
-						handoff( ctx, cb );
+						handoff( engctx, cb );
 
 					else
-					if ( ctx.req )  // was sucessfullly initialized so execute it
-						execute( ctx, cb );
+					if ( engctx.req )  // was sucessfullly initialized so execute it
+						execute( engctx, cb );
 
-					else  // never initialized so reject it
+					else   // had failed initialization so shouldn't be running engine
 						cb( null );
 
 				else { // assign a worker to new context then handoff or initialize
-					var ctx = ATOM.context[thread] = new CONTEXT(thread);
-					if (ATOM.cores) 
-						handoff( ctx, cb );
+					var engctx = ATOM.context[thread] = new CONTEXT(thread);
+					if (ATOM.cores) 	// handoff to worker
+						handoff( engctx, cb );
 					
-					else
-						initialize( ctx, cb );
+					else	// initialize and execute
+						initialize( engctx, cb );
 				}
 			}
 			
 			else { // on worker 
-				if ( ctx = ATOM.context[thread] ) {  // run it if worker has an initialized context
-					Trace( `RUN core${ctx.worker.id} FOR ${ctx.thread}`, sql );
-					if ( ctx.req )  // was sucessfullyl initialized so can execute it
-						execute( ctx, cb );
+				if ( engctx = ATOM.context[thread] ) {  // run it if worker has an initialized context
+					if ( engctx.req )  // was sucessfullyl initialized so can execute it
+						execute( engctx, cb );
 
 					else  // had failed initialization so must reject
 						cb( null );
 				}
 
 				else { // worker must initialize its context, then run it
-					var ctx = ATOM.context[thread] = new CONTEXT(thread);
-					Trace( `INIT core${ctx.worker.id} FOR ${ctx.thread}` );
-					initialize( ctx, cb );
+					var engctx = ATOM.context[thread] = new CONTEXT(thread);
+					initialize( engctx, cb );
 				}
 			}
 
@@ -541,8 +544,8 @@ end
 			ATOM.run(req, function (ctx,step) {
 //Log(">step ",ctx);
 				if ( ctx ) {
+					for (var n=0, N=ctx.Runs||0; n<N; n++) step( (ctx) => {} );
 					res( ctx );
-					for (var n=0, N=ctx.Runs||0; n<N; n++) step( res );
 				}
 				
 				else
@@ -571,15 +574,10 @@ end
 		 Provides engine CRUD interface: step/insert/POST, compile/update/PUT, run/select/GET, and 
 		 free/delete/DELETE.
 		*/
-			var sql = req.sql;
 			ATOM.run( req, function (ctx, step) {  // get engine stepper and its context
 //Log(">run", ctx);
-				if ( ctx ) {
-					step( (ctx) => {
-						//Log(">step", ctx);
-					});
-					res( ctx );
-				}
+				if ( ctx ) 
+					step( res );
 				
 				else
 					res( ATOM.errors.badEngine );
@@ -595,7 +593,6 @@ end
 		*/
 			ATOM.run( req, function (ctx,step) {
 //Log(">init",ctx);
-
 				res( ctx ? ctx : ATOM.errors.badEngine );
 			});
 		},
@@ -612,7 +609,7 @@ end
 				cb( ctx );
 		},
 
-		prime: function (sql, ctx, cb) {  //< callback cb(ctx) with ctx primed by sql ctx.Entry and ctx.Exit queries
+		prime: function (sql, ctx, cb) {  //< callback cb(ctx) with run context primed by sql ctx.Entry and ctx.Exit queries
 		/**
 		@method prime
 		@member ATOMIC
@@ -711,29 +708,29 @@ end
 				cb(ctx);
 		},
 
-		getEngine: function (req, ctx, cb) {  //< callback cb(ctx) with engine context or null if failed
+		getEngine: function (req, engctx, cb) {  //< callback cb(engctx || null) with engine context or null if failed
 			
 			var
 				sql = req.sql,
 				group = req.group,
-				query = req.query,
+				runctx = new Object(req.query),
 				name = req.table;
 			
-			function getState(str, def) {
+			function primeContext(state, ctx) {
 				try {
-					return def ? Copy(JSON.parse(str),def) : JSON.parse(str);
+					return Copy(JSON.parse(state),ctx);
 				}
 				catch (err) {
-					return def;
+					return ctx;
 				}
 			}
 
-			//Log("eng get",name, req.query);
-			if ( name == "engines" )
+			//Log("eng get",name);
+			if ( name == "engines" )  // block attempts to run an engine from the engines repo itself
 				cb( null );
 			
 			else
-				sql.forFirst(
+				sql.forFirst(	// get the requested engine
 					TRACE,
 					"SELECT * FROM ??.engines WHERE least(?) LIMIT 1", 
 					[ group, {
@@ -741,25 +738,25 @@ end
 						Enabled: true
 					}], function (eng) {
 
-					if (eng)
-						cb( Copy({
-							req: {  // http request to get and prime engine context
+					//Log( "got end", engctx.thread, runctx.Voxel.ID);
+						
+					if (eng) 
+						cb( Copy({				// define engine context
+							req: {  
 								group: req.group,
 								table: req.table,
 								client: req.client,
-								query: Copy( // passed query keys override engine state context
-									req.query,
-									getState(eng.State, {})),
+								query: primeContext(eng.State, runctx),
 								body: req.body,
 								action: req.action
-							},
+							},			// http request to get and prime engine context
 							type: eng.Type,   // engine type: js, py, etc
 							code: eng.Code, // engine code
 							wrap: eng.Wrap, // js-code step wrapper
 							init: ATOM.init[ eng.Type ],  // method to initialize/program the engine
 							step: ATOM.step[ eng.Type ]  // method to advance the engine
-						}, ctx) );
-
+						}, engctx) );
+						
 					else
 						cb( null );
 				});
@@ -804,9 +801,9 @@ end
 				var 
 					Thread = thread.split("."),
 					Thread = {
-						case: Thread.pop(),
-						plugin: Thread.pop(),
-						client: Thread.pop()
+						client: Thread[0],
+						plugin: Thread[1],
+						case: Thread[2]
 					},
 					script = "", 
 					gen = ATOM.gen,
@@ -889,9 +886,9 @@ else:
 				var 
 					Thread = thread.split("."),
 					Thread = {
-						case: Thread.pop(),
-						plugin: Thread.pop(),
-						client: Thread.pop()
+						client: Thread[0],
+						plugin: Thread[1],
+						case: Thread[2]
 					},				
 					gen = ATOM.gen,
 					vm = ATOM.vm[thread] = {
@@ -924,9 +921,9 @@ if ( CTX )
 				var 
 					Thread = thread.split("."),
 					Thread = {
-						case: Thread.pop(),
-						plugin: Thread.pop(),
-						client: Thread.pop()
+						client: Thread[0],
+						plugin: Thread[1],
+						case: Thread[2]
 					},
 					func = thread.replace(/\./g,"_"),
 					matlab = ATOM.matlab,
