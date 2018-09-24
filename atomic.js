@@ -160,8 +160,9 @@ end
 
 			if (opts) Copy(opts,ATOM);
 
-			if (CLUSTER.isMaster) {
-				/*var ipcsrv = NET.createServer( function (c) {
+			/*
+			if (CLUSTER.isMaster) {  // experimental ipc
+				var ipcsrv = NET.createServer( function (c) {
 					L("srv got connect");
 					c.on("data", function (d) {
 						L("srv got data",d);
@@ -172,9 +173,8 @@ end
 					//c.pipe(c);
 					//c.write("your connected");
 				});
-				ipcsrv.listen("/tmp/totem.sock");*/
+				ipcsrv.listen("/tmp/totem.sock");
 				
-				/*
 				var sock = ATOM.ipcsocket = NET.createConnection("/tmp/totem.sock", function () {
 					console.log("connected?");
 				});
@@ -183,8 +183,8 @@ end
 				});
 				sock.on("data", function (d) {
 					console.log("got",d);
-				}); */
-			}
+				}); 
+			} */
 			
 			if (thread = ATOM.thread)
 				thread( function (sql) { // compile engines defined in engines DB
@@ -356,8 +356,7 @@ end
 					runctx = engctx.req.query; //body.tau || Copy( req.query, engctx.req.query);
 				
 				Trace( `RUN ${engctx.thread} ON core${engctx.worker.id}`, sql );
-				//Log("run ctx",runctx);
-				Log("run ctx", runctx.Voxel);
+				//Log("run ctx", runctx.Voxel);
 				
 				cb( runctx, function stepper(res) {  // provide this engine stepper to the callback
 
@@ -416,12 +415,12 @@ end
 						runctx = new Object(req.query),
 						name = req.table;
 
-					function primeContext(state, ctx) {
+					function toJSON(state) {
 						try {
-							return Copy(JSON.parse(state),ctx);
+							return JSON.parse(state);
 						}
 						catch (err) {
-							return ctx;
+							return null;
 						}
 					}
 
@@ -446,7 +445,7 @@ end
 										group: req.group,
 										table: req.table,
 										client: req.client,
-										query: primeContext(eng.State, runctx),
+										query: Copy(toJSON(eng.State), runctx),
 										body: req.body,
 										action: req.action
 									},			// http request to get and prime engine context
@@ -488,7 +487,7 @@ end
 					sql = req.sql;
 				
 				Trace( `INIT ${engctx.thread} ON core${engctx.worker.id}` );
-				Log("init ctx", query.Voxel);
+				//Log("init ctx", query.Voxel);
 				
 				prime(req, engctx, function (engctx) {	// prime engine context
 					//Log("get eng", engctx);
@@ -497,9 +496,7 @@ end
 						program(sql, engctx, function (engctx) {	// program/compile engine
 							//Log("pgm eng", engctx);
 							if (engctx) { // all went well so execute it
-								//Copy(query, engctx.req.query);
-								engctx.req.query = query;
-								Log("init exec ctx", query.Voxel);
+								engctx.req.query = query;  // set run context
 								execute( engctx, cb );
 							}
 
@@ -525,9 +522,8 @@ end
 					if ( engctx.req )  // was sucessfullly initialized so execute it
 						execute( engctx, cb );
 
-					else   // had failed initialization so shouldn't be running engine
+					else   // was not yet initialized so do so
 						initialize( engctx, cb );
-						//cb( null );
 
 				else { // assign a worker to new context then handoff or initialize
 					var engctx = ATOM.context[thread] = new CONTEXT(thread);
