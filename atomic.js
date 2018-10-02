@@ -338,7 +338,7 @@ end
 					: CLUSTER.worker;  // use this worker
 				
 				this.thread = thread;
-				this.req = null;  // initialize will prime the request (which contains the run context)
+				this.req = null;  // initialize() will prime the request with an ipc request, run context, etc
 				/*
 				// experimental NET sockets as alternative to sockets used here
 				var sock = this.socket = NET.connect("/tmp/totem."+thread+".sock");
@@ -353,10 +353,11 @@ end
 					sql = req.sql,
 					body = engctx.req.body,
 					port = body.port || "",
-					runctx = engctx.req.query; //body.tau || Copy( req.query, engctx.req.query);
+					runctx = Copy(req.query, engctx.req.query); //body.tau || Copy( req.query, engctx.req.query);
 				
+				//Copy( req.query, runctx );
 				Trace( `RUN ${engctx.thread} ON core${engctx.worker.id}`, sql );
-				//Log("run ctx", runctx.Voxel);
+				//Log("run ctx", runctx);
 				
 				cb( runctx, function stepper(res) {  // provide this engine stepper to the callback
 
@@ -441,13 +442,13 @@ end
 
 							if (eng) 
 								cb( Copy({				// define engine context
-									req: {  
-										group: req.group,
-										table: req.table,
-										client: req.client,
-										query: Copy(toJSON(eng.State), runctx),
-										body: req.body,
-										action: req.action
+									req: {  				// ipc request 
+										group: req.group,	// engine group
+										table: req.table,	// engine name
+										client: req.client,	// engine owner
+										query: Copy(toJSON(eng.State), runctx),  // engine run context
+										body: req.body,		// engine tau parameters
+										action: req.action	// engine CRUD request
 									},			// http request to get and prime engine context
 									type: eng.Type,   // engine type: js, py, etc
 									code: eng.Code, // engine code
@@ -487,7 +488,6 @@ end
 					sql = req.sql;
 				
 				Trace( `INIT ${engctx.thread} ON core${engctx.worker.id}` );
-				//Log("init ctx", query.Voxel);
 				
 				prime(req, engctx, function (engctx) {	// prime engine context
 					//Log("get eng", engctx);
@@ -509,7 +509,7 @@ end
 				});
 			}	
 
-			//Log("eng thread", thread, CLUSTER.isMaster ? "on master" : "on worker", ATOM.context[thread] ? "has ctx":"needs ctx");
+			Log("eng thread", thread, CLUSTER.isMaster ? "on master" : "on worker", ATOM.context[thread] ? "has ctx":"needs ctx" );
 			
 			// Handoff this request if needed; otherwise execute this request on this worker/master.
 			
@@ -519,7 +519,7 @@ end
 						handoff( engctx, cb );
 
 					else
-					if ( engctx.req )  // was sucessfullly initialized so execute it
+					if ( engctx.req ) // was sucessfullly initialized so execute it
 						execute( engctx, cb );
 
 					else   // was not yet initialized so do so
@@ -640,7 +640,7 @@ end
 		 free/delete/DELETE.
 		*/
 			ATOM.run( req, function (ctx, step) {  // get engine stepper and its context
-//Log(">run", ctx);
+Log(">run", ctx.Ingest);
 				if ( ctx ) 
 					step( res );
 				
