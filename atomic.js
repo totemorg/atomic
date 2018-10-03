@@ -205,7 +205,7 @@ end
 										req.sql = sql;  
 										//delete req.socket;
 										route( req, function (tau) {
-											Trace( "IPC responding ");
+											Trace( `IPC ${req.table} ON ${CLUSTER.worker.id}`, sql );
 											sql.release();
 											socket.end( JSON.stringify(tau) );
 										});
@@ -640,7 +640,7 @@ end
 		 free/delete/DELETE.
 		*/
 			ATOM.run( req, function (ctx, step) {  // get engine stepper and its context
-Log(">run", ctx.Ingest);
+//Log(">run", ctx);
 				if ( ctx ) 
 					step( res );
 				
