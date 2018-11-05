@@ -38,7 +38,7 @@ export PATH=$CONDA/bin:$INC/python:$PATH
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIB/python
 
 # Engine interfaces
-export ENGINES=$HERE/atomic/ifs
+export ENGINES=$HERE/ifs
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ENGINES/python/build/Release:$ENGINES/opencv/build/Release:$ENGINES/mac/build/Release
 #export JOBS=$HERE/jobs
 
