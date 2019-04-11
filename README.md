@@ -79,11 +79,7 @@ Configure and use ATOMIC like this:
 	var ATOMIC = require("atomic").config({
 			key: value, 						// set key
 			"key.key": value, 					// indexed set
-			"key.key.": value,					// indexed append
-			OBJECT: [ function (){}, ... ], 	// add OBJECT prototypes 
-			Function: function () {} 			// add chained initializer callback
-			:
-			:
+			"key.key.": value					// indexed append
 		}, function (err) {
 		console.log( err ? "something evil happended" : "Im running");
 	});
@@ -91,6 +87,10 @@ Configure and use ATOMIC like this:
 where [its configuration keys](https://totem.west.ile.nga.ic.gov/shares/prm/atomic/index.html) follow 
 the [ENUM deep copy conventions](https://github.com/acmesds/enum).
 
+The following examples are from the unit tester:
+
+	node atomic.js [A1 || A2 || ... ]
+	
 ### A1 - Totem and Atomic Engine interfaces
 
 	var ATOMIC = require("../atomic");
