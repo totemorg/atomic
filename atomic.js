@@ -6,16 +6,7 @@
 @requires fs
 @requires engineIF
 @requires enum
-@requires vm
- 
-Paths:
-MYSQL_USER = local DB login 
-MYSQL_NAME = local DB name
-MYSQL_PASS = local DB password
-ODBC_USER = remote DB login 
-ODBC_NAME = remote DB name
-ODBC_PASS = remote DB password
-SERVICE_MASTER_URL = url to master service
+@requires vm 
  */
 
 var 														
@@ -1211,11 +1202,19 @@ end` ;
 			
 	});
 
-function Trace(msg,sql) {  //< Execution tracing
+//================== Execution tracing
+
+function Trace(msg,sql) {  
 	TRACE.trace(msg,sql);
 }
 
+//================== Unit testing
+
 switch (process.argv[2]) {	//< unit testers
+	case "?":
+		Log("unit test with 'node atomic.js [A1 || ...]'");
+		break;
+		
 	case "A1": 
 		var ATOM = require("../atomic");
 		var TOTEM = require("../totem");

@@ -88,6 +88,7 @@ RNG rng(12345);
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <iomanip>
 //using namespace std;
 
 //==============================================================
