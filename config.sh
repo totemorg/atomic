@@ -27,6 +27,7 @@ export REBUILD="node-gyp rebuild --nodedir=$NODE"	# use "node-gyp $GYPTOPS" to o
 
 # Dev paths
 export INC=$BASE/include
+export INCLUDE=$INC
 export LIB=$BASE/lib64
 export PATH=$PATH:$INC/opencv:$BASE/opencv/bin
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIB/opencv

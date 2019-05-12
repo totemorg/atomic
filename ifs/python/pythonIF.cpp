@@ -353,7 +353,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 		// machine program/step interface
 		int call(const V8STACK& args) { 			// Monitor/Program/Step machine	
 
-			err = setup(args);
+			setup(args);
 //printf(TRACE "setup err=%d init=%d pcode=%p\n", err, init, pCode);
 			
 			if (err) 
@@ -443,10 +443,8 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 						err = badCode;
 					}
 
-					//if (!pCode)
-					printf(TRACE "************** error=%d\n %s\n", err, code);
-
-					//return err;
+					if (err) printf(TRACE "err=%d\n%s\n", err, code);
+					
 					//Py_Finalize(); // dont do this - will cause segment fault
 				}
 			}
@@ -507,6 +505,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 			}
 					
 //printf(TRACE "stateless step err=%d\n",err);
+			return err;
 		}
 		
 	private:

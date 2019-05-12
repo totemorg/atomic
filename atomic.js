@@ -21,7 +21,7 @@ var
 	NET = require("net"),
 	VM = require("vm");
 	
-const { Copy,Each,Log } = require("enum");
+const { Copy,Each,Log,isString } = require("enum");
 	
 var
 	ATOM = module.exports = Copy( //< extend the engineIF built by node-gyp
@@ -240,6 +240,7 @@ end
 			104: new Error("engine failed to compile"),
 			105: new Error("engine exhausted thread pool"),
 			106: new Error("engine received bad arguments"),
+			107: new Error("engine interface problem"),
 			badType: new Error("engine type not supported"),
 			badPort: new Error("engine provided invalid port"),
 			badError: new Error("engine returned invalid code"),
@@ -310,8 +311,6 @@ end
 				client = req.client.replace(".ic.gov","").replace(/\./g,"").replace("@",""),
 				thread = `${client || 0}.${req.table || 0}.${query.Name || query.ID || 0}.${query.Case || 0}`;
 
-			//Log("def eng thread", thread, req.query);
-			
 			function CONTEXT (thread) {  // construct pre-initialized engine context for specified thread 
 			/* 
 			Construct pre-initialized (req=null) engine context 
@@ -346,27 +345,34 @@ end
 					port = body.port || "",
 					runctx = Copy(req.query, engctx.req.query); //body.tau || Copy( req.query, engctx.req.query);
 				
-				//Copy( req.query, runctx );
 				Trace( `RUN ${engctx.thread} ON core${engctx.worker.id}`, sql );
 				//Log("run ctx", runctx);
 				
 				cb( runctx, function stepper(res) {  // provide this engine stepper to the callback
 
 					if ( stepEngine = engctx.step )
-						ATOM.wrap( engctx.wrap, runctx, function (runctx) {  // coerse engine ctx
-							ATOM.prime(sql, runctx, function (runctx) {  // mixin sql primed keys into engine ctx
-								//Log("prime ctx", runctx);
+						return ATOM.call( engctx.wrap, runctx, (runctx) => {  // coerse engine ctx
+							
+							//Log(">call", runctx);
+							if ( runctx )
+								return ATOM.mixSQLs(sql, runctx.Entry, runctx, (runctx) => {  // mixin sql primed keys into engine ctx
+									//Log(">mix", runctx);
 
-								try {  	// step the engine then return an error if it failed or null if it worked
-									//Log("step ", engctx.thread, runctx.Voxel.ID);
-									return ATOM.errors[ stepEngine(engctx.thread, port, runctx, res) ] || ATOM.badError;
-								}
+									try {  	// step the engine then return an error if it failed or null if it worked
+										if ( err = stepEngine(engctx.thread, port, runctx, res) +104 ) 
+											return ATOM.errors[ err ] || ATOM.badError;
+										
+										//ATOM.mixSQLs( sql, runctx.Exit, runctx );	// mixout sql keys from engine ctx
+										return null;
+									}
 
-								catch (err) {
-									return err;
-								}
-
-							});
+									catch (err) {
+										return err;
+									}
+								});
+							
+							else
+								return ATOM.errors.badEngine;
 						});
 					
 					else 
@@ -397,7 +403,7 @@ end
 					cb( null );
 			}
 
-			function initialize(engctx, cb) {  //< initialize engine then callback cb(ctx, stepper) or cb(null) if failed
+			function initialize(engctx, cb) {  //< prime, program, then execute engine with callback cb(ctx, stepper) or cb(null) if failed
 				
 				function prime(req, engctx, cb) {  //< callback cb(engctx || null) with engine context or null if failed
 
@@ -407,16 +413,6 @@ end
 						runctx = new Object(req.query),
 						name = req.table;
 
-					function toJSON(state) {
-						try {
-							return JSON.parse(state);
-						}
-						catch (err) {
-							return null;
-						}
-					}
-
-					//Log("eng get",name);
 					if ( name == "engines" )  // block attempts to run an engine from the engines repo itself
 						cb( null );
 
@@ -437,7 +433,7 @@ end
 										group: req.group,	// engine group
 										table: req.table,	// engine name
 										client: req.client,	// engine owner
-										query: Copy(toJSON(eng.State), runctx),  // engine run context
+										query: Copy( eng.State.parseJSON({}) /*toJSON(eng.State)*/, runctx),  // engine run context
 										body: req.body,		// engine tau parameters
 										action: req.action	// engine CRUD request
 									},			// http request to get and prime engine context
@@ -457,12 +453,12 @@ end
 					var runctx = engctx.req.query;
 
 					if ( initEngine = engctx.init )
-						ATOM.prime(sql, runctx, function (runctx) {  // mixin sql vars into engine query
-							//Log("eng prime", engctx.thread, runctx);
+						ATOM.mixSQLs(sql, runctx.Entry, runctx, (runctx) => {  // mixin sql vars into engine query
+							//Log(">mix", engctx.thread, runctx);
 
 							if (runctx) 
-								initEngine(engctx.thread, engctx.code || "", runctx, function (err) {
-									//Log("eng init", err);
+								initEngine(engctx.thread, engctx.code || "", runctx, (err) => {
+									//Log(">init", err);
 									cb( err ? null : engctx );
 								});
 
@@ -480,12 +476,12 @@ end
 				
 				Trace( `INIT ${engctx.thread} ON core${engctx.worker.id}` );
 				
-				prime(req, engctx, function (engctx) {	// prime engine context
-					//Log("get eng", engctx);
+				prime(req, engctx, (engctx) => {	// prime engine context
+					//Log(">get", engctx);
 					
 					if (engctx) 
-						program(sql, engctx, function (engctx) {	// program/compile engine
-							//Log("pgm eng", engctx);
+						program(sql, engctx, (engctx) => {	// program/compile engine
+							//Log(">pgm", engctx);
 							if (engctx) { // all went well so execute it
 								engctx.req.query = query;  // set run context
 								execute( engctx, cb );
@@ -500,7 +496,7 @@ end
 				});
 			}	
 
-			Log("eng thread", thread, CLUSTER.isMaster ? "on master" : "on worker", ATOM.context[thread] ? "has ctx":"needs ctx" );
+			//Log(">thread", thread, CLUSTER.isMaster ? "on master" : "on worker", ATOM.context[thread] ? "has ctx":"needs ctx" );
 			
 			// Handoff this request if needed; otherwise execute this request on this worker/master.
 			
@@ -521,7 +517,7 @@ end
 					if (ATOM.cores) 	// handoff to worker to complete the initialization
 						handoff( engctx, cb );
 					
-					else	// initialize and execute
+					else	// initialize the engine
 						initialize( engctx, cb );
 				}
 			}
@@ -540,7 +536,6 @@ end
 					initialize( engctx, cb );
 				}
 			}
-
 		},
 
 		save: function (sql,taus,port,engine,saves) {
@@ -597,8 +592,8 @@ end
 		 Provides engine CRUD interface: step/insert/POST, compile/update/PUT, run/select/GET, and 
 		 free/delete/DELETE.
 		*/
-			ATOM.run(req, function (ctx,step) {
-//Log(">step ",ctx);
+			ATOM.run(req, (ctx,step) => {
+Log(">step ",ctx);
 				if ( ctx ) {
 					for (var n=0, N=ctx.Runs||0; n<N; n++) step( (ctx) => {} );
 					res( ctx );
@@ -616,7 +611,7 @@ end
 		 Provides engine CRUD interface: step/insert/POST, compile/update/PUT, run/select/GET, and 
 		 free/delete/DELETE.
 		*/
-			ATOM.run(req, function (ctx,step) {
+			ATOM.run(req, (ctx,step) => {
 //Log(">kill ",ctx);
 
 				res( ctx ? ctx : ATOM.errors.badEngine );				
@@ -630,11 +625,11 @@ end
 		 Provides engine CRUD interface: step/insert/POST, compile/update/PUT, run/select/GET, and 
 		 free/delete/DELETE.
 		*/
-			ATOM.run( req, function (ctx, step) {  // get engine stepper and its context
+			ATOM.run( req, (ctx, step) => {  // get engine stepper and its context
 //Log(">run", ctx);
 				if ( ctx ) 
 					step( res );
-				
+
 				else
 					res( ATOM.errors.badEngine );
 			});
@@ -647,27 +642,32 @@ end
 		 Provides engine CRUD interface: step/insert/POST, compile/update/PUT, run/select/GET, and 
 		 free/delete/DELETE.
 		*/
-			ATOM.run( req, function (ctx,step) {
+			ATOM.run( req, (ctx,step) => {
 //Log(">init",ctx);
 				res( ctx ? ctx : ATOM.errors.badEngine );
 			});
 		},
 
-		wrap: function (wrap, ctx, cb) { 
-			if (wrap) {
-				VM.runInContext( wrap, VM.createContext({ 
-					ctx: ctx
-				}));
-				cb(ctx);
-			}
+		call: function (code, ctx, cb) { 
+			if (code) 
+				try {
+					VM.runInContext( code, VM.createContext({ 
+						ctx: ctx
+					}));
+					return cb(ctx);
+				}
+			
+				catch (err) {
+					return cb( null );
+				}
 			
 			else
-				cb( ctx );
+				return cb( ctx );
 		},
 
-		prime: function (sql, ctx, cb) {  //< callback cb(ctx) with run context primed by sql ctx.Entry and ctx.Exit queries
+		mixSQLs: function (sql, sqls, ctx, cb) {  //< serialize import/export (ctx mixin/mixout) using sqls queries with callback cb(ctx) 
 		/**
-		@method prime
+		@method mixSQLs
 		@member ATOMIC
 
 		Callback engine cb(ctx) with its state ctx primed with state from its ctx.Entry, then export its 
@@ -678,90 +678,92 @@ end
 		ctx.req = [var, ...] list to be built to synchronously import/export the state into/from the 
 		engine's context.
 		 * */
-			var keys = ctx.keys;
+			var 
+				importing = sqls == ctx.Entry,
+				exporting = sqls == ctx.Exit;
 			
-			if (keys) {    	  // enumerate over each sql key
-				if ( keys.length ) { 							// more keys to import/export
+			//Log(">mix keys", ctx.keys, sqls, importing);
+			if ( keys = ctx.keys ) { // continue key serialization process
+				if ( keys.length ) { // more keys to import/export
 					var 
-						key = keys.pop(), 					// var to import/export
-						query = ctx.sqls[key]; 	// sql query to import/export
+						key = keys.pop(), 		// var key to import/export
+						query = sqls[key]; 	// sql query to import/export
 
-					if (typeof query != "string") {
+					if ( !isString(query) ) {
 						query = query[0];
 						args = query.slice(1);
 					}
 
-		//Trace([key,query]);
+					//Trace([key,query]);
 
-					if (ctx.sqls == ctx.Entry) {  	// importing this var into the ctx
+					if ( importing ) {  	// importing this key into the ctx so ...
 						var data = ctx[key] = [];
 						var args = ctx.query;
 					}
 					
-					else { 									// exporting this var from the ctx
+					else { 	// exporting this key from the ctx so ...
 						var data = ctx[key] || [];
 						var args = [key, {result:data}, ctx.query];
 					}
 
-		//Trace(JSON.stringify(args));
+					//Trace(JSON.stringify(args));
 
-					sql.query(query, args, function (err, recs) { 	// import/export this var
+					sql.query(query, args, (err, recs) => { 	// import/export this key into/from this ctx
 
 		//Trace([key,err,q.sql]);
 
-						if (err) {
-							//ctx.err = err;
-							ctx[key] = null;
-						}
+						if (err) 
+							ctx[key] = null;		// or should we return err?
 						
 						else 
-							if (ctx.sqls == ctx.Entry)   // importing matrix
+							if ( importing )   // importing key so ...
 								recs.each( function (n,rec) {
 									var vec = [];
 									data.push( vec );
 									for ( var x in rec ) vec.push( rec[x] );
 								});
 							
-							else { 								// exporting matrix
+							else { 	// exporting key so ...
 							}					
 
-						ATOM.prime(sql,ctx,cb);
+						return ATOM.mixSQLs(sql,sqls,ctx,cb);	// continue key serialization
 					});
 				}
 				
-				else 					// no more keys to load
-				if (cb) {				// run engine in its ctx
-					cb(ctx);
-
-					if (ctx.Exit) {	// save selected engine ctx keys
-						var sqls = ctx.sqls = ctx.Exit;
-						var keys = ctx.keys = []; for (var n in sqls) keys.push(n);
-
-						ATOM.prime(sql,ctx);
-					}
+				else  { // serialization process exhausted so ...
+					ctx.keys = null;
+					if (cb) return cb(ctx); // return engine ctx to host
 				}
+					/* (ctx) => { // save selected engine ctx keys
+						if ( sqls = ctx.sqls = ctx.Exit) {	
+							var keys = ctx.keys = []; 
+							for (var key in sqls) keys.push(key);
+
+							ATOM.mixSQLs(sql,sqls,ctx);
+						}
+					});  */
 			}
 			
-			else
-			if (ctx.Entry) {  // build ctx.keys from the ctx.Entry sqls
-				var sqls = ctx.sqls = ctx.Entry;
-				
-				if (sqls.constructor == String)   // load entire ctx
-					sql.query(sqls)
-					.on("result", function (rec) {
-						cb( Copy(rec, ctx) );
-					});
-				
-				else {  // load specific ctx keys
-					var keys = ctx.keys = []; 
-					for (var key in sqls) keys.push(key);
-				}
+			else 
+			if (sqls) {  // kick-start key serialization process
+				/*
+				if ( sqls = ctx.sqls = ctx.Entry ) {  // build ctx.keys from the ctx.Entry sqls
+					if ( isString(sqls) )   // load entire ctx
+						sql.query(sqls)
+						.on("result", function (rec) {
+							cb( Copy(rec, ctx) );
+						});
 
-				ATOM.prime(sql, ctx, cb);
+					else   // load specific ctx keys
+						ctx.keys = sqls;
+				*/
+				
+				ctx.keys = isString(sqls) ? [sqls] : sqls;  
+				return ATOM.mixSQLs(sql, sqls, ctx, cb);	
 			}
 			
-			else
-				cb(ctx);
+			else	// nada to do
+			if (cb) return cb(ctx); 
 		},
 
 		gen: {  //< controls code generation when engine initialized/programed
@@ -812,42 +814,48 @@ end
 					db = ATOM.db.python,
 					ports = portsDict( ctx.ports || {} ),
 					script = `
+# define ports and locals
 PORTS = ${ports}		# define ports
 LOCALS = locals()			# engine OS context
+# print "py>> locals",LOCALS
+# define engine 
+${code}
 
-if 'PORT' in PORTS:
-	PORT = LOCALS['PORT']		# engine port for stateful calls
-	if PORT in PORTS:
-		PORTS[port]( CTX['tau'], CTX['ports'][PORT] )
-		ERR = 0
-	else:
-		ERR = 103
-else:
-	${code.replace(/\n/g,"\n\t")}		# engine and port logic
-
-	if INIT:	#import global modules and connect to sqldb
-		global LWIP, JSON, SYS, FLOW, SQL0, SQL1
-		#import caffe as CAFFE		#caffe interface
-		import mysql.connector as SQLC		#db connector interface
-		from PIL import Image as LWIP		#jpeg image interface
-		import json as JSON			#json interface
-		import sys as SYS			#system info
-		import flow as FLOW		# record buffering and loading logic
-
-		SQL = SQLC.connect(user='${db.user}', password='${db.pass}', database='${db.name}')
-		SQL0 = SQL.cursor(buffered=True)
-		SQL1 = SQL.cursor(buffered=True) 
-
-		ERR = 0
-		INIT = 0
-		init(CTX)
-	else:
-		${Thread.plugin}(CTX)
-
-#exit code
-#SQL.commit()
-#SQL0.close()
-#SQL1.close()
+try:
+	if 'PORT' in PORTS:
+		PORT = LOCALS['PORT']		# engine port for stateful calls
+		if PORT in PORTS:
+			PORTS[port]( CTX['tau'], CTX['ports'][PORT] )
+			ERR = 0
+		else:
+			ERR = 103
+	else:	# entry logic	
+		if INIT:	#import global modules and connect to sqldb
+			global LWIP, JSON, SYS, FLOW, SQL0, SQL1
+			#import caffe as CAFFE		#caffe interface
+			import mysql.connector as SQLC		#db connector interface
+			from PIL import Image as LWIP		#jpeg image interface
+			import json as JSON			#json interface
+			import sys as SYS			#system info
+			import flow as FLOW		# record buffering and loading logic
+			# setup sql connectors
+			SQL = SQLC.connect(user='${db.user}', password='${db.pass}', database='${db.name}')
+			# default exit codes and startup
+			ERR = 0
+			INIT = 0
+			#init(CTX)
+		else:
+			# entry
+			SQL0 = SQL.cursor(buffered=True)
+			SQL1 = SQL.cursor(buffered=True) 
+			# call engine
+			${Thread.plugin}(CTX)
+			#exit
+			SQL.commit()
+			SQL0.close()
+			SQL1.close()
+except:
+	ERR = 107
 ` ;
  			
 				if (gen.trace) Log(script);
@@ -1061,14 +1069,12 @@ end` ;
 		step: {  //< step engines on given thread with callback cb(ctx) or cb(null) if error
 			py: function pyStep(thread,port,ctx,cb) {
 				
-				if ( err = ATOM.python(thread,port,ctx) ) {
-					cb( null );
-					return ATOM.errors[err] || ATOM.errors.badError;
-				}
-				else {
+				if ( err = ATOM.python(thread,port,ctx) ) 
+					cb( ATOM.errors[err] || ATOM.errors.badError  );
+					//return cb( ATOM.errors[err] || ATOM.errors.badError );
+				else 
 					cb( ctx );
-					return null;
-				}
+					//return null;
 			},
 			
 			cv: function cvStep(thread,port,ctx,cb) {
@@ -1094,9 +1100,14 @@ end` ;
 					ATOM.thread( function (sql) {
 						Copy( {RES: cb, SQL: sql, CTX: ctx, PORT: port, PORTS: vm.ctx}, vm.ctx );
 						
-						VM.runInContext(vm.code,vm.ctx);
-						
-						return null;
+						Log("run>>>>", vm.code);
+						try {
+							VM.runInContext(vm.code,vm.ctx);						
+							return null;
+						}
+						catch (err) {
+							return err;
+						}
 					});
 				
 				else 
@@ -1179,14 +1190,18 @@ end` ;
 				ctx.SQL = {};
 				ctx.ports = ctx.ports || {};
 
-				VM.runInContext(code,ctx);
-
 				ATOM.app.select[thread] = function (req,cb) { ctx.SQL.select(req.sql,[],function (recs) {cb(recs);}); }
 				ATOM.app.insert[thread] = function (req,cb) { ctx.SQL.insert(req.sql,[],function (recs) {cb(recs);}); }
 				ATOM.app.delete[thread] = function (req,cb) { ctx.SQL.delete(req.sql,[],function (recs) {cb(recs);}); }
 				ATOM.app.update[thread] = function (req,cb) { ctx.SQL.update(req.sql,[],function (recs) {cb(recs);}); }
 
-				return null;	
+				try {
+					VM.runInContext(code,ctx);
+					return null;	
+				}
+				catch (err) {
+					return err;
+				}
 			},
 			
 			sh: function shStep(thread,port,ctx,cb) {  // Linux shell engines

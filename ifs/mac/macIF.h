@@ -89,7 +89,7 @@ class MACHINE {
 			if (name) free(name);
 		}
 	
-		int monitor(void) {   // monitor used for debudding machine 
+		int monitor(void) {   // monitor used for debugging machine 
 			V8ARRAY keys = ctx->GetOwnPropertyNames();
 			char buf[MAX_KEYLEN];
 			
@@ -118,9 +118,8 @@ class MACHINE {
 			ctx = CTXARG(args);
 			tau = TAUARG(args);
 
-//printf(TRACE "setup name=%s code=%s args=%d initialized=%d\n",name,code,args.Length(),(int) init);
-
-			return 0;
+//printf(TRACE "setup name=%s code=%s args=%d initialized=%d err=%d\n",name,code,args.Length(),(int) init, err);
+			return err;
 		}
 	
 		// machine output argument setters
