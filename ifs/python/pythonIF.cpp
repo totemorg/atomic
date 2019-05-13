@@ -443,7 +443,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 						err = badCode;
 					}
 
-					printf(TRACE "err=%d\n%s\n", err, code);
+					printf(TRACE "***********\nerror %d\n%s\n", err, code);
 					
 					//Py_Finalize(); // dont do this - will cause segment fault
 				}
