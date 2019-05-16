@@ -821,41 +821,41 @@ LOCALS = locals()			# engine OS context
 # define engine 
 ${code}
 #
-if 'PORT' in PORTS:
-	PORT = LOCALS['PORT']		# engine port for stateful calls
-	if PORT in PORTS:
-		PORTS[port]( CTX['tau'], CTX['ports'][PORT] )
-		ERR = 0
-	else:
-		ERR = 103
-else:	# entry logic	
-	if INIT:	#import global modules and connect to sqldb
-		global LWIP, JSON, SYS, FLOW, SQL0, SQL1, NP
-		import numpy as NP
-		#import caffe as CAFFE		#caffe interface
-		import mysql.connector as SQLC		#db connector interface
-		from PIL import Image as LWIP		#jpeg image interface
-		import json as JSON			#json interface
-		import sys as SYS			#system info
-		# import flow as FLOW		# record buffering and loading logic
-		# setup sql connectors
-		SQL = SQLC.connect(user='${db.user}', password='${db.pass}', database='${db.name}')
-		# default exit codes and startup
-		ERR = 0
-		INIT = 0
-	else:
-		# entry
-		#SQL0 = SQL.cursor(buffered=True)
-		#SQL1 = SQL.cursor(buffered=True) 
-		# call engine
-		${Thread.plugin}(CTX)
-		#exit
-		#SQL.commit()
-		#SQL0.close()
-		#SQL1.close()
-#try:
-#except:
-#	ERR = 107
+try:
+	if 'PORT' in PORTS:
+		PORT = LOCALS['PORT']		# engine port for stateful calls
+		if PORT in PORTS:
+			PORTS[port]( CTX['tau'], CTX['ports'][PORT] )
+			ERR = 0
+		else:
+			ERR = 103
+	else:	# entry logic	
+		if INIT:	#import global modules and connect to sqldb
+			global LWIP, JSON, SYS, FLOW, SQL0, SQL1, NP
+			import numpy as NP
+			#import caffe as CAFFE		#caffe interface
+			import mysql.connector as SQLC		#db connector interface
+			from PIL import Image as LWIP		#jpeg image interface
+			import json as JSON			#json interface
+			import sys as SYS			#system info
+			# import flow as FLOW		# record buffering and loading logic
+			# setup sql connectors
+			SQL = SQLC.connect(user='${db.user}', password='${db.pass}', database='${db.name}')
+			# default exit codes and startup
+			ERR = 0
+			INIT = 0
+		else:
+			# entry
+			#SQL0 = SQL.cursor(buffered=True)
+			#SQL1 = SQL.cursor(buffered=True) 
+			# call engine
+			${Thread.plugin}(CTX)
+			#exit
+			#SQL.commit()
+			#SQL0.close()
+			#SQL1.close()
+except:
+	ERR = 107
 ` ;
  			
 				if (gen.trace) Log(script);
