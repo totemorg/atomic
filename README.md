@@ -61,17 +61,14 @@ the config parameters:
 ## Installation
 
 Clone [ATOMIC cloud compute](https://github.com/acmesds/atomic) into your PROJECT/atomic folder.  
+Clone [ENUM basic enumerators](https://github.com/acmesds/enum) into your PROJECT/enum folder.  
 	
-### Required environmental variables
+### Configure environment and Unit test
 
-* MYSQL_USER = local DB login 
-* MYSQL_NAME = local DB name
-* MYSQL_PASS = local DB password
-* ODBC_USER = remote DB login 
-* ODBC_NAME = remote DB name
-* ODBC_PASS = remote DB password
-* SERVICE_MASTER_URL = url to master service
-
+	npm run edit
+	npm run start
+	npm test [ ? || A1 || A2 || ... ]
+	
 ## Usage
 
 Configure and use ATOMIC like this:
@@ -87,10 +84,6 @@ Configure and use ATOMIC like this:
 where [its configuration keys](https://totem.west.ile.nga.ic.gov/shares/prm/atomic/index.html) follow 
 the [ENUM deep copy conventions](https://github.com/acmesds/enum).
 
-The following examples are from the unit tester:
-
-	node atomic.js [A1 || A2 || ... ]
-	
 ### A1 - Totem and Atomic Engine interfaces
 
 	var ATOMIC = require("../atomic");

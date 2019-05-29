@@ -295,7 +295,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 			
 			else
 			if ( src->IsNumber() )
-				return PyFloat_FromDouble( src->ToNumber()->Value() );
+				return PyFloat_FromDouble( src->ToNumber(scope)->Value() );
 				
 			else
 			if ( src->IsArray() ) {

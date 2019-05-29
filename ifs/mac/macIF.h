@@ -15,7 +15,7 @@
 #define V8DEF(TAR,VAL,NAME) MACHINE::set(TAR,QUOTE(NAME),VAL)
 #define V8SET(TAR,SRC,NAME) MACHINE::set(TAR,QUOTE(NAME),SRC.NAME)
 #define V8INDEX(X,NAME) X->Get(V8TOKEY(NAME))
-#define V8GETVALUE(X,KEY) V8INDEX(X,KEY)->ToNumber()->Value()
+#define V8GETVALUE(X,KEY) V8INDEX(X,KEY)->ToNumber(scope)->Value()
 #define V8GETSTRING(X,KEY) mac_strclone( V8INDEX(X,KEY)->ToString() )
 #define V8GETARRAY(X,KEY) Local<v8::Array>::Cast( V8INDEX(X,KEY) )
 #define V8GETOBJECT(X,KEY) V8INDEX(X,KEY)->ToObject()

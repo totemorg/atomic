@@ -100,7 +100,7 @@ for n=1:height(ex)
 	disp(ex.script{n});
 	eval(ex.script{n});
 end
-`);
+`, (err) => {} );
 				}
 				
 				else
