@@ -1,9 +1,11 @@
 {
   "name": "atomic",
   "version": "1.0.0",
-  "description": "Cloud compute",
+  "description": "Cloud compute for python, js, cv, matlab, R, etc engines",
   "main": "atomic.js",
   "scripts": {
+	  "prmprep": "source ./maint.sh prmput",
+	  "prmload": "source ./maint.sh prmget",
 	  "edit": "vi ./config.sh",
 	  "start": "source ./config.sh",
     "test": "node atomic.js"
@@ -13,12 +15,13 @@
     "url": "git@git.geointapps.org:acme/atomic.git"
   },
   "keywords": [
-    "machines",
-    "python",
-    "js",
-    "matlab",
-    "r",
-    "opencv"
+	"cloud compute",
+	"engines",
+	"python",
+	"js",
+	"matlab",
+	"r",
+	"opencv"
   ],
   "author": "ACME Software Disposal Service",
   "license": "ISC",

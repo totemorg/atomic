@@ -7,19 +7,26 @@
 
 # ATOMIC
 
-ATOMIC provides cloud computing via [engines](https://totem.west.ile.nga.ic.gov/api.view) of TYPE
+ATOMIC provides cloud computing 
+on [python, js, cv, matlab, R, ... engines](https://totem.west.ile.nga.ic.gov/api.view) 
+via the endpoints:
 
-	py | js | sh | cv | ma | sh | r | octave
-
-at the ATOMIC[TYPE] interface and at the following endpoints:
-
-	POST advance/setp/insert a stateful engine
+	POST advance/step/insert a stateful engine
 	PUT	compile/init/update a stateful engine
 	DELETE deallocate/kill/delete a stateful engine
 	GET execute/read/select a stateless engines
 
-Stateful engines implement the step, init and kill methods, and are provided,
-when endpoint accessed, event tokens:
+Stateless engines are supported at the read (GET) endpoint, and are provided
+the following parameters:
+
+	TAU.i = {tau} = input event sinked to an engine
+	TAU.o = {tau} = output event sourced from an engine
+	TAU.p = {sql: {...}, query: {...} }
+
+where the query hash will contain the supplied url parameters.
+
+Stateful engines implement the step-init-kill (POST-PUT-DELETE) endpoints, and are 
+supplied event tokens (tau):
 
 	TAU.i = [{tau}, ...] = events arriving to engine's input port
 	TAU.o = [{tau}, ...] = events departing from engine's output port
@@ -27,11 +34,10 @@ when endpoint accessed, event tokens:
 	TAU.port = engine's in/out port to step
 	TAU.thread = engine's 0-base thread counter
 
-where input/output port keys and engine code are taken from
-the Vars and Code engine context at workflow initialization, and 
-where sql is a mysql database connector.  
+where input/output ports and engine code are defined by 
+the [engine context](https://totem.west.ile.nga.ic.gov/api.view).
 
-Each event token contains the following default fields (they can 
+An event token typically contain the following default fields (they can 
 be freely interpretted and extended by the engine):
 
 	job = "" 	= Current job thread N.N...
@@ -43,32 +49,17 @@ be freely interpretted and extended by the engine):
 	status = 0	= Status code
 	value = 0	= Flow calculation
 
-Stateless engines are supported by the read method, and are passed
-the following parameters:
-
-	TAU.i = {tau} = input event sinked to an engine
-	TAU.o = {tau} = output event sourced from an engine
-	TAU.p = {sql: {...}, query: {...} }
-
-where the query hash will contain the url parameters.
-
-In addition to geoClient config paramaters, geoEngine accepts 
-the config parameters:
-
-	jobspath path to prefix to a tau.job
-	app{...} crud interface to virtual tables
-
 ## Installation
 
 Clone [ATOMIC cloud compute](https://github.com/acmesds/atomic) into your PROJECT/atomic folder.  
 Clone [ENUM basic enumerators](https://github.com/acmesds/enum) into your PROJECT/enum folder.  
-	
-### Configure environment and Unit test
 
-	npm run edit
-	npm run start
-	npm test [ ? || A1 || A2 || ... ]
-	
+### Manage 
+
+	npm run [ edit || start ]			# Configure environment
+	npm test [ ? || A1 || A2 || ... ]		# Unit test
+	npm run [ prmprep || prmload ]		# Revice PRM
+
 ## Usage
 
 Configure and use ATOMIC like this:
