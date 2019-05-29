@@ -58,7 +58,7 @@ Clone [ENUM basic enumerators](https://github.com/acmesds/enum) into your PROJEC
 
 	npm run [ edit || start ]			# Configure environment
 	npm test [ ? || A1 || A2 || ... ]		# Unit test
-	npm run [ prmprep || prmload ]		# Revice PRM
+	npm run [ prmprep || prmload ]		# Revise PRM
 
 ## Usage
 
