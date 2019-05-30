@@ -836,8 +836,7 @@ else:	# entry logic
 			from PIL import Image as IMP		#jpeg image interface
 			import mysql.connector as SQLC		#db connector interface
 			import numpy as NP
-			#import caffe as CAFFE		#caffe interface
-			print "py>>imports done"
+			# import caffe as CAFFE		#caffe interface
 			# import flow as FLOW		# record buffering and loading logic
 			# setup sql connectors
 			SQL = SQLC.connect(user='${db.user}', password='${db.pass}', database='${db.name}')

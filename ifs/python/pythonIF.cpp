@@ -58,165 +58,7 @@ using namespace std;
 #define PYCTX "CTX"		// engine context during stateless call
 #define PYTAU "TAU"		// port events during stateful call
 #define PYINIT "INIT" 		// initialize flag
-#define PYOS "OS" 		// OS dictionary
-
-/*
-#define PYPORTS "ports"		// py hash of port hashes
-*/
-// Danger zone
-
-/*
-// Parameters used to wrap python code to provide sql connector and debugging
-
-#define WRAP_ADDTRACE trace
-#define WRAP_ADDCATCH false
-#define WRAP_ADDSQLCON true
-#define WRAP_DBPASS getenv("DB_PASS")
-#define WRAP_DBNAME getenv("DB_NAME")
-#define WRAP_DBUSER getenv("DB_USER")
-#define PYTHONORIGIN getenv("PYTHONORIGIN")
-*/
-
-/*
-str indent(str code) {
-	int n,N = strlen(code),m,M;
-	
-	for (n=0,M=0; n<N; n++) if (code[n] == '\n') M++;
-	
-	str rtn = mac_strclone(N+M+1,"\t");
-	
-	for (n=0,m=strlen(rtn); n<N; n++) {
-		rtn[m++] = code[n];
-		if (code[n] == '\n') rtn[m++] = '\t';
-	}
-	
-	rtn[m] = '\0';
-	
-	return rtn;
-}
-
-str wrap(str code,str port,V8OBJECT parm,str idx,str args) {  // wrap user python code in machine interface
-	str rtn = mac_strclone(strlen(code)+1000,"");
-	
-	if (strlen(args)) { // add context front and back end if python args specified
-
-#if WRAP_ADDTRACE
-		strcat(rtn, 
-			"\n#trace code\n"
-			"print 'py>>dumping locals'\n"
-			"print locals()\n"
-			"print 'py>>importing sys'\n"
-			"import sys\n"
-			"print sys.path\n"
-			"print sys.version\n"
-			//"import caffe\n"
-			//"print 'TAU imported caffe'\n"
-		);
-#endif
-		
-		strcat(rtn,		// add db connector interface 
-			"\n#connector interface\n"
-		);
-
-		// mysql connection note:
-		// import will fail with mysql-connector-python-X installed (rum or rpm installed as root using either
-		// python 2.2 or python 2.7).  Will however import under python 2.6.  To fix, we must:
-		//
-		// 		cp -R /usr/lib/python2.6/site-packages/mysql $CONDA/lib/python2.7/site-packages
-		//
-		// after "rpm -i mysql-connector-python-2.X"
-		
-#if WRAP_ADDCATCH
-		strcat(rtn,			// add entry-exit excemption catch
-			"try:\n"
-		);
-#endif
-
-#if WRAP_ADDSQLCON
-
-		// install the python2.7 connector (rpm -Uvh mysql-conector-python-2.x.rpm)
-		// into /usr/local/lib/python2.7/site-packages/mysql, then copy
-		// this mysql folder to the anaconda/lib/python2.7/site-packages.
-		
-		strcat(rtn,
-			"import mysql.connector\n"
-//			"print 'TAU imported mysql'\n"
-		);
-		strcat(rtn,"SQL = mysql.connector.connect(user='");
-		strcat(rtn,WRAP_DBUSER);
-		strcat(rtn,"', password='");
-		strcat(rtn,WRAP_DBPASS);
-		strcat(rtn,"', database='");
-		strcat(rtn,WRAP_DBNAME);
-		strcat(rtn,"')\n");
-
-		// add two sql cursors (more than 2 causes segment fault for some reason)
-		int N = 2;
-		
-		if (N) {
-			for (int n=0;n<N;n++)
-				sprintf(rtn,"%sSQL%d=SQL.cursor(buffered=True)\n", rtn, n);
-		}
-#endif
-
-		strcat(rtn,"\n#supplied code\n");		// add user code
-
-#if WRAP_ADDCATCH
-		strcat(rtn,indent(code)); 
-#else
-		strcat(rtn,code); 
-#endif
-		
-		strcat(rtn,		// add entry code for port processing
-			"\n#entry code\n"
-			"PORTS={"
-		);
-
-		V8ARRAY keys = parm->GetOwnPropertyNames();
-		char buf[MAX_KEYLEN];
-		
-		for (int n=0,k=0,N=keys->Length(); n<N; n++) {
-			str key = V8TOSTR(keys->Get(n), buf);
-			
-			sprintf(rtn,"%s%s'%s':%s",rtn,(k++)?",":"",key,key);
-		}
-		
-		strcat(rtn,"}\n");
-		
-		if (strlen(idx)) 	// if port indexing, 
-			sprintf(rtn,	// add call to the desired port providing specified arguments
-				"%s\n"
-				"if " PYPORT ":\n"
-					"\tif %s in PORTS:\n"
-						"\t\t" PYERR " = PORTS[%s](%s)\n"
-					"\telse:\n"
-						"\t\t" PYERR " = 104\n"
-				"else:\n"
-					"\t" PYERR " = 0\n",
-			rtn,idx,idx,args);
-			
-#if WRAP_ADDSQLCON
-		strcat(rtn,  // close sql connection
-			"\n#exit code\n"
-			"SQL.commit()\n"
-			"SQL.close()\n"
-		);
-#endif
-	
-#if WRAP_ADDCATCH
-		strcat(rtn, 	// catch entry-exit excemptions
-			"except rtn:\n"
-				"\t" PYERR " = 104\n"
-		);
-#endif
-	}
-	
-	else 		// use user code as-is
-		strcat(rtn,code);
-	
-	return rtn;
-}
-*/
+// #define PYOS "OS" 		// OS dictionary
 
 class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 	public:
@@ -412,19 +254,9 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 					// Create global dictonary object (reserved)
 					pMain = PyImport_AddModule("__main__");
 					pGlobals = PyModule_GetDict(pMain);	
-					PyDict_SetItemString(pGlobals, PYOS, PyModule_GetDict(pModule));
+					//PyDict_SetItemString(pGlobals, PYOS, PyModule_GetDict(pModule));
 //printf(TRACE "globals=%p\n",pGlobals);
 					
-					/*
-					str comp = wrap(  // generate code to compile
-						code,
-						port,
-						V8INDEX(ctx,PYPORTS)->ToObject(),
-						PYPORT,
-						PYCTX "," PYPORTS "[" PYPORT "]"
-					);
-					*/
-
 //printf(TRACE "compile=\n%s infile=%d\n",code,Py_file_input);
 					// Uncomment if there is a need to define ctx at compile
 					//PyDict_SetItemString(pLocals, PYPORT, PyString_FromString( port ) );
@@ -443,7 +275,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 						err = badCode;
 					}
 
-					printf(TRACE "compile err=%d\n%s\n", err, code);
+					if (err) printf(TRACE "compile err=%d\n%s\n", err, code);
 					
 					//Py_Finalize(); // dont do this - will cause segment fault
 				}
@@ -490,7 +322,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 			}
 			
 			else {					// Stateless step
-printf(TRACE "stateless step port=%s\n", port);
+//printf(TRACE "stateless step port=%s\n", port);
 				pLocals = PyModule_GetDict(pModule);
 				pGlobals = PyModule_GetDict(pMain);	
 
@@ -506,7 +338,7 @@ printf(TRACE "stateless step port=%s\n", port);
 				err = PyInt_AsLong( LOCAL(PYERR) );	
 			}
 					
-printf(TRACE "stateless step err=%d\n",err);
+//printf(TRACE "stateless step err=%d\n",err);
 			return err;
 		}
 		
