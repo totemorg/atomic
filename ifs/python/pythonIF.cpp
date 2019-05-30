@@ -354,7 +354,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 		int call(const V8STACK& args) { 			// Monitor/Program/Step machine	
 
 			setup(args);
-printf(TRACE "setup err=%d init=%d pcode=%p\n", err, init, pCode);
+//printf(TRACE "setup err=%d init=%d pcode=%p\n", err, init, pCode);
 			
 			if (err) 
 				return err;
@@ -379,7 +379,7 @@ printf(TRACE "setup err=%d init=%d pcode=%p\n", err, init, pCode);
 				path = strstr(port,"\n") ? NULL : port;
 				init = true;
 
-printf(TRACE "compile path=%s port=%s\n",path,port);
+//printf(TRACE "compile path=%s port=%s\n",path,port);
 				
 				if ( strlen(path) ) { 				// load external module
 					pModule = PyImport_Import(PyString_FromString(path));
@@ -443,7 +443,7 @@ printf(TRACE "compile path=%s port=%s\n",path,port);
 						err = badCode;
 					}
 
-					printf(TRACE "error %d\n%s\n", err, code);
+					printf(TRACE "compile err=%d\n%s\n", err, code);
 					
 					//Py_Finalize(); // dont do this - will cause segment fault
 				}

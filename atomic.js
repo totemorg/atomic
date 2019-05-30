@@ -817,7 +817,7 @@ Log(">step ",ctx);
 # define ports and locals
 PORTS = ${ports}		# define ports
 LOCALS = locals()			# engine OS context
-print "py>>locals",LOCALS
+# print "py>>locals",LOCALS
 # define engine 
 ${code}
 if 'PORT' in PORTS:
@@ -829,7 +829,7 @@ if 'PORT' in PORTS:
 		ERR = 103
 else:	# entry logic
 	if INIT:	#import global modules and connect to sqldb
-		global LWIP, JSON, SYS, FLOW, SQL0, SQL1, NP
+		#global LWIP, JSON, SYS, FLOW, SQL0, SQL1, NP
 		import sys as SYS			#system info
 		import json as JSON			#json interface
 		#from PIL import Image as LWIP		#jpeg image interface
