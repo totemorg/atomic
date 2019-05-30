@@ -37,6 +37,7 @@ switch ("py1") {
 			},
 			pgm = `
 print 'Look mom - Im running python!'
+import numpy # fails under nodejs v10
 print "tau=", CTX['tau']
 CTX['Save'] = [{'x':[11,12],'y':[21,22]}]
 `;

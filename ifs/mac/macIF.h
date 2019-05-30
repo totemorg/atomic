@@ -115,8 +115,8 @@ class MACHINE {
 			port = code = CODEARG(args, codebuf);
 			if ( strlen(code) > MAX_CODELEN) return badCode;
 			
-			ctx = CTXARG(args);
-			tau = TAUARG(args);
+			ctx = CTXARG(args);  // define context or empty object if not an object
+			tau = TAUARG(args);	// define event taus or empty list if not a list
 
 //printf(TRACE "setup name=%s code=%s args=%d initialized=%d err=%d\n",name,code,args.Length(),(int) init, err);
 			return err;
