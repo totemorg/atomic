@@ -236,13 +236,13 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 		V8VALUE clone(PyObject *src) { 				// clone python value into v8 value
 			if (PyList_Check(src)) {
 				int N = PyList_Size(src);
-//printf(TRACE "clone list len=%d\n",N);
+//printf(TRACE "clone py>>v8 list len=%d\n",N);
 				V8ARRAY tar = v8::Array::New(scope,N);
 				V8OBJECT Tar = tar->ToObject();
 				
 				for (int n=0; n<N; n++) {
 					Tar->Set(n,clone( PyList_GetItem(src,n) ));
-//printf(TRACE "clone[%d] done\n",n);
+//printf(TRACE "clone py>>v8[%d] done\n",n);
 				}
 					
 				return tar;
@@ -287,7 +287,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 		}
 		
 		PyObject *clone(V8VALUE src) {  			// clone v8 object into python object
-//printf(TRACE " clone str=%d num=%d arr=%d obj=%d null=%d\n ",src->IsString(),src->IsNumber(),src->IsArray(),src->IsObject(),src->IsNull() );
+//printf(TRACE "clone v8>>py str=%d num=%d arr=%d obj=%d null=%d\n ",  src->IsString(),src->IsNumber(),src->IsArray(),src->IsObject(),src->IsNull() );
 			char buf[MAX_CODELEN];
 			
 			if ( src->IsString() )
@@ -324,7 +324,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 			int N = src->Length();
 			PyObject *tar = PyList_New(N);
 			
-//printf(TRACE "clone list len=%d\n",N);
+//printf(TRACE "clone v8>>py list len=%d\n",N);
 			
 			for (int n=0; n<N; n++) 
 				PyList_SetItem(tar, n, clone(src->Get(n)) );
@@ -337,15 +337,15 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 			V8ARRAY keys = src->GetOwnPropertyNames();
 			char buf[MAX_KEYLEN];
 			
-//printf(TRACE "clone object keys=%d\n",keys->Length());
+//printf(TRACE "clone v8>>py object keys=%d\n",keys->Length());
 			
 			for (int n=0,N=keys->Length(); n<N; n++) {
 				str key = V8TOSTR(keys->Get(n), buf);
 				
 				PyDict_SetItemString(tar, key, clone(V8INDEX(src,key)));
-//printf(TRACE "clone key=%s\n", buf);
+//printf(TRACE "clone v8>>py key=%s\n", buf);
 			}
-//printf(TRACE "clone object done\n");
+//printf(TRACE "clone v8>>py object done\n");
 
 			return tar;
 		}
@@ -354,7 +354,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 		int call(const V8STACK& args) { 			// Monitor/Program/Step machine	
 
 			setup(args);
-//printf(TRACE "setup err=%d init=%d pcode=%p\n", err, init, pCode);
+printf(TRACE "setup err=%d init=%d pcode=%p\n", err, init, pCode);
 			
 			if (err) 
 				return err;
@@ -379,7 +379,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 				path = strstr(port,"\n") ? NULL : port;
 				init = true;
 
-//printf(TRACE "compile path=%s port=%s\n",path,port);
+printf(TRACE "compile path=%s port=%s\n",path,port);
 				
 				if ( strlen(path) ) { 				// load external module
 					pModule = PyImport_Import(PyString_FromString(path));
@@ -443,7 +443,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 						err = badCode;
 					}
 
-					printf(TRACE "***********\nerror %d\n%s\n", err, code);
+					printf(TRACE "error %d\n%s\n", err, code);
 					
 					//Py_Finalize(); // dont do this - will cause segment fault
 				}
@@ -490,13 +490,15 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 			}
 			
 			else {					// Stateless step
-//printf(TRACE "stateless step port=%s\n", port);
+printf(TRACE "stateless step port=%s\n", port);
 				pLocals = PyModule_GetDict(pModule);
 				pGlobals = PyModule_GetDict(pMain);	
 
 				PyDict_SetItemString(pLocals, PYPORT, PyString_FromString( port ) );
 				PyDict_SetItemString(pLocals, PYCTX, clone( ctx ));
+//printf(TRACE "context cloned\n");
 				PyEval_EvalCode(pCode,pGlobals,pLocals);
+//printf(TRACE "code evaled\n");
 				
 				set(ctx, clone( LOCAL(PYCTX) )->ToObject() );
 				//set(ctx, clone( pLocals )->ToObject() );
@@ -504,7 +506,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 				err = PyInt_AsLong( LOCAL(PYERR) );	
 			}
 					
-//printf(TRACE "stateless step err=%d\n",err);
+printf(TRACE "stateless step err=%d\n",err);
 			return err;
 		}
 		

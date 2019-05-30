@@ -167,13 +167,13 @@ end
 				ipcsrv.listen("/tmp/totem.sock");
 				
 				var sock = ATOM.ipcsocket = NET.createConnection("/tmp/totem.sock", function () {
-					console.log("connected?");
+					Log("connected?");
 				});
 				sock.on("error", function (err) {
-					console.log("sockerr",err);
+					Log("sockerr",err);
 				});
 				sock.on("data", function (d) {
-					console.log("got",d);
+					Log("got",d);
 				}); 
 			} */
 			
@@ -190,7 +190,7 @@ end
 						if (req.action) { 		// process only our messages (ignores sockets, etc)
 							if (CLUSTER.isWorker) {
 								Trace("IPC grabbing on "+CLUSTER.worker.id+"/"+req.action);
-//console.log(req);	
+//Log(req);	
 								if ( route = ATOM[req.action] ) 
 									ATOM.thread( function (sql) {
 										req.sql = sql;  
@@ -333,7 +333,7 @@ end
 				// experimental NET sockets as alternative to sockets used here
 				var sock = this.socket = NET.connect("/tmp/totem."+thread+".sock");
 				sock.on("data", function (d) {
-					console.log("thread",this.thread,"rx",d);
+					Log("thread",this.thread,"rx",d);
 				}); 
 				sock.write("hello there");*/
 			}
@@ -817,10 +817,9 @@ Log(">step ",ctx);
 # define ports and locals
 PORTS = ${ports}		# define ports
 LOCALS = locals()			# engine OS context
-# print "py>> locals",LOCALS
+print "py>>locals",LOCALS
 # define engine 
 ${code}
-#
 if 'PORT' in PORTS:
 	PORT = LOCALS['PORT']		# engine port for stateful calls
 	if PORT in PORTS:
@@ -828,21 +827,25 @@ if 'PORT' in PORTS:
 		ERR = 0
 	else:
 		ERR = 103
-else:	# entry logic	
+else:	# entry logic
 	if INIT:	#import global modules and connect to sqldb
 		global LWIP, JSON, SYS, FLOW, SQL0, SQL1, NP
-		import numpy as NP
-		#import caffe as CAFFE		#caffe interface
-		import mysql.connector as SQLC		#db connector interface
-		from PIL import Image as LWIP		#jpeg image interface
-		import json as JSON			#json interface
 		import sys as SYS			#system info
+		import json as JSON			#json interface
+		#from PIL import Image as LWIP		#jpeg image interface
+		#import mysql.connector as SQLC		#db connector interface
+		#import numpy as NP
+		#import caffe as CAFFE		#caffe interface
+		print "py>>imports done"
 		# import flow as FLOW		# record buffering and loading logic
 		# setup sql connectors
-		SQL = SQLC.connect(user='${db.user}', password='${db.pass}', database='${db.name}')
+		# SQL = SQLC.connect(user='${db.user}', password='${db.pass}', database='${db.name}')
 		# default exit codes and startup
 		ERR = 0
 		INIT = 0
+		#try:
+		#except:
+		#	ERR = 107
 	else:
 		# entry
 		#SQL0 = SQL.cursor(buffered=True)
@@ -853,9 +856,10 @@ else:	# entry logic
 		#SQL.commit()
 		#SQL0.close()
 		#SQL1.close()
-#try:
-#except:
-#	ERR = 107
+		ERR = 0
+		#try:
+		#except:
+		#	ERR = 108
 ` ;
  			
 				if (gen.trace) Log(script);
@@ -1281,88 +1285,98 @@ switch (process.argv[2]) {	//< unit testers
 			"byTable.": {
 				test: function Chipper(req,res) {
 
-					var itau = [ATOM.tau()];
-					var otau = [ATOM.tau()];
+					var itau = [ ATOM.tau("test.jpg") ];
+					var otau = [ ATOM.tau() ];
 
+					Log("query",req.query);
+					// Python attempts to connect to mysql,  so, if mysql service not running or 
+					// mysql.connector module not found, python engines will not run.
+					
+					// If job/port files do not exist, this can cause engines to crash.
+					
 					switch (req.query.config) {
 						case "cv": // program and step haar opencv machine 
-							parm =	{
-								tau: [], 
+							var ctx =	{
 								ports: {
 									frame:	 {},
 									helipads: {scale:0.05,dim:100,delta:0.1,hits:10,cascade:["c1/cascade"]},
 									faces:	 {scale:0.05,dim:100,delta:0.1,hits:10,cascade:["haarcascade_frontalface_alt","haarcascade_eye_tree_eyeglasses"]}
 							}};
 
-							itau[0].job = "test.jpg";
-							console.log(parm);
+							Log({
+								init: ATOM.opencv("opencv.Me.Thread1","",ctx),
+								ctx: JSON.stringify(ctx)
+							});
 
-							for (var n=0,N=1;n<N;n++)  // program N>1 to test reprogram
-								console.log(`INIT[${n}] = `, ATOM.opencv("opencv.Me.Thread1","setup",parm));
-
-							for (var n=0,N=5;n<N;n++) // step N>1 to test multistep
-								console.log(`STEP[${n}] = `, ATOM.opencv("opencv.Me.Thread1","frame",itau));
+							for (var n=0,N=1;n<N;n++) // step N>1 to test multistep
+								Log({
+									n: n,
+									step: ATOM.opencv("opencv.Me.Thread1","frame",itau),
+									itau: itau
+								});
 
 							// returns badStep if the cascades were undefined at the program step
-							console.log("STEP = ", ATOM.opencv("opencv.Me.Thread1","helipads",otau));
-							console.log(otau);
+							Log({
+								step: ATOM.opencv("opencv.Me.Thread1","helipads",otau),
+								otau: otau
+							});
 							break;
 
 						// python machines fail with "cant find forkpty" if "import cv2" attempted
 
 						case "py1": // program python machine
-							parm =	{ 
-								tau:	[{job:"redefine on run"}],
-								ports: {	
-							}};
-							pgm = `
+							var 
+								ctx =	{ 
+									tau:	[{job:"to be redefined"}]
+								},
+								pgm = `
 print 'Look mom - Im running python!'
-print tau
-tau = [{'x':[11,12],'y':[21,22]}]
+print 'My input context', CTX
+CTX['tau'] = [{'x':[11,12],'y':[21,22]}]
 `;
 
-							// By default python attempts to connect to mysql.  
-							// So, if mysql service not running or mysql.connector module not found, this will not run.
-							console.log({py:pgm, ctx: parm});
-							console.log("INIT = ", ATOM.python("py1.thread",pgm,parm));
-							console.log(parm.tau);
+							Log({
+								pgm: pgm,
+								init: ATOM.python("py1.thread",pgm,ctx),
+								ctx: JSON.stringify(ctx)
+							});
 							break;
 
 						case "py2": // program and step python machine 
-							parm =	{ 
-								tau:	[{job:"redefine on run"}],
+							var ctx =	{ 
+								tau:	[ ATOM.tau("test.jpg") ],
 								ports: { 	
 									frame:	 {},
 									helipads:{scale:1.01,dim:100,delta:0.1,hits:10,cascade:["c1/cascade"]},
 									faces:	 {scale:1.01,dim:100,delta:0.1,hits:10,cascade:["haarcascade_frontalface_alt","haarcascade_eye_tree_eyeglasses"]}
 							}};
 
-							itau[0].job = "test.jpg";
 							pgm = `
 print 'Look mom - Im running python!'
 def frame(tau,parms):
 	print parms
-	return -101
+	return 101
 def helipads(tau,parms):
 	print parms
-	return -102
+	return 102
 def faces(tau,parms):
 	print parms
-	return -103
+	return 103
 `;		
-							console.log({py:pgm, ctx: parm});
-							console.log("INIT = ", ATOM.python("py2.Me.Thread1",pgm,parm));
-							// reprogramming ignored
-							//console.log("INIT = ", ATOM.python("py2.Me.Thread1",pgm,parm));
+							Log({
+								pgm:pgm,
+								init: ATOM.python("py2.Me.Thread1",pgm,ctx),
+								ctx: ctx
+							});
 
 							for (var n=0,N=1; n<N; n++)
-								console.log(`STEP[${n}] = `, ATOM.python("py2.Me.Thread1","frame",itau));
+								Log(`STEP[${n}] = `, ATOM.python("py2.Me.Thread1","frame",itau));
 
-							console.log("STEP = ", ATOM.python("py2.Me.Thread1","helipads",otau));
+							Log("STEP = ", ATOM.python("py2.Me.Thread1","helipads",otau));
 							break;
 
 						case "py3": // program and step python machine string with reinit along the way
-							parm =	{ 
+							var ctx =	{ 
 								tau:	[{job:"redefine on run"}],
 								ports: {	
 									frame:	 {},
@@ -1384,17 +1398,17 @@ def faces(tau,parms):
 	return -103
 `;
 
-							console.log({py:pgm, ctx: parm});
-							console.log("INIT = ", ATOM.python("py3",pgm,parm));
-							console.log("STEP = ", ATOM.python("py3","frame",itau));
+							Log({pgm:pgm, ctx: ctx});
+							Log("INIT = ", ATOM.python("py3",pgm,ctx));
+							Log("STEP = ", ATOM.python("py3","frame",itau));
 							// reprogramming ignored
-							//console.log("REINIT = ", ATOM.python("py3",pgm,parm));
-							//console.log("STEP = ", ATOM.python("py3","frame",itau));
-							console.log(otau);
+							//Log("REINIT = ", ATOM.python("py3",pgm,ctx));
+							//Log("STEP = ", ATOM.python("py3","frame",itau));
+							Log(otau);
 							break;
 
 						case "js": // program and step a js machine string
-							parm =	{ 
+							var ctx =	{ 
 								ports: {	
 									frame:	 {},
 									helipads:{scale:1.01,dim:100,delta:0.1,hits:10,cascade:["c1/cascade"]},
@@ -1416,14 +1430,14 @@ function helipads(tau,parms) {
 function faces(tau,parms) { return 102; }
 `;
 
-							console.log({py:pgm, ctx: parm});
-							console.log("INIT = ", ATOM.js("mytest",pgm,parm));
+							Log({pgm:pgm, ctx: ctx});
+							Log("INIT = ", ATOM.js("mytest",pgm,ctx));
 							// frame should return a 0 = null noerror
-							console.log("STEP = ", ATOM.js("mytest","frame",itau));
-							console.log(itau);
+							Log("STEP = ", ATOM.js("mytest","frame",itau));
+							Log(itau);
 							// helipads should return a 101 = badload error
-							console.log("STEP = ", ATOM.js("mytest","helipads",otau));
-							console.log(otau);
+							Log("STEP = ", ATOM.js("mytest","helipads",otau));
+							Log(otau);
 							break;	
 					}
 
