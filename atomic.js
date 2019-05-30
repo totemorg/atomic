@@ -829,37 +829,37 @@ if 'PORT' in PORTS:
 		ERR = 103
 else:	# entry logic
 	if INIT:	#import global modules and connect to sqldb
-		#global LWIP, JSON, SYS, FLOW, SQL0, SQL1, NP
-		import sys as SYS			#system info
-		import json as JSON			#json interface
-		#from PIL import Image as LWIP		#jpeg image interface
-		#import mysql.connector as SQLC		#db connector interface
-		#import numpy as NP
-		#import caffe as CAFFE		#caffe interface
-		print "py>>imports done"
-		# import flow as FLOW		# record buffering and loading logic
-		# setup sql connectors
-		# SQL = SQLC.connect(user='${db.user}', password='${db.pass}', database='${db.name}')
-		# default exit codes and startup
-		ERR = 0
-		INIT = 0
-		#try:
-		#except:
-		#	ERR = 107
+		try:
+			global IMP, JSON, SYS, FLOW, SQL0, SQL1, NP
+			import sys as SYS			#system info
+			import json as JSON			#json interface
+			from PIL import Image as IMP		#jpeg image interface
+			import mysql.connector as SQLC		#db connector interface
+			import numpy as NP
+			#import caffe as CAFFE		#caffe interface
+			print "py>>imports done"
+			# import flow as FLOW		# record buffering and loading logic
+			# setup sql connectors
+			SQL = SQLC.connect(user='${db.user}', password='${db.pass}', database='${db.name}')
+			# default exit codes and startup
+			ERR = 0
+			INIT = 0
+		except:
+			ERR = 107
 	else:
-		# entry
-		#SQL0 = SQL.cursor(buffered=True)
-		#SQL1 = SQL.cursor(buffered=True) 
-		# call engine
-		${Thread.plugin}(CTX)
-		#exit
-		#SQL.commit()
-		#SQL0.close()
-		#SQL1.close()
-		ERR = 0
-		#try:
-		#except:
-		#	ERR = 108
+		try:
+			# entry
+			SQL0 = SQL.cursor(buffered=True)
+			SQL1 = SQL.cursor(buffered=True) 
+			# call engine
+			${Thread.plugin}(CTX)
+			#exit
+			SQL.commit()
+			SQL0.close()
+			SQL1.close()
+			ERR = 0
+		except:
+			ERR = 108
 ` ;
  			
 				if (gen.trace) Log(script);
