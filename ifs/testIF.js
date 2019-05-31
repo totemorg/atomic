@@ -60,14 +60,14 @@ CTX['Save'] = [{'x':[11,12],'y':[21,22]}]
 			}},
 			pgm = `
 print 'Look mom - Im running python!'
-def frame(tau,parms):
-	print parms
+def frame(tau,spec):
+	print spec
 	return -101
-def helipads(tau,parms):
-	print parms
+def helipads(tau,spec):
+	print spec
 	return -102
-def faces(tau,parms):
-	print parms
+def faces(tau,spec):
+	print spec
 	return -103
 `;		
 		
@@ -89,14 +89,14 @@ def faces(tau,parms):
 			}},		
 			pgm = `
 print 'Look mom - Im running python!'
-def frame(tau,parms):
-	print parms
+def frame(tau,spec):
+	print spec
 	return -101
-def helipads(tau,parms):
-	print parms
+def helipads(tau,spec):
+	print spec
 	return -102
-def faces(tau,parms):
-	print parms
+def faces(tau,spec):
+	print spec
 	return -103
 `;
 		
@@ -117,16 +117,16 @@ def faces(tau,parms):
 			}},
 			pgm = `
 CON.log('Look mom - Im running javascript!');
-function frame(tau,parms) { 
+function frame(tau,spec) { 
 	CON.log("here I come to save the day");
 	tau[0].xyz=123; 
 	return 0; 
 }
-function helipads(tau,parms) { 
+function helipads(tau,spec) { 
 	tau[0].results=666; 
 	return 101; 
 }
-function faces(tau,parms) { return 102; }
+function faces(tau,spec) { return 102; }
 `;
 		
 		Log("INIT = ", ATOM.js("mytest",pgm,ctx));

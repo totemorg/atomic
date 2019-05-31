@@ -1103,7 +1103,6 @@ end` ;
 					ATOM.thread( function (sql) {
 						Copy( {RES: cb, SQL: sql, CTX: ctx, PORT: port, PORTS: vm.ctx}, vm.ctx );
 						
-						Log("run>>>>", vm.code);
 						try {
 							VM.runInContext(vm.code,vm.ctx);						
 							return null;
