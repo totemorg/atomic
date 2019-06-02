@@ -1,0 +1,1 @@
+cmd_Release/obj.target/engineIF.node := g++ -shared -pthread -rdynamic -m64  -Wl,-soname=engineIF.node -o Release/obj.target/engineIF.node -Wl,--start-group Release/obj.target/engineIF/engineIF.o -Wl,--end-group /local/service/atomic/ifs/opencv/build/Release/opencvIF.so /local/service/atomic/ifs/python/build/Release/pythonIF.so /local/service/atomic/ifs/mac/build/Release/macIF.so
