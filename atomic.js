@@ -24,7 +24,7 @@ var
 const { Copy,Each,Log,isString } = require("enum");
 	
 var
-	ATOM = module.exports = Copy( //< extend the engineIF built by node-gyp
+	ATOM = module.exports = Copy( //< Extend the engineIF built by node-gyp
 		require("./ifs/build/Release/engineIF"), {
 		 
 		/**
