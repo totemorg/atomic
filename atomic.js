@@ -350,12 +350,13 @@ end
 				
 				cb( runctx, function stepper(res) {  // provide this engine stepper to the callback
 
+					//Log( "step eng", engctx.step );
 					if ( stepEngine = engctx.step )
-						return ATOM.call( engctx.wrap, runctx, (runctx) => {  // coerse engine ctx
+						return ATOM.call( engctx.wrap, runctx, runctx => {  // coerse engine ctx
 							
 							//Log(">call", runctx);
 							if ( runctx )
-								return ATOM.mixSQLs(sql, runctx.Entry, runctx, (runctx) => {  // mixin sql primed keys into engine ctx
+								return ATOM.mixSQLs(sql, runctx.Entry, runctx, runctx => {  // mixin sql primed keys into engine ctx
 									//Log(">mix", runctx);
 
 									try {  	// step the engine then return an error if it failed or null if it worked
@@ -453,7 +454,7 @@ end
 					var runctx = engctx.req.query;
 
 					if ( initEngine = engctx.init )
-						ATOM.mixSQLs(sql, runctx.Entry, runctx, (runctx) => {  // mixin sql vars into engine query
+						ATOM.mixSQLs(sql, runctx.Entry, runctx, runctx => {  // mixin sql vars into engine query
 							//Log(">mix", engctx.thread, runctx);
 
 							if (runctx) 
@@ -1097,17 +1098,18 @@ end` ;
 			},
 			
 			js: function jsStep(thread,port,ctx,cb) {
-				//Log("step thread",thread, ATOM.vm[thread] ? "has thread" : " no thread");
+				Log("step thread",thread, ATOM.vm[thread] ? "has thread" : " no thread");
 
 				if ( vm = ATOM.vm[thread] ) 
 					ATOM.thread( function (sql) {
 						Copy( {RES: cb, SQL: sql, CTX: ctx, PORT: port, PORTS: vm.ctx}, vm.ctx );
 						
 						try {
-							VM.runInContext(vm.code,vm.ctx);						
+							VM.runInContext(vm.code,vm.ctx);
 							return null;
 						}
 						catch (err) {
+							Log(err);
 							return err;
 						}
 					});
