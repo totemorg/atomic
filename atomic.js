@@ -718,7 +718,7 @@ Log(">step ",ctx);
 						
 						else 
 							if ( importing )   // importing key so ...
-								recs.each( function (n,rec) {
+								recs.forEach( rec => {
 									var vec = [];
 									data.push( vec );
 									for ( var x in rec ) vec.push( rec[x] );
@@ -796,7 +796,7 @@ Log(">step ",ctx);
 				*/
 					var ports = Object.keys( portsHash );
 
-					ports.each( function (n,port) {
+					ports.forEach( (port,n) => {
 						ports[n] = port + ":" + port;
 					});
 
