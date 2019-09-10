@@ -308,8 +308,10 @@ end
 			var
 				sql = req.sql,
 				query = req.query,
-				client = req.client.replace(".ic.gov","").replace(/\./g,"").replace("@",""),
-				thread = `${client || 0}.${req.table || 0}.${query.Name || query.ID || 0}.${query.Case || 0}`;
+				client = req.client.replace(/[\.@]/g,"") || "undefined",
+				table = req.table || "undefined",
+				name = query.Name || query.ID || "undefined",
+				thread = `${client}.${table}.${name}`;
 
 			function CONTEXT (thread) {  // construct pre-initialized engine context for specified thread 
 			/* 
@@ -393,6 +395,7 @@ end
 						action: req.action
 					};
 				
+				//Log("handoff", ipcreq);
 				if ( CLUSTER.isWorker )   // handoff thread to master
 					process.send(ipcreq, req.resSocket() );
 
@@ -627,7 +630,7 @@ Log(">step ",ctx);
 		 free/delete/DELETE.
 		*/
 			ATOM.run( req, (ctx, step) => {  // get engine stepper and its context
-//Log(">run", ctx);
+				// Log(">run", ctx);
 				if ( ctx ) 
 					step( res );
 
@@ -1104,6 +1107,7 @@ end` ;
 					ATOM.thread( function (sql) {
 						Copy( {RES: cb, SQL: sql, CTX: ctx, PORT: port, PORTS: vm.ctx}, vm.ctx );
 						
+						//Log(">>>>run", vm.code);
 						try {
 							VM.runInContext(vm.code,vm.ctx);
 							return null;
