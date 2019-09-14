@@ -395,7 +395,7 @@ end
 						action: req.action
 					};
 				
-				//Log("handoff", ipcreq);
+				Log("handoff", ipcreq);
 				if ( CLUSTER.isWorker )   // handoff thread to master
 					process.send(ipcreq, req.resSocket() );
 
