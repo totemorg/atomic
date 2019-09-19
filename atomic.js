@@ -273,7 +273,7 @@ end
 		@method run
 		@member ATOMIC
 		
-		The request req = { group, table, client, query, body, action, state } 
+		The request req = { table, client, query, body, action, state } 
 
 		If the engine's req.state is not provided, then the engine is programmed; otherwise it is stepped.
 		
@@ -387,7 +387,6 @@ end
 			function handoff(engctx, cb) {  //< handoff ctx to worker or  cb(null) if handoff fails
 				var 
 					ipcreq = {  // an ipc request must not contain sql, socket, state etc
-						group: req.group,
 						table: req.table,
 						client: req.client,
 						query: req.query,
@@ -413,7 +412,6 @@ end
 
 					var
 						sql = req.sql,
-						group = req.group,
 						runctx = new Object(req.query),
 						name = req.table;
 
@@ -423,18 +421,17 @@ end
 					else
 						sql.forFirst(	// get the requested engine
 							TRACE,
-							"SELECT * FROM ??.engines WHERE least(?) LIMIT 1", 
-							[ group, {
+							"SELECT * FROM app.engines WHERE least(?) LIMIT 1", 
+							{
 								Name: name,
 								Enabled: true
-							}], function (eng) {
+							}, function (eng) {
 
 							//Log( "got end", engctx.thread, runctx.Voxel.ID);
 
 							if (eng) 
 								cb( Copy({				// define engine context
 									req: {  				// ipc request 
-										group: req.group,	// engine group
 										table: req.table,	// engine name
 										client: req.client,	// engine owner
 										query: Copy( eng.State.parseJSON({}) /*toJSON(eng.State)*/, runctx),  // engine run context
