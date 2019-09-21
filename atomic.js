@@ -145,9 +145,9 @@ end
 		@member ATOMIC
 		Configure are start the engine interface, estblish worker core connections
 		*/
-		config: function (opts) {  //< configure with options
+		config: opts => {  //< configure with options
 	
-			Trace(`CONFIG ATOMIC`);
+			Trace(`CONFIGURE`);
 
 			if (opts) Copy(opts,ATOM);
 
@@ -212,8 +212,6 @@ end
 						}									
 					});
 				});
-
-			return ATOM;
 		},
 
 		flex: null,
@@ -1236,7 +1234,6 @@ switch (process.argv[2]) {	//< unit testers
 		break;
 		
 	case "A1": 
-		var ATOM = require("../atomic");
 		var TOTEM = require("../totem");
 
 		Trace({
@@ -1256,13 +1253,15 @@ switch (process.argv[2]) {	//< unit testers
 			TOTEM.stop();
 		});
 
-		var ATOM = require("../atomic").config({
+		ATOM.config({
 			thread: TOTEM.thread
 		});
 		break;
 		
 	case "A3": 
-		var TOTEM = require("../totem").config({
+		var TOTEM = require("../totem");
+		
+		TOTEM.config({
 			"byTable.": {
 				chipper: function Chipper(req,res) {				
 					res( 123 );
@@ -1274,15 +1273,16 @@ switch (process.argv[2]) {	//< unit testers
 				user: ENV.MYSQL_USER,
 				pass: ENV.MYSQL_PASS
 			}
-
 		});
 
-		var ATOM = require("../atomic").config({
+		ATOM.config({
 			thread: TOTEM.thread
 		});
 		
 	case "A4": 
-		var TOTEM = require("../totem").config({
+		var TOTEM = require("../totem");
+		
+		TOTEM.config({
 			"byTable.": {
 				test: function Chipper(req,res) {
 
@@ -1452,11 +1452,11 @@ function faces(tau,parms) { return 102; }
 				pass: ENV.MYSQL_PASS
 			}
 
-		}, function (err) {
+		}, err => {
 			Trace( "Unit test my engines with /test?config=cv | py1 | py2 | py3 | js" );
 		});
 
-		var ATOM = require("../atomic").config({
+		ATOM.config({
 			thread: TOTEM.thread
 		});
 		break;
