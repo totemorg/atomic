@@ -1096,7 +1096,7 @@ end` ;
 			},
 			
 			js: function jsStep(thread,port,ctx,cb) {
-				Log("step thread",thread, ATOM.vm[thread] ? "has thread" : " no thread");
+				Trace("step "+thread);
 
 				if ( vm = ATOM.vm[thread] ) 
 					ATOM.thread( function (sql) {
@@ -1108,7 +1108,7 @@ end` ;
 							return null;
 						}
 						catch (err) {
-							Log(err);
+							Log(thread,err);
 							return err;
 						}
 					});
