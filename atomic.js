@@ -12,7 +12,6 @@
 var 														
 	// globals
 	ENV = process.env,
-	TRACE = "A>",
 	
 	// NodeJS modules
 	CP = require("child_process"),
@@ -356,14 +355,14 @@ end
 							
 							//Log(">call", runctx);
 							if ( runctx )
-								return ATOM.mixSQLs(sql, runctx.Entry, runctx, runctx => {  // mixin sql primed keys into engine ctx
+								return ATOM.mixContext(sql, runctx.Entry, runctx, runctx => {  // mixin sql primed keys into engine ctx
 									//Log(">mix", runctx);
 
 									try {  	// step the engine then return an error if it failed or null if it worked
 										if ( err = stepEngine(engctx.thread, port, runctx, res) +104 ) 
 											return ATOM.errors[ err ] || ATOM.badError;
 										
-										//ATOM.mixSQLs( sql, runctx.Exit, runctx );	// mixout sql keys from engine ctx
+										//ATOM.mixContext( sql, runctx.Exit, runctx );	// mixout sql keys from engine ctx
 										return null;
 									}
 
@@ -418,7 +417,7 @@ end
 
 					else
 						sql.forFirst(	// get the requested engine
-							TRACE,
+							"A>",
 							"SELECT * FROM app.engines WHERE least(?) LIMIT 1", 
 							{
 								Name: name,
@@ -452,7 +451,7 @@ end
 					var runctx = engctx.req.query;
 
 					if ( initEngine = engctx.init )
-						ATOM.mixSQLs(sql, runctx.Entry, runctx, runctx => {  // mixin sql vars into engine query
+						ATOM.mixContext(sql, runctx.Entry, runctx, runctx => {  // mixin sql vars into engine query
 							//Log(">mix", engctx.thread, runctx);
 
 							if (runctx) 
@@ -594,12 +593,12 @@ end
 			ATOM.run(req, (ctx,step) => {
 Log(">step ",ctx);
 				if ( ctx ) {
-					for (var n=0, N=ctx.Runs||0; n<N; n++) step( (ctx) => {} );
+					for (var n=0, N=ctx.Runs||0; n<N; n++) step( ctx => {} );
 					res( ctx );
 				}
 				
 				else
-					res( ATOM.errors.badEngine );
+					res( null );
 			});
 		},
 
@@ -611,13 +610,17 @@ Log(">step ",ctx);
 		 free/delete/DELETE.
 		*/
 			ATOM.run(req, (ctx,step) => {
-//Log(">kill ",ctx);
-
-				res( ctx ? ctx : ATOM.errors.badEngine );				
+Log(">kill ",ctx);
+				if (ctx) {	// reset machine
+					res( ctx );
+				}
+				
+				else
+					res( null );	
 			});
 		},
 
-		select: function (req,res) {	//< run a stateless engine with callback res(ctx || Error) 
+		select: function (req,res) {	//< run a stateless engine with callback res(ctx || null) 
 		/**
 		 @method select(read)
 		 @member ATOMIC
@@ -627,10 +630,10 @@ Log(">step ",ctx);
 			ATOM.run( req, (ctx, step) => {  // get engine stepper and its context
 				// Log(">run", ctx);
 				if ( ctx ) 
-					step( res );
+					step( ctx => res(ctx) );
 
 				else
-					res( ATOM.errors.badEngine );
+					res( null );
 			});
 		},
 
@@ -643,7 +646,11 @@ Log(">step ",ctx);
 		*/
 			ATOM.run( req, (ctx,step) => {
 //Log(">init",ctx);
-				res( ctx ? ctx : ATOM.errors.badEngine );
+				if ( ctx )
+					res( ctx );
+				
+				else
+					res( null );
 			});
 		},
 
@@ -664,9 +671,9 @@ Log(">step ",ctx);
 				return cb( ctx );
 		},
 
-		mixSQLs: function (sql, sqls, ctx, cb) {  //< serialize import/export (ctx mixin/mixout) using sqls queries with callback cb(ctx) 
+		mixContext: function (sql, sqls, ctx, cb) {  //< serialize import/export (ctx mixin/mixout) using sqls queries with callback cb(ctx) 
 		/**
-		@method mixSQLs
+		@method mixContext
 		@member ATOMIC
 
 		Callback engine cb(ctx) with its state ctx primed with state from its ctx.Entry, then export its 
@@ -725,7 +732,7 @@ Log(">step ",ctx);
 							else { 	// exporting key so ...
 							}					
 
-						return ATOM.mixSQLs(sql,sqls,ctx,cb);	// continue key serialization
+						return ATOM.mixContext(sql,sqls,ctx,cb);	// continue key serialization
 					});
 				}
 				
@@ -738,7 +745,7 @@ Log(">step ",ctx);
 							var keys = ctx.keys = []; 
 							for (var key in sqls) keys.push(key);
 
-							ATOM.mixSQLs(sql,sqls,ctx);
+							ATOM.mixContext(sql,sqls,ctx);
 						}
 					});  */
 			}
@@ -758,7 +765,7 @@ Log(">step ",ctx);
 				*/
 				
 				ctx.keys = isString(sqls) ? [sqls] : sqls;  
-				return ATOM.mixSQLs(sql, sqls, ctx, cb);	
+				return ATOM.mixContext(sql, sqls, ctx, cb);	
 			}
 			
 			else	// nada to do
@@ -1223,7 +1230,7 @@ end` ;
 //================== Execution tracing
 
 function Trace(msg,sql) {  
-	TRACE.trace(msg,sql);
+	"A>".trace(msg,sql);
 }
 
 //================== Unit testing
