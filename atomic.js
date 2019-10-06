@@ -480,7 +480,7 @@ end
 					
 					if (engctx) 
 						program(sql, engctx, engctx => {	// program/compile engine
-							Log(">pgm", engctx);
+							// Log(">pgm", engctx);
 							if (engctx)  // all went well so execute it
 								execute( engctx, cb );
 
