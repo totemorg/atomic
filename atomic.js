@@ -590,11 +590,14 @@ end
 		 free/delete/DELETE.
 		*/
 			ATOM.run(req, (ctx,step) => {
-Log(">step ",ctx);
-				res( ctx ? "ok" : "failed" );
-				
-				if ( ctx ) 
+Log(">step",ctx.thread);
+				if ( ctx && step ) {
 					for (var n=0, N=ctx.Runs||0; n<N; n++) step( ctx => {} );
+					res( ctx );
+				}
+				
+				else
+					res( null );
 			});
 		},
 
@@ -606,9 +609,9 @@ Log(">step ",ctx);
 		 free/delete/DELETE.
 		*/
 			ATOM.run(req, (ctx,step) => {
-Log(">kill ",ctx);
+Log(">kill",ctx.thread);
 				delete ATOM.context[ ctx.thread ];
-				res( ctx ? "ok" : "failed" );
+				res( ctx );
 			});
 		},
 
@@ -620,11 +623,12 @@ Log(">kill ",ctx);
 		 free/delete/DELETE.
 		*/
 			ATOM.run( req, (ctx, step) => {  // get engine stepper and its context
-				res( ctx ? "ok" : "failed" );
-// Log(">run", ctx);
-				step( ctx => {
-					if ( !ctx ) Trace("ctx lost");
-				});
+Log(">run", ctx.thread);
+				if ( ctx && step )
+					step( ctx => res( ctx ) );
+				
+				else
+					res( null );
 			});
 		},
 
@@ -636,8 +640,8 @@ Log(">kill ",ctx);
 		 free/delete/DELETE.
 		*/
 			ATOM.run( req, (ctx,step) => {
-//Log(">init",ctx);
-				res( ctx ? "ok" : "failed" );
+Log(">init",ctx.thread);
+				res( ctx );
 			});
 		},
 
