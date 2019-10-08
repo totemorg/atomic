@@ -99,14 +99,14 @@ for n=1:height(ex)
 	disp(ex.script{n});
 	eval(ex.script{n});
 end
-`, (err) => {} );
+`, err => {} );
 				}
 				
 				else
 					sql.query("INSERT INTO openv.agents SET ?", {
 						queue: qname,
 						script: script
-					}, function (err) {
+					}, err => {
 
 						sql.query("SELECT * FROM openv.agents WHERE ? ORDER BY ID", {
 							queue: qname
@@ -168,7 +168,7 @@ end
 				var sock = ATOM.ipcsocket = NET.createConnection("/tmp/totem.sock", function () {
 					Log("connected?");
 				});
-				sock.on("error", function (err) {
+				sock.on("error", err => {
 					Log("sockerr",err);
 				});
 				sock.on("data", function (d) {
@@ -1247,7 +1247,7 @@ switch (process.argv[2]) {	//< unit testers
 	case "A2": 
 		var TOTEM = require("../totem");
 
-		TOTEM.config({}, function (err) {
+		TOTEM.config({}, err => {
 			Trace( err || "Started but I will now power down" );
 			TOTEM.stop();
 		});
