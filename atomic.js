@@ -43,7 +43,7 @@ var
 		@method thread
 		Start a sql thread
 		*/
-		thread: () => { Trace("sql thread not configured"); },  //< sql threader
+		thread: () => { throw new Error("sql thread not configured"); },  //< sql threader
 		
 		/**
 		@cfg {Number}
@@ -188,14 +188,14 @@ end
 
 						if (req.action) { 		// process only our messages (ignores sockets, etc)
 							if (CLUSTER.isWorker) {
-								Trace("IPC grabbing on "+CLUSTER.worker.id+"/"+req.action);
+								Trace( `IPC grab ${CLUSTER.worker.id}/req.action`, req, Log);
 //Log(req);	
 								if ( route = ATOM[req.action] ) 
-									ATOM.thread( function (sql) {
+									ATOM.thread( sql => {
 										req.sql = sql;  
 										//delete req.socket;
-										route( req, function (tau) {
-											Trace( `IPC ${req.table} ON ${CLUSTER.worker.id}`, sql );
+										route( req, tau => {
+											Trace( `IPC ${req.table} ON ${CLUSTER.worker.id}` );
 											sql.release();
 											socket.end( JSON.stringify(tau) );
 										});
@@ -344,7 +344,7 @@ end
 					port = body.port || "",
 					runctx = Copy(req.query, engctx.req.query); 
 				
-				Trace( `RUN ${engctx.thread} ON core${engctx.worker.id}`, sql );
+				Trace( `RUN ${engctx.thread} ON core${engctx.worker.id}`, req, Log );
 				//Log("run ctx", runctx);
 				
 				cb( runctx, function step(res) {  // provide this engine stepper to the callback
@@ -473,7 +473,7 @@ end
 					query = new Object(req.query),
 					sql = req.sql;
 				
-				Trace( `INIT ${engctx.thread} ON core${engctx.worker.id}` );
+				Trace( `INIT ${engctx.thread} ON core${engctx.worker.id}`, req, Log );
 				
 				prime(req, engctx, engctx => {	// prime engine context
 					//Log(">prime", engctx);
@@ -590,7 +590,8 @@ end
 		 free/delete/DELETE.
 		*/
 			ATOM.run(req, (ctx,step) => {
-Log(">step",ctx.thread);
+				Trace( `step ${ctx.thread}`, req, Log);
+				Log(">run", ctx);
 				if ( ctx && step ) {
 					for (var n=0, N=ctx.Runs||0; n<N; n++) step( ctx => {} );
 					res( ctx );
@@ -609,7 +610,7 @@ Log(">step",ctx.thread);
 		 free/delete/DELETE.
 		*/
 			ATOM.run(req, (ctx,step) => {
-Log(">kill",ctx.thread);
+				Trace( `kill ${ctx.thread}`, req, Log);
 				delete ATOM.context[ ctx.thread ];
 				res( ctx );
 			});
@@ -623,7 +624,7 @@ Log(">kill",ctx.thread);
 		 free/delete/DELETE.
 		*/
 			ATOM.run( req, (ctx, step) => {  // get engine stepper and its context
-Log(">run", ctx.thread);
+				Trace( `run ${ctx.thread}`, req, Log);
 				if ( ctx && step )
 					step( ctx => res( ctx ) );
 				
@@ -640,7 +641,7 @@ Log(">run", ctx.thread);
 		 free/delete/DELETE.
 		*/
 			ATOM.run( req, (ctx,step) => {
-Log(">init",ctx.thread);
+				Trace( `init ${ctx.thread}`, req, Log);
 				res( ctx );
 			});
 		},
@@ -1094,7 +1095,7 @@ end` ;
 			},
 			
 			js: function jsStep(thread,port,ctx,cb) {
-				Trace("step "+thread);
+				//Trace("step "+thread);
 
 				if ( vm = ATOM.vm[thread] ) 
 					ATOM.thread( function (sql) {
@@ -1209,7 +1210,7 @@ end` ;
 				if (code) context.code = code;
 
 				CP.exec(context.code, function (err,stdout,stderr) {
-					Trace(err || stdout);
+					Log(err || stdout);
 				});
 
 				return null;
@@ -1220,8 +1221,8 @@ end` ;
 
 //================== Execution tracing
 
-function Trace(msg,sql) {  
-	"A>".trace(msg,sql);
+function Trace(msg,req,fwd) {  
+	"A>".trace(msg,req,fwd);
 }
 
 //================== Unit testing
