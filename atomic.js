@@ -20,6 +20,10 @@ var
 	NET = require("net"),
 	VM = require("vm");
 	
+function Trace(msg,req,fwd) {  
+	"atom".trace(msg,req,fwd);
+}
+
 const { Copy,Each,Log,isString } = require("enum");
 	
 var
@@ -1218,12 +1222,6 @@ end` ;
 		}
 			
 	});
-
-//================== Execution tracing
-
-function Trace(msg,req,fwd) {  
-	"A>".trace(msg,req,fwd);
-}
 
 //================== Unit testing
 
