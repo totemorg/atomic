@@ -1,5 +1,43 @@
 // UNCLASSIFIED
 
+/*
+Use:
+ 
+ 		V8POOL(MAC,MAX,CLS)
+ 
+to generate MAX CLS-machines named MAC_machine[0, ... MAX-1].  Each MAC_machine(args) accepts
+a list of args = [ name string, code string, ctx hash or list ] || [ name string, port string, ctx hash or list ] ||
+[ name string, code string, NULL ctx ] to program, execute, or reset a machine.  If an error occurs, a 
+non-zero error code is returned.  CLS specifies the technology (opencv, python, ....) being interfaced.
+
+A machine name (typically "Client.Engine.Instance") uniquely identifies the engine's compute thread.  
+Compute threads are automatically added to the pool (when the args ctx is not NULL), or removed 
+from the pool (when the args ctx is NULL).  An error is returned should the pool become full.  
+ 
+When stepping a machine, port specifies either the name of the input port on which arriving events [ tau, tau, ... ] 
+are latched, or the name of the output port on which departing events [ tau, tau, ... ] are latched; thus stepping the 
+machine in a stateful way (to maximize data restfulness).  An empty port will cause the machine to be 
+stepped in a stateless way with the supplied context hash.
+ 
+When programming a machine, the context hash = { ports: {name1: {...}, name2: {...}, ...}, key: value, .... } defines 
+parameters to/from a machine.  Empty code will cause the machine to monitor its current parameters.
+
+See the opencv.cpp, python.cpp, etc machines for usage examples.  This interface is created using node-gyp with 
+the binding.gyp provided.
+
+Implementation notes: 
+	google's rapidjson does not provide a useful V8 interface here as (1) its"Value" class conflicts with V8 "Value" 
+	class, and (2) passing rapidjson objects to machines is self-defeating.  Similar conflicts occured with the
+	nodejs nan module.
+
+References:
+	machines/opencv/objdet for an example opencv mac-machine.  
+	machines/python for an example python mac-machine.  
+	http://izs.me/v8-docs/ for API to V8 engine.
+	http://nodejs.org/api/addons.html for node-gyp help.
+	macIF.h for machine classes.
+ */
+ 
 #include <string.h>
 #include <stdlib.h>
 
@@ -80,13 +118,17 @@ class MACHINE {
 	public:
 		MACHINE(void) {
 			steps = depth = drops = err = 0; 
-			name = code = NULL;
+			name = code = NULL;		// NULL signals machine available
 			scope = NULL; 
 			init = false;
 		}
 		
 		~MACHINE(void) {
-			if (name) free(name);
+			if (name) {
+				printf("machine ~delete=%s\n", name);
+				free(name);
+				name = NULL;
+			}
 		}
 	
 		int monitor(void) {   // monitor used for debugging machine 
@@ -105,20 +147,27 @@ class MACHINE {
 		}
 		
 		int setup(const V8STACK& args) {   // setup used when machine is called
+			err = 0;	// signal ok
 			scope = V8ENTRY(args);  // retain scope for V8 garbage collection
 			
-			if ( args.Length() != 3 ) return badArgs;
+			if ( args.Length() != 3 ) return badArgs;	// text engine args list
 			if ( !args[0]->IsString() ) return badArgs;  // test engine name string
 			if ( !args[1]->IsString() ) return badArgs;	// test engine code/port string
-			if ( !args[2]->IsObject() ) return badArgs;	// test engine context
-				
+			
 			port = code = CODEARG(args, codebuf);
 			if ( strlen(code) > MAX_CODELEN) return badCode;
-			
-			ctx = CTXARG(args);  // define context or empty object if not an object
-			tau = TAUARG(args);	// define event taus or empty list if not a list
 
-//printf(TRACE "setup name=%s code=%s args=%d initialized=%d err=%d\n",name,code,args.Length(),(int) init, err);
+			if ( args[2]->IsNull() ) {  // init/clear/reset the machine
+				init = true;
+			}
+			
+			else {	// program/execute the machine
+				init = false;
+				ctx = CTXARG(args);  // define context or empty object if not an object
+				tau = TAUARG(args);	// define event taus or empty list if not a list
+	//printf(TRACE "setup name=%s code=%s args=%d initialized=%d err=%d\n",name,code,args.Length(),(int) init, err);
+			}
+			
 			return err;
 		}
 	
@@ -176,7 +225,7 @@ class MACHINE {
 		}
 
 		int steps,depth,drops,err;	// number of steps, current call depth, dropped events, return code
-		bool init;	 	// machine was initialzed flag
+		bool init;	 	// reinit/clear machine flag
 		str name, code, port; 		// engine name and engine code/port being latched
 		char codebuf[MAX_CODELEN];  // holds code string
 		V8OBJECT ctx;		// context parameters
@@ -185,9 +234,10 @@ class MACHINE {
 };
 
 /*
-Reserves a pool MAC_machine[0,1,...] of machines.  Each MAC_machine accepts either
-a [name, port, tau] list to execute a machine, or a [name, ctx, code] list to program 
-a machine.  If the named machine does not exists in the pool, it is added to the pool.
+Reserves a pool of machines named MAC_machine[0,1, ... MAX-1].  Each MAC_machine accepts 
+an args = [ name, port, ctx ] || [ name, code, ctx ] || [ name, code, null ] list.  If the named machine does 
+not exists in the pool, it is added to the pool at the last open slot.  If there are no more open slots, the 
+badPool error is returned.
 */
 
 #define V8POOL(MAC,MAX,CLS) \
@@ -199,16 +249,21 @@ void MAC(const V8STACK& args) { \
 	str name = NAMEARG(args,buf); \
 	int n; \
 \
-	for (n=0; MAC##_machine[n].name && n<MAX; n++)  \
-		if ( strcmp(MAC##_machine[n].name,name) == 0 ) { \
+	for (n=0; n<MAX; n++) { \
+		if ( MAC##_machine[n].name ) \
+			if ( strcmp(MAC##_machine[n].name,name) == 0 ) { \
+				args.V8EXIT( MAC##_machine[n].call(args) ); \
+				if ( args[2]->IsNull() ) MAC##_machine[n].name = NULL; \
+				return; \
+			 } \
+	} \
+\
+	for (n=0; n<MAX; n++) { \
+		if ( ! MAC##_machine[n].name ) { \
+			MAC##_machine[n].name = mac_strclone(name); \
 			args.V8EXIT( MAC##_machine[n].call(args) ); \
 			return; \
 		} \
-\
-	if (n < MAX) { \
-		MAC##_machine[n].name = mac_strclone(name); \
-		args.V8EXIT( MAC##_machine[n].call(args) ); \
-		return; \
 	} \
 \
 	args.V8EXIT( badPool ); \

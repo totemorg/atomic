@@ -195,14 +195,65 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 		// machine program/step interface
 		int call(const V8STACK& args) { 			// Monitor/Program/Step machine	
 
-			setup(args);
+			err = setup(args);
 //printf(TRACE "setup err=%d init=%d pcode=%p\n", err, init, pCode);
 			
 			if (err) 
 				return err;
 			
-			else
-			if ( !init ) { 					// Program module
+			else 
+			if ( init || !pCode ) {		// compile the machine
+				
+				if (pCode) { 			// free old stuff
+					Py_XDECREF(pCode);
+					Py_XDECREF(pModule);	
+					Py_XDECREF(pArgs);	
+				}
+				
+				Py_Initialize(); 
+
+				path = strstr(port,"\n") ? NULL : port;
+
+	//printf(TRACE "compile path=%s port=%s\n",path,port);
+
+				if ( strlen(path) ) { 				// load external module
+					pModule = PyImport_Import(PyString_FromString(path));
+					//pCode = pModule ? 1 : NULL;
+				}
+
+				else {
+					// Create a module for this new code
+					pModule = PyModule_New(name);
+
+					// Prime local dictionary with context hash
+					pLocals = PyModule_GetDict(pModule);
+	//printf(TRACE "locals=%p/\n",pLocals);
+
+					//PyDict_Merge(pLocals, clone(ctx), true);
+					PyDict_SetItemString(pLocals, PYCTX, clone( ctx ));	
+					PyDict_SetItemString(pLocals, PYERR, PyInt_FromLong(0));
+					PyDict_SetItemString(pLocals, PYINIT, PyInt_FromLong(1));
+
+					// Build a tuple to hold external module arguments
+					pArgs = PyTuple_New(3);
+
+					// Create global dictonary object (reserved)
+					pMain = PyImport_AddModule("__main__");
+					pGlobals = PyModule_GetDict(pMain);	
+					//PyDict_SetItemString(pGlobals, PYOS, PyModule_GetDict(pModule));
+	//printf(TRACE "globals=%p\n",pGlobals);
+
+	//printf(TRACE "compile=\n%s infile=%d\n",code,Py_file_input);
+					// Uncomment if there is a need to define ctx at compile
+					//PyDict_SetItemString(pLocals, PYPORT, PyString_FromString( port ) );
+					//PyDict_SetItemString(pLocals, PYCTX, clone( ctx ));
+
+					// For some reason cant recompile already compiled code.  
+					pCode = (PyCodeObject*) Py_CompileString(code, "py_traceback", Py_file_input);
+				}
+			}
+			
+			if ( pCode ) { // Execute/Program machine
 				/* 
 				 * All attempts to redirect Initialize to the anaconda install fail (SetProgramName, SetPythonName, redefine PYTHONHOME,
 				 * virtualized, etc, etc).  If PYTHONORIGIN = /usr is the default python install base, we must alias /usr/lib/python2.7 
@@ -216,128 +267,66 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 //printf(TRACE "initialize %s\n",Py_GetPythonHome());
 				*/
 				
-				Py_Initialize(); 
-				
-				path = strstr(port,"\n") ? NULL : port;
-				init = true;
+				if ( strlen(path) ) {			// Step external module
+	//printf(TRACE "module path=%s\n",port);
+					pFunc = PyObject_GetAttrString(pModule, port);
+					//err = PyInt_AsLong( PyRun_String(port, Py_file_input, pGlobals, pLocals) );
+					//err = PyRun_SimpleString(port);
 
-//printf(TRACE "compile path=%s port=%s\n",path,port);
-				
-				if ( strlen(path) ) { 				// load external module
-					pModule = PyImport_Import(PyString_FromString(path));
-					if ( !pModule ) return badModule;
-				}
-				
-				else {
-					if (pCode) { 			// free old stuff
-						Py_XDECREF(pCode);
-						Py_XDECREF(pModule);	
-						Py_XDECREF(pArgs);	
+					if ( PyCallable_Check(pFunc) ) {
+	//printf(TRACE "module step\n");
+						PyTuple_SetItem(pArgs, 0, clone(ctx));
+						PyTuple_SetItem(pArgs, 1, LOCAL(PYPARM));
+
+						err = PyInt_AsLong( PyObject_CallObject(pFunc, pArgs) );
+
+	//printf(TRACE "module err: %ld\n", err);
+						Py_XDECREF(pFunc);
+
+						//set(ctx,clone( PyTuple_GetItem(pArgs,0) )->ToObject() );
+	//monitor("py set ctx[0]",ctx->ToObject()->Get(0)->ToObject());
 					}
-					
-					// Create a module for this new code
-					pModule = PyModule_New(name);
-					if ( !pModule ) return badModule;
+					else 									// Bad call
+						err = badCode; 
+				}
 
-					// Prime local dictionary with context hash
+				else 
+				if ( strlen(port) ) {		// Stateful step
+	//printf(TRACE "stateful step port=%s\n",port);
+					PyDict_SetItemString(pLocals, PYPORT, PyString_FromString(port) );
+					PyDict_SetItemString(pLocals, PYTAU, clone(tau) );
+
+					PyEval_EvalCode(pCode,pGlobals,pLocals);
+					err = PyInt_AsLong( LOCAL(PYERR) );
+
+					set(tau, clone( LOCAL(PYTAU) ));
+					//set(ctx, clone( pLocals )->ToObject() );	
+				}
+
+				else {					// Stateless step
+	//printf(TRACE "stateless step port=%s\n", port);
 					pLocals = PyModule_GetDict(pModule);
-//printf(TRACE "locals=%p/\n",pLocals);
-					
-					//PyDict_Merge(pLocals, clone(ctx), true);
-					PyDict_SetItemString(pLocals, PYCTX, clone( ctx ));	
-					PyDict_SetItemString(pLocals, PYERR, PyInt_FromLong(0));
-					PyDict_SetItemString(pLocals, PYINIT, PyInt_FromLong(1));
-					
-					// Build a tuple to hold external module arguments
-					pArgs = PyTuple_New(3);
-
-					// Create global dictonary object (reserved)
-					pMain = PyImport_AddModule("__main__");
 					pGlobals = PyModule_GetDict(pMain);	
-					//PyDict_SetItemString(pGlobals, PYOS, PyModule_GetDict(pModule));
-//printf(TRACE "globals=%p\n",pGlobals);
-					
-//printf(TRACE "compile=\n%s infile=%d\n",code,Py_file_input);
-					// Uncomment if there is a need to define ctx at compile
-					//PyDict_SetItemString(pLocals, PYPORT, PyString_FromString( port ) );
-					//PyDict_SetItemString(pLocals, PYCTX, clone( ctx ));
-					
-					// For some reason cant recompile already compiled code.  
-					pCodeTest = (PyCodeObject*) Py_CompileString(code, "py_traceback", Py_file_input);
-					
-					if (pCodeTest) {
-						pCode = pCodeTest;
-						err = 0;
-					}
-					
-					else {
-						pCode = NULL;
-						err = badCode;
-					}
 
-					if (err) printf(TRACE "compile err=%d\n%s\n", err, code);
-					
-					//Py_Finalize(); // dont do this - will cause segment fault
-				}
+					PyDict_SetItemString(pLocals, PYPORT, PyString_FromString( port ) );
+					PyDict_SetItemString(pLocals, PYCTX, clone( ctx ));
+	//printf(TRACE "context cloned\n");
+					PyEval_EvalCode(pCode,pGlobals,pLocals);
+	//printf(TRACE "code evaled\n");
+
+					set(ctx, clone( LOCAL(PYCTX) )->ToObject() );
+					//set(ctx, clone( pLocals )->ToObject() );
+
+					err = PyInt_AsLong( LOCAL(PYERR) );	
+				}					
 			}
-			
-			if (!pCode) 
+				
+			else {
 				err = badCode;
-			
-			else		
-			if ( strlen(path) ) {			// Step external module
-//printf(TRACE "module path=%s\n",port);
-				pFunc = PyObject_GetAttrString(pModule, port);
-				//err = PyInt_AsLong( PyRun_String(port, Py_file_input, pGlobals, pLocals) );
-				//err = PyRun_SimpleString(port);
-					
-				if ( PyCallable_Check(pFunc) ) {
-//printf(TRACE "module step\n");
-					PyTuple_SetItem(pArgs, 0, clone(ctx));
-					PyTuple_SetItem(pArgs, 1, LOCAL(PYPARM));
-
-					err = PyInt_AsLong( PyObject_CallObject(pFunc, pArgs) );
-
-//printf(TRACE "module err: %ld\n", err);
-					Py_XDECREF(pFunc);
-
-					//set(ctx,clone( PyTuple_GetItem(pArgs,0) )->ToObject() );
-//monitor("py set ctx[0]",ctx->ToObject()->Get(0)->ToObject());
-				}
-				else 									// Bad call
-					err = badCode; 
+				printf(TRACE "compile err=%d\n%s\n", err, code);
+					//Py_Finalize(); // dont do this - will cause segment fault
 			}
 			
-			else 
-			if ( strlen(port) ) {		// Stateful step
-//printf(TRACE "stateful step port=%s\n",port);
-				PyDict_SetItemString(pLocals, PYPORT, PyString_FromString(port) );
-				PyDict_SetItemString(pLocals, PYTAU, clone(tau) );
-
-				PyEval_EvalCode(pCode,pGlobals,pLocals);
-				err = PyInt_AsLong( LOCAL(PYERR) );
-				
-				set(tau, clone( LOCAL(PYTAU) ));
-				//set(ctx, clone( pLocals )->ToObject() );	
-			}
-			
-			else {					// Stateless step
-//printf(TRACE "stateless step port=%s\n", port);
-				pLocals = PyModule_GetDict(pModule);
-				pGlobals = PyModule_GetDict(pMain);	
-
-				PyDict_SetItemString(pLocals, PYPORT, PyString_FromString( port ) );
-				PyDict_SetItemString(pLocals, PYCTX, clone( ctx ));
-//printf(TRACE "context cloned\n");
-				PyEval_EvalCode(pCode,pGlobals,pLocals);
-//printf(TRACE "code evaled\n");
-				
-				set(ctx, clone( LOCAL(PYCTX) )->ToObject() );
-				//set(ctx, clone( pLocals )->ToObject() );
-				
-				err = PyInt_AsLong( LOCAL(PYERR) );	
-			}
-					
 //printf(TRACE "stateless step err=%d\n",err);
 			return err;
 		}
@@ -350,14 +339,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 		str path, port;
 };
 
-/*
- * Generates MAXMACHINES number of PYMACHINE-class machines of type PYTHON.
- * An engine accepts a V8 argument list args = [name string, port string, ctx array hash,
- * ctx array hash, context hash, and code string) and returns a V8 error scope handle.  Engine names
- * are of the form Client.Engine.Instance to uniquely identify a workflow engine, or of the form
- * Engine to uniquely identify standalone engines.  New engines threads can be freely added to the 
- * thread pool until the pool is exhausted.
- * */
+// Generate a pool of machine python_machine[0 ... MAXMACHINES-1].
 
 V8POOL(python,MAXMACHINES,PYMACHINE);
 
