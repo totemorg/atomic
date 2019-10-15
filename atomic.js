@@ -44,10 +44,10 @@ var
 		@cfg {Function}
 		@private
 		@member ATOMIC
-		@method thread
+		@method sqlThread
 		Start a sql thread
 		*/
-		thread: () => { throw new Error("sql thread not configured"); },  //< sql threader
+		sqlThread: () => { throw new Error("atomic unconfigured sqlThread method"); },  //< sql threader
 		
 		/**
 		@cfg {Number}
@@ -130,14 +130,13 @@ end
 			
 			queue: function (qname, script) { //< append script job to qname=init|step|... queue
 				
-				ATOM.thread( function (sql) {
+				ATOM.sqlThread( sql => {
 					sql.query("INSERT INTO openv.agents SET ?", {
 						queue: qname,
 						script: script
 					}, err => {
 						Log("matlab queue", err);
 					}); 
-					sql.release();
 				});
 			}		
 		},
@@ -180,7 +179,7 @@ end
 				}); 
 			} */
 			
-			if (thread = ATOM.thread)
+			if (thread = ATOM.sqlThread)
 				thread( sql => { // compile engines defined in engines DB
 
 					ATOM.matlab.flush(sql, "init_queue");
@@ -195,12 +194,11 @@ end
 								Trace( `IPC grab ${CLUSTER.worker.id}/req.action`, req, Log);
 //Log(req);	
 								if ( route = ATOM[req.action] ) 
-									ATOM.thread( sql => {
+									ATOM.sqlThread( sql => {
 										req.sql = sql;  
 										//delete req.socket;
 										route( req, tau => {
 											Trace( `IPC ${req.table} ON ${CLUSTER.worker.id}` );
-											sql.release();
 											socket.end( JSON.stringify(tau) );
 										});
 									});
@@ -1051,7 +1049,7 @@ end` ;
 			},
 			
 			sq:  function sqInit(thread,code,ctx,cb) {
-				ATOM.thread( function (sql) {
+				ATOM.sqlThread( sql => {
 					ctx.SQL[ctx.action](sql, [], function (recs) {
 						//ctx.Save = [1,2,3];  // cant work as no cb exists
 					});
@@ -1102,7 +1100,7 @@ end` ;
 				//Trace("step "+thread);
 
 				if ( vm = ATOM.vm[thread] ) 
-					ATOM.thread( function (sql) {
+					ATOM.sqlThread( sql => {
 						Copy( {RES: cb, SQL: sql, CTX: ctx, PORT: port, PORTS: vm.ctx}, vm.ctx );
 						
 						//Log(">>>>run", vm.code);
@@ -1164,7 +1162,7 @@ end` ;
 			
 			me: function meStep(thread,port,ctx,cb) {
 				if ( vm = ATOM.vm[thread] )
-					ATOM.thread( function (sql) {
+					ATOM.sqlThread( sql => {
 						//Copy( {SQL: sql, CTX: ctx, DATA: [], RES: [], PORT: port, PORTS: vm.ctx}, vm.ctx );
 
 						ATOM.plugins.ME.exec( vm.code, Copy(ctx, vm.ctx), function (vmctx) {
@@ -1179,7 +1177,7 @@ end` ;
 				
 				/*
 				if ( vm = ATOM.vm[thread] )
-					ATOM.thread( function (sql) {
+					ATOM.sqlThread( sql => {
 						Copy( {SQL: sql, CTX: ctx, DATA: [], RES: [], PORT: port, PORTS: vm.ctx}, vm.ctx );
 						
 						ATOM.plugins.MATH.eval(vm.code,vm.ctx);
