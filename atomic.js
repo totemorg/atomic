@@ -455,11 +455,11 @@ end
 
 					if ( initEngine = engctx.init )
 						ATOM.mixContext(sql, runctx.Entry, runctx, runctx => {  // mixin sql vars into engine query
-							Log(">mix", runctx);
+							//Log(">mix", runctx);
 
 							if (runctx) 
 								initEngine(engctx.thread, engctx.code || "", runctx, err => {
-									Log(">init", err);
+									//Log(">init", err);
 									cb( err ? null : engctx );
 								});
 
@@ -478,11 +478,11 @@ end
 				Trace( `INIT ${engctx.thread} ON core${engctx.worker.id}`, req, Log );
 				
 				prime(req, engctx, engctx => {	// prime engine context
-					Log(">prime", engctx);
+					//Log(">prime", engctx);
 					
 					if (engctx) 
 						program(sql, engctx, engctx => {	// program/compile engine
-							Log(">pgm", engctx);
+							//Log(">pgm", engctx);
 							if (engctx)  // all went well so execute it
 								execute( engctx, cb );
 
@@ -592,7 +592,6 @@ end
 		 free/delete/DELETE.
 		*/
 			ATOM.run(req, (ctx,step) => {
-				Log(">init", ctx);
 				if ( ctx && step ) {
 					Trace( `step ${ctx.thread}`, req, Log);
 					for (var n=0, N=ctx.Runs||0; n<N; n++) step( ctx => {} );
@@ -840,22 +839,22 @@ if 'PORT' in PORTS:
 		ERR = 103
 else:	# entry logic
 	if INIT:	#import global modules and connect to sqldb
-		global IMP, JSON, SYS, FLOW, SQL0, SQL1, NP
-		import sys as SYS			#system info
-		import json as JSON			#json interface
-		from PIL import Image as IMP		#jpeg image interface
-		import mysql.connector as SQLC		#db connector interface
-		import numpy as NP
-		# import caffe as CAFFE		#caffe interface
-		# import flow as FLOW		# record buffering and loading logic
-		# setup sql connectors
-		SQL = SQLC.connect(user='${db.user}', password='${db.pass}', database='${db.name}')
-		# default exit codes and startup
-		ERR = 0
-		INIT = 0
-		#try:
-		#except:
-		#	ERR = 107
+		try:
+			global IMP, JSON, SYS, FLOW, SQL0, SQL1, NP
+			import sys as SYS			#system info
+			import json as JSON			#json interface
+			from PIL import Image as IMP		#jpeg image interface
+			import mysql.connector as SQLC		#db connector interface
+			import numpy as NP
+			# import caffe as CAFFE		#caffe interface
+			# import flow as FLOW		# record buffering and loading logic
+			# setup sql connectors
+			SQL = SQLC.connect(user='${db.user}', password='${db.pass}', database='${db.name}')
+			# default exit codes and startup
+			ERR = 0
+			INIT = 0
+		except:
+			ERR = 107
 	else:
 		try:
 			# entry
