@@ -744,30 +744,10 @@ end
 					ctx.keys = null;
 					if (cb) return cb(ctx); // return engine ctx to host
 				}
-					/* (ctx) => { // save selected engine ctx keys
-						if ( sqls = ctx.sqls = ctx.Exit) {	
-							var keys = ctx.keys = []; 
-							for (var key in sqls) keys.push(key);
-
-							ATOM.mixContext(sql,sqls,ctx);
-						}
-					});  */
 			}
 			
 			else 
 			if (sqls) {  // kick-start key serialization process
-				/*
-				if ( sqls = ctx.sqls = ctx.Entry ) {  // build ctx.keys from the ctx.Entry sqls
-					if ( isString(sqls) )   // load entire ctx
-						sql.query(sqls)
-						.on("result", function (rec) {
-							cb( Copy(rec, ctx) );
-						});
-
-					else   // load specific ctx keys
-						ctx.keys = sqls;
-				*/
-				
 				ctx.keys = isString(sqls) ? [sqls] : sqls;  
 				return ATOM.mixContext(sql, sqls, ctx, cb);	
 			}
@@ -1038,17 +1018,6 @@ end` ;
 
 			me: function meInit(thread,code,ctx,cb) {
 
-				/*
-				Copy(ATOM.plugins, ctx);
-				
-				if (ctx.require) 
-					ATOM.plugins.MATH.import( ctx.require );
-
-				ATOM.plugins.MATH.eval(code,ctx);
-
-				cb( null, ctx ); 
-				*/
-
 				ATOM.vm[thread] = {
 					ctx: {
 					},
@@ -1083,46 +1052,42 @@ end` ;
 			py: function pyStep(thread,port,ctx,cb) {
 				
 				if ( err = ATOM.python(thread,port,ctx) ) 
-					cb( ATOM.errors[err] || ATOM.errors.badError  );
-					//return cb( ATOM.errors[err] || ATOM.errors.badError );
+					cb( err = ATOM.errors[err] || ATOM.errors.badError  );
+				
 				else 
 					cb( ctx );
-					//return null;
+				
+				return err;
 			},
 			
 			cv: function cvStep(thread,port,ctx,cb) {
-				if ( ctx.frame && ctx.detector )
-					if ( err = ATOM.opencv(thread,code,ctx) ) {
-						cb(null);
-						return ATOM.errors[err] || ATOM.errors.badError;
-					}
 					
-					else  {
-						cb( ctx );
-						return null;
-					}
-				
-				else
-					return ATOM.errors.badContext;
+				if ( err = ATOM.opencv(thread,code,ctx) ) 
+					cb( err = ATOM.errors[err] || ATOM.errors.badError );
+
+				else  
+					cb( ctx );
+
+				return err;
 			},
 			
 			js: function jsStep(thread,port,ctx,cb) {
 				//Trace("step "+thread);
 
-				if ( vm = ATOM.vm[thread] ) 
+				if ( vm = ATOM.vm[thread] ) {
 					ATOM.sqlThread( sql => {
 						Copy( {RES: cb, SQL: sql, CTX: ctx, PORT: port, PORTS: vm.ctx}, vm.ctx );
 						
 						//Log(">>>>run", vm.code);
 						try {
 							VM.runInContext(vm.code,vm.ctx);
-							return null;
 						}
 						catch (err) {
 							Log(thread,err);
-							return err;
 						}
 					});
+					return null;
+				}
 				
 				else 
 					return ATOM.errors.lostContext;
@@ -1131,7 +1096,7 @@ end` ;
 			m: function mStep(thread,port,ctx,cb) {
 				function arglist(x) {
 					var rtn = [], q = "'";
-					Each(x, function (key,val) {
+					Each(x, (key,val) => {
 						rtn.push(`'${key}'`);
 						
 						if (val)
@@ -1171,16 +1136,17 @@ end` ;
 			},
 			
 			me: function meStep(thread,port,ctx,cb) {
-				if ( vm = ATOM.vm[thread] )
+				if ( vm = ATOM.vm[thread] ) {
 					ATOM.sqlThread( sql => {
 						//Copy( {SQL: sql, CTX: ctx, DATA: [], RES: [], PORT: port, PORTS: vm.ctx}, vm.ctx );
 
-						ATOM.plugins.ME.exec( vm.code, Copy(ctx, vm.ctx), function (vmctx) {
+						ATOM.plugins.ME.exec( vm.code, Copy(ctx, vm.ctx), vmctx => {
 							//Log("vmctx", vmctx);
 							cb( vmctx );
 						});
-						return null;
 					});
+					return null;
+				}
 				
 				else
 					return ATOM.errors.lostContext;	
