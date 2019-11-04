@@ -344,7 +344,7 @@ end
 					sql = req.sql,
 					body = engctx.req.body,
 					port = body.port || "",
-					runctx = Copy(req.query, engctx.req.query); 
+					runctx = Copy( engctx.req.query, req.query); 	// save engine run content for potential handoff // Copy(req.query, engctx.req.query); 
 				
 				Trace( `RUN ${engctx.thread} ON core${engctx.worker.id}`, req, Log );
 				//Log("run ctx", runctx);
@@ -353,7 +353,7 @@ end
 
 					//Log( "step eng", engctx.step );
 					if ( stepEngine = engctx.step )
-						return ATOM.call( engctx.wrap, runctx, runctx => {  // coerse engine ctx
+						return ATOM.call( engctx.wrap, runctx, runctx => {  // allow a js-wrapper to modify engine context
 							
 							//Log(">call", runctx);
 							if ( runctx )
