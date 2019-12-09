@@ -495,7 +495,7 @@ end
 				});
 			}	
 
-			//Log(">thread", thread, CLUSTER.isMaster ? "on master" : "on worker", ATOM.context[thread] ? "has ctx":"needs ctx" );
+			Log(">thread", thread, CLUSTER.isMaster ? "on master" : "on worker", ATOM.context[thread] ? "has ctx":"needs ctx" );
 			
 			// Handoff this request if needed; otherwise execute this request on this worker/master.
 			
