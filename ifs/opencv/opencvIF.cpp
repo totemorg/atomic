@@ -45,8 +45,10 @@ and expects the following compile directives:
 
 #define MAXPORTS 32
 #define MAXCASCADES 10
-#define MAXMACHINES 64
+#define MAXMACHINES 4
 #define CVBUGJPG "prime.jpg"
+
+/*
 #define JSONIFY \
 	outlen += strlen(buff); \
 \
@@ -67,6 +69,7 @@ and expects the following compile directives:
 	if (features) strcat(out,buffs[i]); \
 \
 	strcat(out,"]}");
+*/
 
 
 //==============================================================
@@ -89,31 +92,22 @@ RNG rng(12345);
 #include <stdlib.h>
 #include <string.h>
 #include <iomanip>
-//using namespace std;
 
 //==============================================================
 // Node V8 interface
 
-#include <node.h>
-using namespace v8;
-
-//==============================================================
-// TAU machine interface
-
 #include <macIF.h>
 #define TRACE "cv>"
+#define QUOTE(X) #X
+#define V8GETVALUE(X,KEY) X.Get(KEY).ToNumber().DoubleValue()
+#define V8GETSTRING(X,KEY) X.Get(KEY).ToString()
+#define V8GETOBJECT(X,KEY) X.Get(KEY).ToObject()
+#define TOSTR(X) X.c_str()
 
 // String testers
 
-#define STRDEFINED(X) strcmp(X.data(),"undefined")
+#define STRDEFINED(X) (X == "undefined")
 #define STREMPTY(X) (X.length() ? false : true)
-#define STREQ(X,Y) (strcmp(X,Y) ? false : true) 
-
-// Test for special keys in oPort parms
-
-#define ISSQL(X) (strcmp(X,"sql")==0)
-#define ISQUERY(X) (strcmp(X,"query")==0)
-#define ISNAN(X) (X != X)
 
 //=========================================================================
 // CNN support functions
@@ -122,8 +116,6 @@ using namespace v8;
 	#include <caffe/caffe.hpp>
 	using namespace caffe;  // NOLINT(build/namespaces)
 #endif
-
-using std::string;
 
 /* Pair (label, confidence) representing a prediction. */
 typedef std::pair<string, float> Prediction;
@@ -195,7 +187,7 @@ Classifier::Classifier(
 
   /* Load labels. */
   if ( !STREMPTY(label_file) ) {
-	  std::ifstream labels(label_file.c_str());
+	  std::ifstream labels( TOSTR(label_file) );
 	  CHECK(labels) << TRACE "Unable to open labels file " << label_file;
 	  string line;
 	  while (std::getline(labels, line))
@@ -264,7 +256,7 @@ void Classifier::SetMean(const string& mean_file) {
 #if HASCAFFE
 
   BlobProto blob_proto;
-  ReadProtoFromBinaryFileOrDie(mean_file.c_str(), &blob_proto);
+  ReadProtoFromBinaryFileOrDie( TOSTR(mean_file), &blob_proto);
 
   /* Convert from BlobProto to Blob<float> */
   Blob<float> mean_blob;
@@ -448,8 +440,8 @@ class IPORT {							 		// HAAR i/o port
 		~IPORT(void) {
 		};
 	
-		IPORT(Isolate* scope, str Name, V8OBJECT Parm) {
-			name = mac_strclone(Name);
+		IPORT(V8SCOPE scope, string Name, V8OBJECT Parm) {
+			name = Name;
 				
 			/*
 			printf(TRACE "inport %s CAFFE %s GPU %s\n", 
@@ -466,29 +458,29 @@ class IPORT {							 		// HAAR i/o port
 	
 		// HAAR input frame parameters
 		Mat frame;
-		str name;
+		string name;
 };
 
 class OPORT {							 		// HAAR i/o port
 	public:
 		OPORT(void) {
 			cascades = 0;
-			name = NULL;
+			name = "";
 			CNN_classify = NULL;
-			for (int n=0; n<MAXCASCADES; n++) 
-				if (HAAR_cascade[n]) HAAR_cascade[n] = NULL;
+			for (int n=0; n<MAXCASCADES; n++) HAAR_cascade[n] = "";
+				//if (HAAR_cascade[n]) HAAR_cascade[n] = NULL;
 		};
 		
 		~OPORT(void) {
 			if (CNN_classify) delete CNN_classify;
-			if (name) free(name);
+			//if (name) free(name);
 			
-			for (int n=0; n<MAXCASCADES; n++) 
-				if (HAAR_cascade[n]) delete HAAR_cascade[n];
+			//for (int n=0; n<MAXCASCADES; n++) 
+			//	if (HAAR_cascade[n]) delete HAAR_cascade[n];
 		};
 	
-		OPORT(Isolate* scope, str Name, V8OBJECT Parm) {
-			name = mac_strclone(Name);
+		OPORT(V8SCOPE scope, string Name, V8OBJECT Parm) {
+			name = Name;
 
 			/*
 			printf(TRACE "out port %s CAFFE %s GPU %s\n", 
@@ -507,35 +499,36 @@ class OPORT {							 		// HAAR i/o port
 			min = Size(dim*(1-delta),dim*(1-delta));
 			max = Size(dim*(1+delta),dim*(1+delta));
 
-			V8ARRAY Cascade = V8GETARRAY(Parm,"cascade");
-			cascades = Cascade->Length();
+			V8ARRAY Cascade(scope,Parm.Get("cascade"));
+			cascades = Cascade.Length();
 
 			for (int n=0; n<cascades; n++) 
-				HAAR_cascade[n] = V8TOSTRING(Cascade->Get(n));
+				HAAR_cascade[n] = V8GETSTRING(Cascade,n);
 
 			printf(TRACE "HAAR cascades=%d scale=%g dim=%g delta=%g hits=%d depth=%d min=%d,%d max=%d,%d\n",
 					cascades,scale,dim,delta,hits,cascades,min.width,min.height,max.width,max.height);
 
 			for (int n=0; n<cascades; n++) {
-				str fparts[] = {"","","",0,".xml",0};
-				str fname = mac_strcat(fparts,3,HAAR_cascade[n]);
+				//str fparts[] = {"","","",0,".xml",0};
+				//str fname = mac_strcat(fparts,3,HAAR_cascade[n]);
+				string fname = HAAR_cascade[n] + string(".xml");
 
 				if( !HAAR_classify[n].load(fname) ) 
-					printf(TRACE "HAAR ignored %s\n",fname); 
+					printf(TRACE "HAAR ignored %s\n", TOSTR(fname)); 
 				
 				else
-					printf(TRACE "HAAR loaded %s\n",fname);
+					printf(TRACE "HAAR loaded %s\n", TOSTR(fname));
 			}
 
 			// Initialize CNN Classifier 
 
-			std::string net = V8GETSTRING(Parm,"net"); // trained caffe cnn 
+			string net = V8GETSTRING(Parm,"net"); // trained caffe cnn 
 
 			if ( STRDEFINED(net) && HASCAFFE) {
-				std::string deploy_file = net + "deploy.prototxt"; 	
-				std::string param_file = net + "params.dat"; 	
-				std::string mean_file  = ""; //net + "means.dat";
-				std::string label_file = net + "labels.names";
+				string deploy_file = net + "deploy.prototxt"; 	
+				string param_file = net + "params.dat"; 	
+				string mean_file  = ""; //net + "means.dat";
+				string label_file = net + "labels.names";
 
 printf(TRACE "CNN model=%s train=%s mean=%s label=%s\n",deploy_file.data(),param_file.data(),mean_file.data(),label_file.data());
 
@@ -550,13 +543,13 @@ printf(TRACE "CNN model=%s train=%s mean=%s label=%s\n",deploy_file.data(),param
 		
 		// HAAR classifier parameters
 
-		str name;
+		string name;
 		int cascades;
 		float scale,dim,delta;
 		Size min,max;
 		int hits;
 		
-		str HAAR_cascade[MAXCASCADES];
+		string HAAR_cascade[MAXCASCADES];
 		CascadeClassifier HAAR_classify[MAXCASCADES]; 
 	
 		// CNN classifier parameters
@@ -568,22 +561,23 @@ class FEATURE { 								// Machine output
 	public:
 		FEATURE(void) {
 			feature = NULL;
-			label = name = NULL; 
+			label = "";
+			name = ""; 
 			features = row = col = rows = cols = level = 0; 
 		};
 		
 		~FEATURE(void) {
 //printf(TRACE "[free features\n");
 			//if (feature) delete[] feature;  //<dont force this
-			if (name) free(name);
+			//if (name) free(name);
 //printf(TRACE "]free features\n");
 		}
 	
 		// Classify features in Frame over specified AOI bounding-box.
 
-		FEATURE(int Depth,Rect AOI,str Name,Mat Frame,OPORT &Port,Classifier *CNN) {
+		FEATURE(int Depth,Rect AOI,string Name,Mat Frame,OPORT &Port,Classifier *CNN) {
 			
-			name = mac_strclone(Name);
+			name = Name;
 
 printf(TRACE "HAAR path=%d,%d CNN=%p\n",Depth,Port.cascades,CNN);
 
@@ -653,7 +647,7 @@ printf(TRACE "feature minWH=%d,%d maxWH=%d,%d\n",Port.min.width,Port.min.height,
 				feature = new FEATURE[features];   	// feature information to save on each detection
 
 printf(TRACE "feature=%s depth=%d frameWH=%d,%d scale=%g hits=%d detects=%d\n",
-	Name,Depth,Frame.cols,Frame.rows,Port.scale,Port.hits,features);
+	TOSTR(Name),Depth,Frame.cols,Frame.rows,Port.scale,Port.hits,features);
 
 //printf("haar depth=%d at=%s found=%d rows=%d cols=%d\n",Depth,Port.HAAR_cascade[Depth],features,Frame.rows,Frame.cols);
 
@@ -671,7 +665,7 @@ printf(TRACE "feature=%s depth=%d frameWH=%d,%d scale=%g hits=%d detects=%d\n",
 						Rect det = dets[i];
 						rectangle(Frame,det,255);
 						det.x+=3; det.y+=3; //det.width-=6; det.height-=2;
-						if (strcmp(feature[i].label,"car")==0)
+						if ( feature[i].label == string("car") )
 							rectangle(Frame,det,255);
 					}
 					
@@ -710,19 +704,19 @@ printf(TRACE "feature=%s depth=%d frameWH=%d,%d scale=%g hits=%d detects=%d\n",
 								<< std::endl;
 					}
 
-				label = mac_strclone((str) predictions[0].first.c_str());
+				label = predictions[0].first;
 				level = predictions[0].second;
 			}
 
 		};
 
 		float 	row,col,rows,cols;		// bounding-box within this frame
-		str 	name;					// cascade used at this frame 
+		string 	name;					// cascade used at this frame 
 		int		features;				// number of features located within this frame
 		float	level;					// classification level at this frame
-		str 	label; 					// classification label at this frame
+		string 	label; 					// classification label at this frame
 		FEATURE *feature;				// list of features found in this frame
-		str		json(void);				// method to jsonize this feature
+		string	json(void);				// method to jsonize this feature
 };
 
 class CVMACHINE : public MACHINE {  	// HAAR machine via the MACHINE class
@@ -741,49 +735,45 @@ class CVMACHINE : public MACHINE {  	// HAAR machine via the MACHINE class
 		};
 	
 		// provide V8-C convertors
-		void set(V8ARRAY tar, FEATURE &src) { 	// Set array of HAAR features
-			int n,N=tar->Length();
+		void latch(V8ARRAY tar, FEATURE &src) { 	// Set array of HAAR features
+			int n,N=tar.Length();
 //printf(TRACE "set features=%d into tau length=%d\n", src.features, N);
 			for (n=0; n<N && n<src.features; n++) {
 //printf(TRACE "set n=%d\n",n);
-				set( tar->Get(n)->ToObject(), src.feature[n] );
+				latch( V8GETOBJECT(tar,n), src.feature[n] );
 			}
 			
 //printf(TRACE "set ending\n"); 
 			//if (src.feature) delete[] src.feature;  //< dont force this 
-			// for ( ; n<N; n++) set( tar->Get(n)->ToObject() );  // for debugging
+			// for ( ; n<N; n++) latch( tar->Get(n)->ToObject() );  // for debugging
 		}
 
-		void set(V8OBJECT tar, FEATURE &src) {	// Set feature vector
-//printf(TRACE "set name=%s\n",src.name);
-			V8SET(tar,src,name);
-			V8SET(tar,src,row);
-			V8SET(tar,src,col);
-			V8SET(tar,src,rows);
-			V8SET(tar,src,cols);
-			//V8SET(tar,src,label);
-			//V8SET(tar,src,level);
+		void latch(V8OBJECT tar, FEATURE &src) {	// Set feature vector
+//printf(TRACE "set name=%s\n",TOSTR(src.name));
+			tar["name"] = V8TOSTRING(src.name);
+			tar["row"] = V8TONUMBER(src.row);
+			tar["col"] = V8TONUMBER(src.col);
+			tar["rows"] = V8TONUMBER(src.rows);
+			tar["cols"] = V8TONUMBER(src.cols);
 		}
 
-		void set(V8OBJECT tar) {				// Set null feature vector
-			V8DEF(tar,"",name);
-			V8DEF(tar,100.0,row);
-			V8DEF(tar,101.0,col);
-			V8DEF(tar,10.0,rows);
-			V8DEF(tar,20.0,cols);
-			//V8SET(tar,"",label);
-			//V8SET(tar,0.0,level);
+		void latch(V8OBJECT tar) {				// Set null feature vector
+			tar["name"] = V8TOSTRING("");
+			tar["row"] = V8TONUMBER(100);
+			tar["col"] = V8TONUMBER(101);
+			tar["rows"] = V8TONUMBER(10);
+			tar["cols"] = V8TONUMBER(20);
 		}
 
 		/*
-		void set(FEATURE &tar, V8ARRAY src) {
+		void latch(FEATURE &tar, V8ARRAY src) {
 		}
-		void set(FEATURE &tar, V8OBJECT src) {
+		void latch(FEATURE &tar, V8OBJECT src) {
 		}
 		*/
 		
 		/*
-		 * A machine implements 3 latch operations: (1) latch V8 input events to a specified input 
+		 * A machine implements 3 operations: (1) latch V8 input events to a specified input 
 		 * port, (2) step the machine and latch its events to a specified output port, (3) latch
 		 * program code and parameter hash.  After completing the requested operation, the machine 
 		 * returns a V8 error handle.  
@@ -798,24 +788,25 @@ class CVMACHINE : public MACHINE {  	// HAAR machine via the MACHINE class
 			if (true) {  // debugging
 				FEATURE detects( 1, Rect(0,0,0,0), port.name, iPort->frame, port, port.CNN_classify);
 //printf(TRACE "save detections to tau context\n");
-				set( V8GETARRAY(tau,"dets"), detects);
+				V8ARRAY dets(scope, tau.Get("dets"));
+				latch( dets, detects);
 //printf(TRACE "save completed\n");
 				return 0;
 			}
 			
 			else {
 				FEATURE detects( 0, Rect(0,0,0,0), port.name, iPort->frame, port, port.CNN_classify);
-				set( V8GETARRAY(tau,"dets"), detects);
+				V8ARRAY dets(scope, tau.Get("dets"));
+				latch( dets, detects);
 				return 0;
 			}
 		}
 	
 		int latch(IPORT &port, V8OBJECT tau) { 	// Latch input context tau to input port
-			str job = V8TOSTRING( V8INDEX(tau,"job") );
+			string job = V8GETSTRING(tau,"job");
 
-//printf(TRACE "job=%s\n",job);
+//printf(TRACE "job=%s\n", TOSTR(job));
 			port.frame = cv::imread( job , 1 );
-			free(job);
 printf(TRACE "frame %s\n", port.frame.empty() ? "failed" : "loaded" );
 
 			//cvtColor(frame,frame,CV_RGB2GRAY);
@@ -849,7 +840,7 @@ printf(TRACE "load=%s empty=%d\n",job,frame.empty());
 			
 printf(TRACE "detects=%d\n",detects.features);
 
-			set(tau,detects);
+			latch(tau,detects);
 			return 0;
 		}
 		*/
@@ -865,10 +856,10 @@ printf(TRACE "detects=%d\n",detects.features);
 		 * */
 	
 		int stepStateless(void) {
-			err = latch(*iPort, V8INDEX(ctx,"frame")->ToObject() );
+			err = latch(*iPort, V8GETOBJECT(ctx,"frame") );
 			if (err) return err;
 			
-			err = latch(V8INDEX(ctx,"detector")->ToObject() ,*oPort);
+			err = latch(V8GETOBJECT(ctx,"detector") ,*oPort);
 			return err; 
 		}
 		
@@ -877,25 +868,25 @@ printf(TRACE "detects=%d\n",detects.features);
 		}
 
 		int program (void) { 
-			str Key = "detector";
+			string Key = "detector";
 
-			//printf(TRACE "pgm port %s\n",Key);
+//printf(TRACE "pgm port %s\n", TOSTR(Key));
 			if (oPort) delete oPort;  
-			oPort = new OPORT(scope, Key, V8INDEX(ctx,Key)->ToObject());
+			oPort = new OPORT(scope, Key, V8GETOBJECT(ctx,Key) );
 
 			Key = "frame";
 
-			//printf(TRACE "pgm port %s\n",Key);
+//printf(TRACE "pgm port %s\n", TOSTR(Key));
 			if (iPort) delete iPort;  
-			iPort = new IPORT(scope, Key, V8INDEX(ctx,Key)->ToObject());
+			iPort = new IPORT(scope, Key, V8GETOBJECT(ctx,Key) );
 
 			init = true;
 			return 0;
 		}
 
-		int call(const V8STACK& args) {
+		int run(const V8STACK& args) {
 			
-			//printf(TRACE "init=%d\n", init);
+//printf(TRACE "init=%d\n", init);
 			err  = setup(args);
 			
 			if ( err ) 
@@ -918,33 +909,49 @@ printf(TRACE "detects=%d\n",detects.features);
 // HAAR feature detection machine for the opencvIF.cpp machine interface
 // expected by the CVMACHINE pool requested in the (tauif.cpp,tauif.h) interface.
 
-str json(FEATURE objs[], int N) {
+string json(FEATURE objs[], int N) {
+	/*
 	int n;
 	str buffs[N];
 	
 	for (n=0;n<N;n++) buffs[n] = objs[n].json();
 	
 	return mac_strjson(buffs,N);
+	*/
+	string out = "";
+	return out;
 }
 
-str	FEATURE::json(void) {
+string FEATURE::json(void) {
+	/*
 	int 	outlen=0,bufflen,i;
 	str		buffs[features],out;
 	char 	buff[512];
 	
-	/*
 	sprintf(buff,
 		"\"FEATURE\":\"%s\",\"x\":%d,\"y\":%d,\"width\":%d,\"height\":%d,\"row\":%g,\"col\":%g,\"rows\":%g,\"cols\":%g\"children\":",
 		name,box.x,box.y,box.width,box.height,row,col,rows,cols);
 	*/
 	
-	JSONIFY;
+	//JSONIFY;
+	string out = "";
 	return out;
 }
 
 //==============================================
-// Generate the TAU machine pool interface
+// Generate a pool of opencv machines
 
 V8POOL(opencv,MAXMACHINES,CVMACHINE)
+
+V8NUMBER run(const V8STACK& args) {
+	V8SCOPE scope = args.Env();
+	return V8NUMBER::New(scope,opencv(args) );
+}
+
+V8OBJECT Init(V8SCOPE scope, V8OBJECT exports) {
+	return V8FUNCTION::New(scope, run, "run");
+}
+
+NODE_API_MODULE(opencvIF, Init)
 
 // UNCLASSIFIED

@@ -21,23 +21,24 @@
 	"targets": [{
 		"target_name": "opencvIF",
 		
-		"type": "<(library)",
+		#"type": "<(library)",
 		
 		"include_dirs": [
 			".",
 			"../mac",
+			"$(INCLUDE)/opencv",
 			"$(INCLUDE)/cuda",
 			"$(CAFFE)/build/src",
 			"$(CAFFE)/include",
 			"$(INCLUDE)/atlas",
-			"$(INCLUDE)",
-			"$(INCLUDE)/opencv"
+			#"$(INCLUDE)",
 			
 			#"$(CV)/include",
 			#"$(CAFFE)/include",
 			#"$(CAFFE)/build/src",
 			#"$(CUDA)/include",
-			#"$(ATLAS)/include"
+			#"$(ATLAS)/include",
+			"<!@(node -p \"require('node-addon-api').include\")"    # has to be last
 		],
 		
 		"sources": [
@@ -83,12 +84,12 @@
 			"$(LIB)/opencv/libopencv_objdetect.so",
 			"$(LIB)/opencv/libopencv_photo.so",
 			"$(LIB)/opencv/libopencv_stitching.so",
-			"$(LIB)/opencv/libopencv_superres.so",
+			#"$(LIB)/opencv/libopencv_superres.so",
 			"$(LIB)/opencv/libopencv_video.so",
-			"$(LIB)/opencv/libopencv_videostab.so"
+			#"$(LIB)/opencv/libopencv_videostab.so"
 		],
 
-		"define": [   # caffe make options needed
+		"define": [   # caffe make options needed (place in defines?)
 			# "CPU_ONLY",
 			"USE_CUDNN",
 			"USE_OPENCV",
@@ -97,20 +98,24 @@
 			# "ALLOW_LMDB_NOLOCK",
 		],
 
-		"conditions": [   # add gcc flags for boost
-			[ 'OS=="linux"' , {
-				"cflags_cc+": ["-fexceptions"]
-			}]
-		],
+		#"conditions": [   # add gcc flags for boost
+		#	[ 'OS=="linux"' , {
+		#		"cflags_cc+": ["-fexceptions"]
+		#	}]
+		#],
 		
 		"cflags_cc+": [   # add gcc flags for opencvIF conditional GPU support
 			"-D HASCAFFE=$(HASCAFFE)",
-			"-D HASGPU=$(HASGPU)"
+			"-D HASGPU=$(HASGPU)",
+			"-fno-exceptions"
 		],
 		
 		"cflags_cc!": [  # remove gcc no-rtti for opencv3.x
-			"-fno-rtti" 
-		]
+			"-fno-rtti" ,
+			"-fno-exceptions" 
+		],
+		
+		"defines": [ "NAPI_DISABLE_CPP_EXCEPTIONS" ],
 		
 	}]
 }

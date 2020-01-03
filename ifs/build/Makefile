@@ -143,7 +143,7 @@ cmd_alink_thin = rm -f $@ && $(AR.$(TOOLSET)) crsT $@ $(filter %.o,$^)
 # special "figure out circular dependencies" flags around the entire
 # input list during linking.
 quiet_cmd_link = LINK($(TOOLSET)) $@
-cmd_link = $(LINK.$(TOOLSET)) $(GYP_LDFLAGS) $(LDFLAGS.$(TOOLSET)) -o $@ -Wl,--start-group $(LD_INPUTS) -Wl,--end-group $(LIBS)
+cmd_link = $(LINK.$(TOOLSET)) $(GYP_LDFLAGS) $(LDFLAGS.$(TOOLSET)) -o $@ -Wl,--start-group $(LD_INPUTS) $(LIBS) -Wl,--end-group
 
 # We support two kinds of shared objects (.so):
 # 1) shared_library, which is just bundling together many dependent libraries
@@ -308,8 +308,8 @@ ifeq ($(strip $(foreach prefix,$(NO_LOAD),\
 endif
 
 quiet_cmd_regen_makefile = ACTION Regenerating $@
-cmd_regen_makefile = cd $(srcdir); /local/nodejs-8.9.4/lib/node_modules/node-gyp/gyp/gyp_main.py -fmake --ignore-environment "--toplevel-dir=." -I/local/service-8/atomic/ifs/build/config.gypi -I/local/nodejs-8.9.4/lib/node_modules/node-gyp/addon.gypi -I/local/nodejs/include/node/common.gypi "--depth=." "-Goutput_dir=." "--generator-output=build" "-Dlibrary=shared_library" "-Dvisibility=default" "-Dnode_root_dir=/local/nodejs" "-Dnode_gyp_dir=/local/nodejs-8.9.4/lib/node_modules/node-gyp" "-Dnode_lib_file=/local/nodejs/$(Configuration)/node.lib" "-Dmodule_root_dir=/local/service-8/atomic/ifs" "-Dnode_engine=v8" binding.gyp
-Makefile: $(srcdir)/../../../nodejs-8.9.4/include/node/common.gypi $(srcdir)/build/config.gypi $(srcdir)/binding.gyp $(srcdir)/../../../nodejs-8.9.4/lib/node_modules/node-gyp/addon.gypi
+cmd_regen_makefile = cd $(srcdir); /local/nodejs-12.14.0/lib/node_modules/node-gyp/gyp/gyp_main.py -fmake --ignore-environment "--toplevel-dir=." -I/local/service/atomic/ifs/build/config.gypi -I/local/nodejs-12.14.0/lib/node_modules/node-gyp/addon.gypi -I/home/admin/.cache/node-gyp/12.14.0/include/node/common.gypi "--depth=." "-Goutput_dir=." "--generator-output=build" "-Dlibrary=shared_library" "-Dvisibility=default" "-Dnode_root_dir=/home/admin/.cache/node-gyp/12.14.0" "-Dnode_gyp_dir=/local/nodejs-12.14.0/lib/node_modules/node-gyp" "-Dnode_lib_file=/home/admin/.cache/node-gyp/12.14.0/<(target_arch)/node.lib" "-Dmodule_root_dir=/local/service/atomic/ifs" "-Dnode_engine=v8" binding.gyp
+Makefile: $(srcdir)/../../../nodejs-12.14.0/lib/node_modules/node-gyp/addon.gypi $(srcdir)/build/config.gypi $(srcdir)/binding.gyp $(srcdir)/../../../../home/admin/.cache/node-gyp/12.14.0/include/node/common.gypi
 	$(call do_cmd,regen_makefile)
 
 # "all" is a concatenation of the "all" targets from all the included

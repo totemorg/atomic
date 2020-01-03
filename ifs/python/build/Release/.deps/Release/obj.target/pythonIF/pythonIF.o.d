@@ -1,103 +1,140 @@
-cmd_Release/obj.target/pythonIF/pythonIF.o := g++ '-DNODE_GYP_MODULE_NAME=pythonIF' '-DUSING_UV_SHARED=1' '-DUSING_V8_SHARED=1' '-DV8_DEPRECATION_WARNINGS=1' '-D_LARGEFILE_SOURCE' '-D_FILE_OFFSET_BITS=64' -I/local/nodejs/include/node -I/local/nodejs/src -I/local/nodejs/deps/uv/include -I/local/nodejs/deps/v8/include -I../. -I../../mac -I/local/include/python  -fPIC -pthread -Wall -Wextra -Wno-unused-parameter -m64 -O3 -fno-omit-frame-pointer -fno-rtti -fno-exceptions -std=gnu++0x -MMD -MF ./Release/.deps/Release/obj.target/pythonIF/pythonIF.o.d.raw   -c -o Release/obj.target/pythonIF/pythonIF.o ../pythonIF.cpp
-Release/obj.target/pythonIF/pythonIF.o: ../pythonIF.cpp \
- /local/include/python/Python.h /local/include/python/patchlevel.h \
- /local/include/python/pyconfig.h /local/include/python/pymacconfig.h \
- /local/include/python/pyport.h /local/include/python/pymath.h \
- /local/include/python/pymem.h /local/include/python/object.h \
- /local/include/python/objimpl.h /local/include/python/pydebug.h \
- /local/include/python/unicodeobject.h /local/include/python/intobject.h \
- /local/include/python/boolobject.h /local/include/python/longobject.h \
- /local/include/python/floatobject.h \
- /local/include/python/complexobject.h \
- /local/include/python/rangeobject.h /local/include/python/stringobject.h \
- /local/include/python/memoryobject.h \
- /local/include/python/bufferobject.h /local/include/python/bytesobject.h \
- /local/include/python/bytearrayobject.h \
- /local/include/python/tupleobject.h /local/include/python/listobject.h \
- /local/include/python/dictobject.h /local/include/python/enumobject.h \
- /local/include/python/setobject.h /local/include/python/methodobject.h \
- /local/include/python/moduleobject.h /local/include/python/funcobject.h \
- /local/include/python/classobject.h /local/include/python/fileobject.h \
- /local/include/python/cobject.h /local/include/python/pycapsule.h \
- /local/include/python/traceback.h /local/include/python/sliceobject.h \
- /local/include/python/cellobject.h /local/include/python/iterobject.h \
- /local/include/python/genobject.h /local/include/python/descrobject.h \
- /local/include/python/warnings.h /local/include/python/weakrefobject.h \
- /local/include/python/codecs.h /local/include/python/pyerrors.h \
- /local/include/python/pystate.h /local/include/python/pyarena.h \
- /local/include/python/modsupport.h /local/include/python/pythonrun.h \
- /local/include/python/ceval.h /local/include/python/sysmodule.h \
- /local/include/python/intrcheck.h /local/include/python/import.h \
- /local/include/python/abstract.h /local/include/python/compile.h \
- /local/include/python/code.h /local/include/python/eval.h \
- /local/include/python/pyctype.h /local/include/python/pystrtod.h \
- /local/include/python/pystrcmp.h /local/include/python/dtoa.h \
- /local/include/python/pyfpe.h /local/nodejs/include/node/v8.h \
- /local/nodejs/include/node/v8-version.h \
- /local/nodejs/include/node/v8config.h ../../mac/macIF.h
+cmd_Release/obj.target/pythonIF/pythonIF.o := g++ '-DNODE_GYP_MODULE_NAME=pythonIF' '-DUSING_UV_SHARED=1' '-DUSING_V8_SHARED=1' '-DV8_DEPRECATION_WARNINGS=1' '-DV8_DEPRECATION_WARNINGS' '-DV8_IMMINENT_DEPRECATION_WARNINGS' '-D_LARGEFILE_SOURCE' '-D_FILE_OFFSET_BITS=64' '-DOPENSSL_NO_PINSHARED' '-DOPENSSL_THREADS' '-DNAPI_DISABLE_CPP_EXCEPTIONS' '-DBUILDING_NODE_EXTENSION' -I/home/admin/.cache/node-gyp/12.14.0/include/node -I/home/admin/.cache/node-gyp/12.14.0/src -I/home/admin/.cache/node-gyp/12.14.0/deps/openssl/config -I/home/admin/.cache/node-gyp/12.14.0/deps/openssl/openssl/include -I/home/admin/.cache/node-gyp/12.14.0/deps/uv/include -I/home/admin/.cache/node-gyp/12.14.0/deps/zlib -I/home/admin/.cache/node-gyp/12.14.0/deps/v8/include -I../. -I../../mac -I/local/anaconda/include/python2.7 -I/local/service/atomic/ifs/python/node_modules/node-addon-api  -fPIC -pthread -Wall -Wextra -Wno-unused-parameter -m64 -O3 -fno-omit-frame-pointer -fno-rtti -std=gnu++1y -MMD -MF ./Release/.deps/Release/obj.target/pythonIF/pythonIF.o.d.raw   -c -o Release/obj.target/pythonIF/pythonIF.o ../pythonIF.cpp
+Release/obj.target/pythonIF/pythonIF.o: ../pythonIF.cpp ../../mac/macIF.h \
+ /local/service/atomic/ifs/python/node_modules/node-addon-api/napi.h \
+ /home/admin/.cache/node-gyp/12.14.0/include/node/node_api.h \
+ /home/admin/.cache/node-gyp/12.14.0/include/node/js_native_api.h \
+ /home/admin/.cache/node-gyp/12.14.0/include/node/js_native_api_types.h \
+ /home/admin/.cache/node-gyp/12.14.0/include/node/node_api_types.h \
+ /local/service/atomic/ifs/python/node_modules/node-addon-api/napi-inl.h \
+ /local/service/atomic/ifs/python/node_modules/node-addon-api/napi-inl.deprecated.h \
+ /local/anaconda/include/python2.7/Python.h \
+ /local/anaconda/include/python2.7/patchlevel.h \
+ /local/anaconda/include/python2.7/pyconfig.h \
+ /local/anaconda/include/python2.7/pymacconfig.h \
+ /local/anaconda/include/python2.7/pyport.h \
+ /local/anaconda/include/python2.7/pymath.h \
+ /local/anaconda/include/python2.7/pymem.h \
+ /local/anaconda/include/python2.7/object.h \
+ /local/anaconda/include/python2.7/objimpl.h \
+ /local/anaconda/include/python2.7/pydebug.h \
+ /local/anaconda/include/python2.7/unicodeobject.h \
+ /local/anaconda/include/python2.7/intobject.h \
+ /local/anaconda/include/python2.7/boolobject.h \
+ /local/anaconda/include/python2.7/longobject.h \
+ /local/anaconda/include/python2.7/floatobject.h \
+ /local/anaconda/include/python2.7/complexobject.h \
+ /local/anaconda/include/python2.7/rangeobject.h \
+ /local/anaconda/include/python2.7/stringobject.h \
+ /local/anaconda/include/python2.7/memoryobject.h \
+ /local/anaconda/include/python2.7/bufferobject.h \
+ /local/anaconda/include/python2.7/bytesobject.h \
+ /local/anaconda/include/python2.7/bytearrayobject.h \
+ /local/anaconda/include/python2.7/tupleobject.h \
+ /local/anaconda/include/python2.7/listobject.h \
+ /local/anaconda/include/python2.7/dictobject.h \
+ /local/anaconda/include/python2.7/enumobject.h \
+ /local/anaconda/include/python2.7/setobject.h \
+ /local/anaconda/include/python2.7/methodobject.h \
+ /local/anaconda/include/python2.7/moduleobject.h \
+ /local/anaconda/include/python2.7/funcobject.h \
+ /local/anaconda/include/python2.7/classobject.h \
+ /local/anaconda/include/python2.7/fileobject.h \
+ /local/anaconda/include/python2.7/cobject.h \
+ /local/anaconda/include/python2.7/pycapsule.h \
+ /local/anaconda/include/python2.7/traceback.h \
+ /local/anaconda/include/python2.7/sliceobject.h \
+ /local/anaconda/include/python2.7/cellobject.h \
+ /local/anaconda/include/python2.7/iterobject.h \
+ /local/anaconda/include/python2.7/genobject.h \
+ /local/anaconda/include/python2.7/descrobject.h \
+ /local/anaconda/include/python2.7/warnings.h \
+ /local/anaconda/include/python2.7/weakrefobject.h \
+ /local/anaconda/include/python2.7/codecs.h \
+ /local/anaconda/include/python2.7/pyerrors.h \
+ /local/anaconda/include/python2.7/pystate.h \
+ /local/anaconda/include/python2.7/pyarena.h \
+ /local/anaconda/include/python2.7/modsupport.h \
+ /local/anaconda/include/python2.7/pythonrun.h \
+ /local/anaconda/include/python2.7/ceval.h \
+ /local/anaconda/include/python2.7/sysmodule.h \
+ /local/anaconda/include/python2.7/intrcheck.h \
+ /local/anaconda/include/python2.7/import.h \
+ /local/anaconda/include/python2.7/abstract.h \
+ /local/anaconda/include/python2.7/compile.h \
+ /local/anaconda/include/python2.7/code.h \
+ /local/anaconda/include/python2.7/eval.h \
+ /local/anaconda/include/python2.7/pyctype.h \
+ /local/anaconda/include/python2.7/pystrtod.h \
+ /local/anaconda/include/python2.7/pystrcmp.h \
+ /local/anaconda/include/python2.7/dtoa.h \
+ /local/anaconda/include/python2.7/pyfpe.h
 ../pythonIF.cpp:
-/local/include/python/Python.h:
-/local/include/python/patchlevel.h:
-/local/include/python/pyconfig.h:
-/local/include/python/pymacconfig.h:
-/local/include/python/pyport.h:
-/local/include/python/pymath.h:
-/local/include/python/pymem.h:
-/local/include/python/object.h:
-/local/include/python/objimpl.h:
-/local/include/python/pydebug.h:
-/local/include/python/unicodeobject.h:
-/local/include/python/intobject.h:
-/local/include/python/boolobject.h:
-/local/include/python/longobject.h:
-/local/include/python/floatobject.h:
-/local/include/python/complexobject.h:
-/local/include/python/rangeobject.h:
-/local/include/python/stringobject.h:
-/local/include/python/memoryobject.h:
-/local/include/python/bufferobject.h:
-/local/include/python/bytesobject.h:
-/local/include/python/bytearrayobject.h:
-/local/include/python/tupleobject.h:
-/local/include/python/listobject.h:
-/local/include/python/dictobject.h:
-/local/include/python/enumobject.h:
-/local/include/python/setobject.h:
-/local/include/python/methodobject.h:
-/local/include/python/moduleobject.h:
-/local/include/python/funcobject.h:
-/local/include/python/classobject.h:
-/local/include/python/fileobject.h:
-/local/include/python/cobject.h:
-/local/include/python/pycapsule.h:
-/local/include/python/traceback.h:
-/local/include/python/sliceobject.h:
-/local/include/python/cellobject.h:
-/local/include/python/iterobject.h:
-/local/include/python/genobject.h:
-/local/include/python/descrobject.h:
-/local/include/python/warnings.h:
-/local/include/python/weakrefobject.h:
-/local/include/python/codecs.h:
-/local/include/python/pyerrors.h:
-/local/include/python/pystate.h:
-/local/include/python/pyarena.h:
-/local/include/python/modsupport.h:
-/local/include/python/pythonrun.h:
-/local/include/python/ceval.h:
-/local/include/python/sysmodule.h:
-/local/include/python/intrcheck.h:
-/local/include/python/import.h:
-/local/include/python/abstract.h:
-/local/include/python/compile.h:
-/local/include/python/code.h:
-/local/include/python/eval.h:
-/local/include/python/pyctype.h:
-/local/include/python/pystrtod.h:
-/local/include/python/pystrcmp.h:
-/local/include/python/dtoa.h:
-/local/include/python/pyfpe.h:
-/local/nodejs/include/node/v8.h:
-/local/nodejs/include/node/v8-version.h:
-/local/nodejs/include/node/v8config.h:
 ../../mac/macIF.h:
+/local/service/atomic/ifs/python/node_modules/node-addon-api/napi.h:
+/home/admin/.cache/node-gyp/12.14.0/include/node/node_api.h:
+/home/admin/.cache/node-gyp/12.14.0/include/node/js_native_api.h:
+/home/admin/.cache/node-gyp/12.14.0/include/node/js_native_api_types.h:
+/home/admin/.cache/node-gyp/12.14.0/include/node/node_api_types.h:
+/local/service/atomic/ifs/python/node_modules/node-addon-api/napi-inl.h:
+/local/service/atomic/ifs/python/node_modules/node-addon-api/napi-inl.deprecated.h:
+/local/anaconda/include/python2.7/Python.h:
+/local/anaconda/include/python2.7/patchlevel.h:
+/local/anaconda/include/python2.7/pyconfig.h:
+/local/anaconda/include/python2.7/pymacconfig.h:
+/local/anaconda/include/python2.7/pyport.h:
+/local/anaconda/include/python2.7/pymath.h:
+/local/anaconda/include/python2.7/pymem.h:
+/local/anaconda/include/python2.7/object.h:
+/local/anaconda/include/python2.7/objimpl.h:
+/local/anaconda/include/python2.7/pydebug.h:
+/local/anaconda/include/python2.7/unicodeobject.h:
+/local/anaconda/include/python2.7/intobject.h:
+/local/anaconda/include/python2.7/boolobject.h:
+/local/anaconda/include/python2.7/longobject.h:
+/local/anaconda/include/python2.7/floatobject.h:
+/local/anaconda/include/python2.7/complexobject.h:
+/local/anaconda/include/python2.7/rangeobject.h:
+/local/anaconda/include/python2.7/stringobject.h:
+/local/anaconda/include/python2.7/memoryobject.h:
+/local/anaconda/include/python2.7/bufferobject.h:
+/local/anaconda/include/python2.7/bytesobject.h:
+/local/anaconda/include/python2.7/bytearrayobject.h:
+/local/anaconda/include/python2.7/tupleobject.h:
+/local/anaconda/include/python2.7/listobject.h:
+/local/anaconda/include/python2.7/dictobject.h:
+/local/anaconda/include/python2.7/enumobject.h:
+/local/anaconda/include/python2.7/setobject.h:
+/local/anaconda/include/python2.7/methodobject.h:
+/local/anaconda/include/python2.7/moduleobject.h:
+/local/anaconda/include/python2.7/funcobject.h:
+/local/anaconda/include/python2.7/classobject.h:
+/local/anaconda/include/python2.7/fileobject.h:
+/local/anaconda/include/python2.7/cobject.h:
+/local/anaconda/include/python2.7/pycapsule.h:
+/local/anaconda/include/python2.7/traceback.h:
+/local/anaconda/include/python2.7/sliceobject.h:
+/local/anaconda/include/python2.7/cellobject.h:
+/local/anaconda/include/python2.7/iterobject.h:
+/local/anaconda/include/python2.7/genobject.h:
+/local/anaconda/include/python2.7/descrobject.h:
+/local/anaconda/include/python2.7/warnings.h:
+/local/anaconda/include/python2.7/weakrefobject.h:
+/local/anaconda/include/python2.7/codecs.h:
+/local/anaconda/include/python2.7/pyerrors.h:
+/local/anaconda/include/python2.7/pystate.h:
+/local/anaconda/include/python2.7/pyarena.h:
+/local/anaconda/include/python2.7/modsupport.h:
+/local/anaconda/include/python2.7/pythonrun.h:
+/local/anaconda/include/python2.7/ceval.h:
+/local/anaconda/include/python2.7/sysmodule.h:
+/local/anaconda/include/python2.7/intrcheck.h:
+/local/anaconda/include/python2.7/import.h:
+/local/anaconda/include/python2.7/abstract.h:
+/local/anaconda/include/python2.7/compile.h:
+/local/anaconda/include/python2.7/code.h:
+/local/anaconda/include/python2.7/eval.h:
+/local/anaconda/include/python2.7/pyctype.h:
+/local/anaconda/include/python2.7/pystrtod.h:
+/local/anaconda/include/python2.7/pystrcmp.h:
+/local/anaconda/include/python2.7/dtoa.h:
+/local/anaconda/include/python2.7/pyfpe.h:

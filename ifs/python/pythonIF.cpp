@@ -1,12 +1,19 @@
 ﻿// UNCLASSIFIED
 
 /*
-Reserves a pool of V8 python machines:
+Reserves a pool of V8 python machines accessed using:
  
- 		error = python.call( [ id string, code string, context hash ] )
- 		error = python.call( [ id string, port string, context hash or event list] )
+ 	error = pythonIF( id string, code || port string, context hash || event list )
  
-and returns an interger error code.
+where the returned error code is:
+
+	ok			0
+	badModule 	101
+	badStep 	102
+	badPort		103
+	badCode 	104
+	badPool		105
+	badArgs		106
 
 A machine id (typically "Name.Client.Instance") uniquely identifies the machine's compute thread.  Compute
 threads can be freely added to the pool until the pool becomes full.  
@@ -20,30 +27,19 @@ When programming a machine, the context hash = { ports: {name1: {...}, name2: {.
 parameters to/from a machine.  Empty code will cause the machine to monitor its current parameters.  
 */
 
-#define MAXMACHINES 64
+// V8 interface
+#include <macIF.h>
 
 // Python interface
-
 #include <Python.h>
 
-// V8 interface
-
-#include <v8.h>
-using namespace v8;
-
 // Standard interface
-
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-using namespace std;
-
-// machine interface
-#include <macIF.h>
 
 // Machine specs
-
+#define MAXMACHINES 10
 #define TRACE "py>"
 #define LOCAL(X) PyDict_GetItemString(pLocals,X)
 
@@ -60,6 +56,9 @@ using namespace std;
 #define PYINIT "INIT" 		// initialize flag
 // #define PYOS "OS" 		// OS dictionary
 
+
+// Define python machine
+
 class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 	public:
 	
@@ -74,16 +73,18 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 		~PYMACHINE(void) {
 		};
 	
-		// machine V8-python converters
-		V8VALUE clone(PyObject *src) { 				// clone python value into v8 value
+		// V8 to python converters
+
+		V8VALUE clone(PyObject *src) { 				// clone python value to v8 value
+			
 			if (PyList_Check(src)) {
 				int N = PyList_Size(src);
 //printf(TRACE "clone py>>v8 list len=%d\n",N);
-				V8ARRAY tar = v8::Array::New(scope,N);
-				V8OBJECT Tar = tar->ToObject();
+				V8ARRAY tar = V8ARRAY::New(scope,N);
+				V8OBJECT Tar = tar.ToObject();
 				
 				for (int n=0; n<N; n++) {
-					Tar->Set(n,clone( PyList_GetItem(src,n) ));
+					Tar[n] = clone( PyList_GetItem(src,n) );
 //printf(TRACE "clone py>>v8[%d] done\n",n);
 				}
 					
@@ -92,21 +93,21 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 			
 			else
 			if (PyDict_Check(src)) {
-				V8OBJECT tar = v8::Object::New(scope);
+				V8OBJECT tar = V8OBJECT::New(scope);
 				PyObject *key,*value;
 				Py_ssize_t pos = 0;
 				
 				while (PyDict_Next(src,&pos,&key,&value)) {
 					str Key = PyString_AsString(key);
-					tar->Set(V8TOKEY(Key), clone( value ) );
+					tar[ Key ] = clone( value );
 				}
 				
 				return tar;
 			}
 			
-			else
-			if (PyFunction_Check(src)) 
-				return V8TONUMBER(0.0);
+			//else
+			//if (PyFunction_Check(src)) 
+			//	return V8TONUMBER(0.0);
 			
 			else
 			if (PyFloat_Check(src)) 
@@ -118,7 +119,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 			
 			else
 			if (PyString_Check(src)) 
-				return V8TOKEY(PyString_AsString(src));
+				return V8TOSTRING(PyString_AsString(src));
 			
 			else
 			if (src == Py_None)
@@ -126,77 +127,73 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 				
 			else 
 				return V8TONUMBER(0.0);
+			
 		}
 		
 		PyObject *clone(V8VALUE src) {  			// clone v8 object into python object
-//printf(TRACE "clone v8>>py str=%d num=%d arr=%d obj=%d null=%d\n ",  src->IsString(),src->IsNumber(),src->IsArray(),src->IsObject(),src->IsNull() );
-			char buf[MAX_CODELEN];
-			
-			if ( src->IsString() )
-				return PyString_FromString( V8TOSTR(src, buf) );
+//printf(TRACE "clone v8>>py str=%d num=%d arr=%d obj=%d null=%d\n ",  src.IsString(),src.IsNumber(),src.IsArray(),src.IsObject(),src.IsNull() );
+			if ( src.IsString() )
+				return PyString_FromString( V8STR(src) );
 			
 			else
-			if ( src->IsNumber() )
-				return PyFloat_FromDouble( src->ToNumber(scope)->Value() );
+			if ( src.IsNumber() )
+				return PyFloat_FromDouble( src.ToNumber().DoubleValue() );
 				
 			else
-			if ( src->IsArray() ) {
-				V8ARRAY v = V8TOARRAY(src); //Array::Cast(src);
-				return clone( v );
+			if ( src.IsArray() ) {
+				V8ARRAY x(scope,src);
+				return clone( x );
 			}
 			
 			else
-			if ( src->IsObject() )
-				return clone(src->ToObject());
+			if ( src.IsObject() )
+				return clone(src.ToObject());
 				
 			else
-			if ( src->IsNull() )
+			if ( src.IsNull() )
 				return Py_None; //PyLong_FromVoidPtr(NULL);
 				
 			else
-			if ( src->IsFunction() )
+			if ( src.IsFunction() )
 				return Py_None;  //PyLong_FromVoidPtr(NULL);
 				
 			else
 				return PyFloat_FromDouble( 0.0 );
-
 		}
 	
 		PyObject *clone(V8ARRAY src) { 				// clone v8 array into python object
-			int N = src->Length();
+			int N = src.Length();
 			PyObject *tar = PyList_New(N);
 			
 //printf(TRACE "clone v8>>py list len=%d\n",N);
 			
 			for (int n=0; n<N; n++) 
-				PyList_SetItem(tar, n, clone(src->Get(n)) );
+				PyList_SetItem(tar, n, clone(src[n]) );
 			
 			return tar;
 		}
 
 		PyObject *clone(V8OBJECT src) { 			// clone v8 object into python object
 			PyObject *tar = PyDict_New();
-			V8ARRAY keys = src->GetOwnPropertyNames();
-			char buf[MAX_KEYLEN];
+			V8ARRAY keys = src.GetPropertyNames();
 			
 //printf(TRACE "clone v8>>py object keys=%d\n",keys->Length());
 			
-			for (int n=0,N=keys->Length(); n<N; n++) {
-				str key = V8TOSTR(keys->Get(n), buf);
-				
-				PyDict_SetItemString(tar, key, clone(V8INDEX(src,key)));
-//printf(TRACE "clone v8>>py key=%s\n", buf);
+			for (int n=0,N=keys.Length(); n<N; n++) {
+				V8VALUE key = keys[n];
+				PyDict_SetItemString(tar, V8STR(key), clone( src[ V8TOSTR(key) ]));
 			}
 //printf(TRACE "clone v8>>py object done\n");
 
 			return tar;
 		}
-				
-		// machine program/step interface
-		int call(const V8STACK& args) { 			// Monitor/Program/Step machine	
 
+		// machine program/step interface
+		int run(const V8STACK& args) { 			// Monitor/Program/Step machine	
+printf(TRACE "running\n");
+			
 			err = setup(args);
-//printf(TRACE "setup err=%d init=%d pcode=%p\n", err, init, pCode);
+printf(TRACE "setup err=%d init=%d pcode=%p\n", err, init, pCode);
 			
 			if (err) 
 				return err;
@@ -214,7 +211,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 
 				path = strstr(port,"\n") ? NULL : port;
 
-	//printf(TRACE "compile path=%s port=%s\n",path,port);
+printf(TRACE "compile path=%s port=%s\n",path,port);
 
 				if ( strlen(path) ) { 				// load external module
 					pModule = PyImport_Import(PyString_FromString(path));
@@ -223,11 +220,11 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 
 				else {
 					// Create a module for this new code
-					pModule = PyModule_New(name);
+					pModule = PyModule_New(name.c_str());
 
 					// Prime local dictionary with context hash
 					pLocals = PyModule_GetDict(pModule);
-	//printf(TRACE "locals=%p/\n",pLocals);
+printf(TRACE "locals=%p/\n",pLocals);
 
 					//PyDict_Merge(pLocals, clone(ctx), true);
 					PyDict_SetItemString(pLocals, PYCTX, clone( ctx ));	
@@ -241,15 +238,15 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 					pMain = PyImport_AddModule("__main__");
 					pGlobals = PyModule_GetDict(pMain);	
 					//PyDict_SetItemString(pGlobals, PYOS, PyModule_GetDict(pModule));
-	//printf(TRACE "globals=%p\n",pGlobals);
+printf(TRACE "globals=%p\n",pGlobals);
 
-	//printf(TRACE "compile=\n%s infile=%d\n",code,Py_file_input);
+printf(TRACE "compile=\n%s infile=%d\n",code.c_str(),Py_file_input);
 					// Uncomment if there is a need to define ctx at compile
 					//PyDict_SetItemString(pLocals, PYPORT, PyString_FromString( port ) );
 					//PyDict_SetItemString(pLocals, PYCTX, clone( ctx ));
 
 					// For some reason cant recompile already compiled code.  
-					pCode = (PyCodeObject*) Py_CompileString(code, "py_traceback", Py_file_input);
+					pCode = (PyCodeObject*) Py_CompileString(code.c_str(), "py_traceback", Py_file_input);
 				}
 			}
 			
@@ -283,39 +280,40 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 	//printf(TRACE "module err: %ld\n", err);
 						Py_XDECREF(pFunc);
 
-						//set(ctx,clone( PyTuple_GetItem(pArgs,0) )->ToObject() );
+						//latch(ctx,clone( PyTuple_GetItem(pArgs,0) )->ToObject() );
 	//monitor("py set ctx[0]",ctx->ToObject()->Get(0)->ToObject());
 					}
+					
 					else 									// Bad call
 						err = badCode; 
 				}
 
 				else 
 				if ( strlen(port) ) {		// Stateful step
-	//printf(TRACE "stateful step port=%s\n",port);
+printf(TRACE "stateful step port=%s\n",port);
 					PyDict_SetItemString(pLocals, PYPORT, PyString_FromString(port) );
 					PyDict_SetItemString(pLocals, PYTAU, clone(tau) );
 
 					PyEval_EvalCode(pCode,pGlobals,pLocals);
 					err = PyInt_AsLong( LOCAL(PYERR) );
 
-					set(tau, clone( LOCAL(PYTAU) ));
-					//set(ctx, clone( pLocals )->ToObject() );	
+					latch(tau, clone( LOCAL(PYTAU) ));
+					////latch(ctx, clone( pLocals )->ToObject() );	
 				}
 
 				else {					// Stateless step
-	//printf(TRACE "stateless step port=%s\n", port);
+printf(TRACE "stateless step port=%s\n", port);
 					pLocals = PyModule_GetDict(pModule);
 					pGlobals = PyModule_GetDict(pMain);	
 
 					PyDict_SetItemString(pLocals, PYPORT, PyString_FromString( port ) );
 					PyDict_SetItemString(pLocals, PYCTX, clone( ctx ));
-	//printf(TRACE "context cloned\n");
+printf(TRACE "context cloned\n");
 					PyEval_EvalCode(pCode,pGlobals,pLocals);
-	//printf(TRACE "code evaled\n");
+printf(TRACE "code evaled\n");
 
-					set(ctx, clone( LOCAL(PYCTX) )->ToObject() );
-					//set(ctx, clone( pLocals )->ToObject() );
+					latch(ctx, clone( LOCAL(PYCTX) ).ToObject() );
+					////latch(ctx, clone( pLocals )->ToObject() );
 
 					err = PyInt_AsLong( LOCAL(PYERR) );	
 				}					
@@ -323,11 +321,11 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 				
 			else {
 				err = badCode;
-				printf(TRACE "compile err=%d\n%s\n", err, code);
+				printf(TRACE "compile err=%d\n%s\n", err, code.c_str());
 					//Py_Finalize(); // dont do this - will cause segment fault
 			}
 			
-//printf(TRACE "stateless step err=%d\n",err);
+printf(TRACE "stateless step err=%d\n",err);
 			return err;
 		}
 		
@@ -339,8 +337,25 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 		str path, port;
 };
 
-// Generate a pool of machine python_machine[0 ... MAXMACHINES-1].
+// Generate a pool python_machine[0 ... MAXMACHINES-1] of python machines.
 
-V8POOL(python,MAXMACHINES,PYMACHINE);
+V8POOL(python, MAXMACHINES, PYMACHINE)
+
+V8NUMBER run(const V8STACK& args) {
+	V8SCOPE scope = args.Env();
+	return V8NUMBER::New(scope,python(args) );
+	/*
+	V8OBJECT obj = V8OBJECT::New(scope);
+	obj[ V8TOSTRING("msg") ] = args[0].ToString();
+	return obj;*/
+}
+
+V8OBJECT Init(V8SCOPE scope, V8OBJECT exports) {
+	return V8FUNCTION::New(scope, run, "run");
+	//exports[ V8TOSTRING("run") ] = V8FUNCTION::New(scope, run, "run"));
+	//return exports;
+}
+
+NODE_API_MODULE(pythonIF, Init)
 
 // UNCLASSIFIED

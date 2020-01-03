@@ -1,1 +1,0 @@
-cmd_Release/obj.target/macIF.so := g++ -shared -pthread -rdynamic -m64  -Wl,-soname=macIF.so -o Release/obj.target/macIF.so -Wl,--whole-archive ./Release/obj.target/macIF/macIF.o -Wl,--no-whole-archive 

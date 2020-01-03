@@ -19,13 +19,17 @@
 
 {
 	"targets": [{
+		"cflags!": [ "-fno-exceptions" ],
+		"cflags_cc!": [ "-fno-exceptions" ],
+		'defines': [ 'NAPI_DISABLE_CPP_EXCEPTIONS' ],
+	  
 		"target_name": "pythonIF",
-		"type": "<(library)",
+		#"type": "<(library)",
 		"include_dirs": [
 			".",
 			"../mac",
-			#"$(CONDA)/include/python2.7",
-			"$(INCLUDE)/python"
+			"$(CONDA)/include/python2.7",
+			"<!@(node -p \"require('node-addon-api').include\")"    # has to be last
 		],
 		"sources": [
 			"pythonIF.cpp"

@@ -7,8 +7,12 @@ DEFS_Debug := \
 	'-DUSING_UV_SHARED=1' \
 	'-DUSING_V8_SHARED=1' \
 	'-DV8_DEPRECATION_WARNINGS=1' \
+	'-DV8_DEPRECATION_WARNINGS' \
+	'-DV8_IMMINENT_DEPRECATION_WARNINGS' \
 	'-D_LARGEFILE_SOURCE' \
 	'-D_FILE_OFFSET_BITS=64' \
+	'-DOPENSSL_NO_PINSHARED' \
+	'-DOPENSSL_THREADS' \
 	'-DBUILDING_NODE_EXTENSION' \
 	'-DDEBUG' \
 	'-D_DEBUG' \
@@ -32,13 +36,16 @@ CFLAGS_C_Debug :=
 CFLAGS_CC_Debug := \
 	-fno-rtti \
 	-fno-exceptions \
-	-std=gnu++0x
+	-std=gnu++1y
 
 INCS_Debug := \
-	-I/local/nodejs/include/node \
-	-I/local/nodejs/src \
-	-I/local/nodejs/deps/uv/include \
-	-I/local/nodejs/deps/v8/include \
+	-I/home/admin/.cache/node-gyp/12.14.0/include/node \
+	-I/home/admin/.cache/node-gyp/12.14.0/src \
+	-I/home/admin/.cache/node-gyp/12.14.0/deps/openssl/config \
+	-I/home/admin/.cache/node-gyp/12.14.0/deps/openssl/openssl/include \
+	-I/home/admin/.cache/node-gyp/12.14.0/deps/uv/include \
+	-I/home/admin/.cache/node-gyp/12.14.0/deps/zlib \
+	-I/home/admin/.cache/node-gyp/12.14.0/deps/v8/include \
 	-I$(srcdir)/mac \
 	-I$(srcdir)/.
 
@@ -47,8 +54,12 @@ DEFS_Release := \
 	'-DUSING_UV_SHARED=1' \
 	'-DUSING_V8_SHARED=1' \
 	'-DV8_DEPRECATION_WARNINGS=1' \
+	'-DV8_DEPRECATION_WARNINGS' \
+	'-DV8_IMMINENT_DEPRECATION_WARNINGS' \
 	'-D_LARGEFILE_SOURCE' \
 	'-D_FILE_OFFSET_BITS=64' \
+	'-DOPENSSL_NO_PINSHARED' \
+	'-DOPENSSL_THREADS' \
 	'-DBUILDING_NODE_EXTENSION'
 
 # Flags passed to all source files.
@@ -69,13 +80,16 @@ CFLAGS_C_Release :=
 CFLAGS_CC_Release := \
 	-fno-rtti \
 	-fno-exceptions \
-	-std=gnu++0x
+	-std=gnu++1y
 
 INCS_Release := \
-	-I/local/nodejs/include/node \
-	-I/local/nodejs/src \
-	-I/local/nodejs/deps/uv/include \
-	-I/local/nodejs/deps/v8/include \
+	-I/home/admin/.cache/node-gyp/12.14.0/include/node \
+	-I/home/admin/.cache/node-gyp/12.14.0/src \
+	-I/home/admin/.cache/node-gyp/12.14.0/deps/openssl/config \
+	-I/home/admin/.cache/node-gyp/12.14.0/deps/openssl/openssl/include \
+	-I/home/admin/.cache/node-gyp/12.14.0/deps/uv/include \
+	-I/home/admin/.cache/node-gyp/12.14.0/deps/zlib \
+	-I/home/admin/.cache/node-gyp/12.14.0/deps/v8/include \
 	-I$(srcdir)/mac \
 	-I$(srcdir)/.
 

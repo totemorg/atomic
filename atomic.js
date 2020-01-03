@@ -4,9 +4,10 @@
 @class ATOMIC
 @requires child_processby
 @requires fs
-@requires engineIF
-@requires enum
 @requires vm 
+@requires pythonIF
+@requires opencvIF
+@requires enum
  */
 
 var 														
@@ -27,9 +28,11 @@ function Trace(msg,req,fwd) {
 const { Copy,Each,Log,isString } = require("enum");
 	
 var
-	ATOM = module.exports = Copy( //< Extend the engineIF built by node-gyp
-		require("./ifs/build/Release/engineIF"), {
-		 
+	ATOM = module.exports = {
+		//require("./ifs/build/Release/engineIF"), 	
+		python: require("pythonIF"),
+		opencv: require("opencvIF"),
+		
 		/**
 		@cfg {Object}
 		@private
@@ -1195,7 +1198,7 @@ end` ;
 			}			
 		}
 			
-	});
+	};
 
 //================== Unit testing
 

@@ -7,8 +7,14 @@ DEFS_Debug := \
 	'-DUSING_UV_SHARED=1' \
 	'-DUSING_V8_SHARED=1' \
 	'-DV8_DEPRECATION_WARNINGS=1' \
+	'-DV8_DEPRECATION_WARNINGS' \
+	'-DV8_IMMINENT_DEPRECATION_WARNINGS' \
 	'-D_LARGEFILE_SOURCE' \
 	'-D_FILE_OFFSET_BITS=64' \
+	'-DOPENSSL_NO_PINSHARED' \
+	'-DOPENSSL_THREADS' \
+	'-DNAPI_DISABLE_CPP_EXCEPTIONS' \
+	'-DBUILDING_NODE_EXTENSION' \
 	'-DDEBUG' \
 	'-D_DEBUG' \
 	'-DV8_ENABLE_CHECKS'
@@ -30,25 +36,34 @@ CFLAGS_C_Debug :=
 # Flags passed to only C++ files.
 CFLAGS_CC_Debug := \
 	-fno-rtti \
-	-fno-exceptions \
-	-std=gnu++0x
+	-std=gnu++1y
 
 INCS_Debug := \
-	-I/local/nodejs/include/node \
-	-I/local/nodejs/src \
-	-I/local/nodejs/deps/uv/include \
-	-I/local/nodejs/deps/v8/include \
+	-I/home/admin/.cache/node-gyp/12.14.0/include/node \
+	-I/home/admin/.cache/node-gyp/12.14.0/src \
+	-I/home/admin/.cache/node-gyp/12.14.0/deps/openssl/config \
+	-I/home/admin/.cache/node-gyp/12.14.0/deps/openssl/openssl/include \
+	-I/home/admin/.cache/node-gyp/12.14.0/deps/uv/include \
+	-I/home/admin/.cache/node-gyp/12.14.0/deps/zlib \
+	-I/home/admin/.cache/node-gyp/12.14.0/deps/v8/include \
 	-I$(srcdir)/. \
 	-I$(srcdir)/../mac \
-	-I$(INCLUDE)/python
+	-I$(CONDA)/include/python2.7 \
+	-I/local/service/atomic/ifs/python/node_modules/node-addon-api
 
 DEFS_Release := \
 	'-DNODE_GYP_MODULE_NAME=pythonIF' \
 	'-DUSING_UV_SHARED=1' \
 	'-DUSING_V8_SHARED=1' \
 	'-DV8_DEPRECATION_WARNINGS=1' \
+	'-DV8_DEPRECATION_WARNINGS' \
+	'-DV8_IMMINENT_DEPRECATION_WARNINGS' \
 	'-D_LARGEFILE_SOURCE' \
-	'-D_FILE_OFFSET_BITS=64'
+	'-D_FILE_OFFSET_BITS=64' \
+	'-DOPENSSL_NO_PINSHARED' \
+	'-DOPENSSL_THREADS' \
+	'-DNAPI_DISABLE_CPP_EXCEPTIONS' \
+	'-DBUILDING_NODE_EXTENSION'
 
 # Flags passed to all source files.
 CFLAGS_Release := \
@@ -67,17 +82,20 @@ CFLAGS_C_Release :=
 # Flags passed to only C++ files.
 CFLAGS_CC_Release := \
 	-fno-rtti \
-	-fno-exceptions \
-	-std=gnu++0x
+	-std=gnu++1y
 
 INCS_Release := \
-	-I/local/nodejs/include/node \
-	-I/local/nodejs/src \
-	-I/local/nodejs/deps/uv/include \
-	-I/local/nodejs/deps/v8/include \
+	-I/home/admin/.cache/node-gyp/12.14.0/include/node \
+	-I/home/admin/.cache/node-gyp/12.14.0/src \
+	-I/home/admin/.cache/node-gyp/12.14.0/deps/openssl/config \
+	-I/home/admin/.cache/node-gyp/12.14.0/deps/openssl/openssl/include \
+	-I/home/admin/.cache/node-gyp/12.14.0/deps/uv/include \
+	-I/home/admin/.cache/node-gyp/12.14.0/deps/zlib \
+	-I/home/admin/.cache/node-gyp/12.14.0/deps/v8/include \
 	-I$(srcdir)/. \
 	-I$(srcdir)/../mac \
-	-I$(INCLUDE)/python
+	-I$(CONDA)/include/python2.7 \
+	-I/local/service/atomic/ifs/python/node_modules/node-addon-api
 
 OBJS := \
 	$(obj).target/$(TARGET)/pythonIF.o
@@ -119,29 +137,28 @@ LDFLAGS_Release := \
 LIBS := \
 	$(LIB)/python/libpython2.7.so
 
-$(obj).target/pythonIF.so: GYP_LDFLAGS := $(LDFLAGS_$(BUILDTYPE))
-$(obj).target/pythonIF.so: LIBS := $(LIBS)
-$(obj).target/pythonIF.so: LD_INPUTS := $(OBJS)
-$(obj).target/pythonIF.so: TOOLSET := $(TOOLSET)
-$(obj).target/pythonIF.so: $(OBJS) FORCE_DO_CMD
-	$(call do_cmd,solink)
+$(obj).target/pythonIF.node: GYP_LDFLAGS := $(LDFLAGS_$(BUILDTYPE))
+$(obj).target/pythonIF.node: LIBS := $(LIBS)
+$(obj).target/pythonIF.node: TOOLSET := $(TOOLSET)
+$(obj).target/pythonIF.node: $(OBJS) FORCE_DO_CMD
+	$(call do_cmd,solink_module)
 
-all_deps += $(obj).target/pythonIF.so
+all_deps += $(obj).target/pythonIF.node
 # Add target alias
 .PHONY: pythonIF
-pythonIF: $(builddir)/pythonIF.so
+pythonIF: $(builddir)/pythonIF.node
 
-# Copy this to the shared library output path.
-$(builddir)/pythonIF.so: TOOLSET := $(TOOLSET)
-$(builddir)/pythonIF.so: $(obj).target/pythonIF.so FORCE_DO_CMD
+# Copy this to the executable output path.
+$(builddir)/pythonIF.node: TOOLSET := $(TOOLSET)
+$(builddir)/pythonIF.node: $(obj).target/pythonIF.node FORCE_DO_CMD
 	$(call do_cmd,copy)
 
-all_deps += $(builddir)/pythonIF.so
-# Short alias for building this shared library.
-.PHONY: pythonIF.so
-pythonIF.so: $(obj).target/pythonIF.so $(builddir)/pythonIF.so
+all_deps += $(builddir)/pythonIF.node
+# Short alias for building this executable.
+.PHONY: pythonIF.node
+pythonIF.node: $(obj).target/pythonIF.node $(builddir)/pythonIF.node
 
-# Add shared library to "all" target.
+# Add executable to "all" target.
 .PHONY: all
-all: $(builddir)/pythonIF.so
+all: $(builddir)/pythonIF.node
 

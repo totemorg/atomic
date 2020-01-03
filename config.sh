@@ -26,6 +26,9 @@ export REBUILD="node-gyp rebuild --nodedir=$NODE"	# use "node-gyp $GYPTOPS" to o
 #export LINK=g++ 			# fixes node-gyp flock issue when source files on NFS system
 
 # Dev paths
+#export PATH=
+#export LD_LIBRARY_PATH=
+
 export INC=$BASE/include
 export INCLUDE=$INC
 export LIB=$BASE/lib64
@@ -41,7 +44,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIB/python
 
 # Engine interfaces
 export ENGINES=$HERE/ifs
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ENGINES/python/build/Release:$ENGINES/opencv/build/Release:$ENGINES/mac/build/Release
+#export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ENGINES/python/build/Release:$ENGINES/opencv/build/Release:$ENGINES/mac/build/Release
 #export JOBS=$HERE/jobs
 
 #export PATH=$INC:$PATH
