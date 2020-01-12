@@ -1,0 +1,15 @@
+{
+  "name": "r",
+  "version": "1.0.0",
+  "description": "interface to R machine",
+  "main": "R.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bindings": "^1.5.0",
+    "node-addon-api": "^2.0.0"
+  }
+}

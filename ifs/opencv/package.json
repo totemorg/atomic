@@ -1,0 +1,12 @@
+{
+  "name": "opencvMachine",
+  "version": "1.0.0",
+  "description": "opencv machine interface",
+  "main": "opencvIF.js",
+  "private": true,
+  "gypfile": true,
+  "dependencies": {
+    "bindings": "~1.2.1",
+    "node-addon-api": "^1.0.0"
+  }
+}

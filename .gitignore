@@ -1,5 +1,1 @@
 /_*
-/ifs/*
-*/Release/*
-!*.node
-!node_modules/*
