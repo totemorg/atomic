@@ -1,15 +1,21 @@
 // UNCLASSIFIED
 
 /*
-Use:
+Provides:
  
- 	V8POOL(PREFIX,MAX,CLASS)
+ 	V8POOL(IF,MAX,CLASS)
  
-to generate a pool of CLASS-machines named PREFIX_machine[0, ... MAX-1] and a PREFIX(args):
+to generate a pool of CLASS-machines:
 
-	error = PREFIX( id string, code || port string, context hash || event list )
- 
-which accepts machine arguments and returns an error code:
+ 	error = IF_machine[n]( id string, code string, context hash )
+ 	error = IF_machine[n]( id string, port string, event list )
+
+where n = 0:MAX-1 that are accessed using:
+
+ 	error = IF( id string, code string, context hash )
+ 	error = IF( id string, port string, event list )
+
+returning error code:
 
 	ok			0
 	badModule 	101
@@ -19,25 +25,28 @@ which accepts machine arguments and returns an error code:
 	badPool		105
 	badArgs		106
 
-A machine name (typically "Client.Engine.Instance") uniquely identifies the engine's compute thread.  
+The machine id (e.g. "Client.Engine.Instance") uniquely identifies the engine's compute thread.  
 Compute threads are automatically added to the pool (when the args ctx is not NULL), or removed 
 from the pool (when the args ctx is NULL).  An error is returned should the pool become full.  
  
-When stepping a machine, port specifies either the name of the input port on which arriving events [ tau, tau, ... ] 
-are latched, or the name of the output port on which departing events [ tau, tau, ... ] are latched; thus stepping the 
-machine in a stateful way (to maximize data restfulness).  An empty port will cause the machine to be 
-stepped in a stateless way with the supplied context hash.
+When stepping a machine, port specifies either the name of the input port on which arriving 
+events [ tau, tau, ... ] are latched, or the name of the output port on which departing events
+[ tau, tau, ... ] are latched; thus stepping the machine in a stateful way (to maximize data 
+restfulness).  An empty port will cause the machine to be stepped in a stateless way with the 
+supplied context hash.
  
-When programming a machine, the context hash = { ports: {name1: {...}, name2: {...}, ...}, key: value, .... } defines 
-parameters to/from a machine.  Empty code will cause the machine to monitor its current parameters.
+When programming a machine, the context hash = { ports: {name1: {...}, name2: {...}, ...}, 
+key: value, .... } defines parameters to/from a machine.  Empty code will cause the machine to 
+monitor its current parameters.
 
-See the opencv.cpp, python.cpp, etc machines for usage examples.  This interface is created using node-gyp with 
-the binding.gyp provided.
+See the opencv.cpp, python.cpp, etc machines for usage examples.  This interface is created using 
+node-gyp with the binding.gyp provided.
 
 Implementation notes: 
 	google's rapidjson does not provide a useful V8 interface here as (1) its"Value" class conflicts with V8 "Value" 
 	class, and (2) passing rapidjson objects to machines is self-defeating.  Similar conflicts occured with the
-	nodejs nan module.
+	nodejs nan module.  NodeJS has evolved to using the Napi module to provide a consistent interface, independent 
+	of the EMAC V8 api.
 
 References:
 	machines/opencv/objdet for an example opencv mac-machine.  
@@ -231,28 +240,28 @@ printf(TRACE "construct machine\n");
 	V8SCOPE scope = NULL; 		// v8 garbage collection thread	
 };
 
-#define V8POOL(PREFIX,MAX,CLASS) \
-CLASS PREFIX##_machine[MAX]; \
+#define V8POOL(IF,MAX,CLASS) \
+CLASS IF##_machine[MAX]; \
 \
-int PREFIX(const V8STACK& args) { \
+int IF(const V8STACK& args) { \
 	V8SCOPE scope = V8ENTRY(args); \
 	string name = NAMEARG(args); \
 \
 	for (int n=0; n<MAX; n++) { \
-printf(TRACE "scan %s = %s\n",name.c_str(), PREFIX##_machine[n].name.c_str() ); \
-		if ( !STREMPTY( PREFIX##_machine[n].name ) ) \
-			if ( PREFIX##_machine[n].name == name ) { \
-				int err = PREFIX##_machine[n].run(args); \
-				if ( args[2].IsNull() ) PREFIX##_machine[n].name = ""; \
+printf(TRACE "scan %s = %s\n",name.c_str(), IF##_machine[n].name.c_str() ); \
+		if ( !STREMPTY( IF##_machine[n].name ) ) \
+			if ( IF##_machine[n].name == name ) { \
+				int err = IF##_machine[n].run(args); \
+				if ( args[2].IsNull() ) IF##_machine[n].name = ""; \
 				return err; \
 			 } \
 	} \
 \
 	for (int n=0; n<MAX; n++) { \
-		if ( STREMPTY( PREFIX##_machine[n].name ) ) { \
-			PREFIX##_machine[n].name = name; \
+		if ( STREMPTY( IF##_machine[n].name ) ) { \
+			IF##_machine[n].name = name; \
 printf(TRACE "define %s\n", name.c_str() ); \
-			return PREFIX##_machine[n].run(args); \
+			return IF##_machine[n].run(args); \
 		} \
 	} \
 \

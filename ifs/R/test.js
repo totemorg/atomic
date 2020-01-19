@@ -5,7 +5,7 @@ var
 var ctx = {a:10,b:11,c:20};
 				//[{ev:1}, {ev:2}] ) )
 
-Log(RIF("RIF test", `
+Log(RIF("test1", `
 print('you da man');
 print('ctx=');str(CTX);
 print('tau=');str(TAU);

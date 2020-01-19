@@ -1,22 +1,31 @@
 // UNCLASSIFIED
 
 /*
-Reserves a pool of V8 opencv (haar locator, dnn classifier) machines:
+Reserves a pool of V8 opencv machines accessed using:
  
- 		error = opencv.call( [ id string, code string, context hash ] )
+ 	error = opencvIF( id string, code string, context hash )
+ 	error = opencvIF( id string, port string, event list )
  
-and returns an interger error code.
+where the returned error code is:
+
+	ok			0
+	badModule 	101
+	badStep 	102
+	badPort		103
+	badCode 	104
+	badPool		105
+	badArgs		106
 
 A machine id (typically "Name.Client.Instance") uniquely identifies the machine's compute thread.  Compute
 threads can be freely added to the pool until the pool becomes full.  
  
-When stepping a machine, code specifies either the name of the input port on which the arriving context 
-is latched, or the name of the output port on which the departing context is latched; thus stepping
-the machine in a stateful way (to maximize data restfulness).  Given, however, an empty port will, the machine is 
-stepped in a stateless way: by latching events to all input ports, then latching all output ports to events.
-
-When programming a machine with a code string, the context = { frame: {job:path}, detector: {key:value}, ... } 
-defines parameters to machine i/o ports and i/o events.  Empty code will monitor current machine parameters.
+When stepping a machine, port specifies either the name of the input port on which arriving events [ tau, tau, ... ] 
+are latched, or the name of the output port on which departing events [ tau, tau, ... ] are latched; thus stepping the 
+machine in a stateful way (to maximize data restfulness).  An empty port will cause the machine to be 
+stepped in a stateless way with the supplied context hash.
+ 
+When programming a machine, the context hash = { ports: {name1: {...}, name2: {...}, ...}, key: value, .... } defines 
+parameters to/from a machine.  Empty code will cause the machine to monitor its current parameters.  
 
 The opencv machine implemented here is a HAAR cascade feature detector with the key-parameters:
 
@@ -941,11 +950,11 @@ string FEATURE::json(void) {
 //==============================================
 // Generate a pool of opencv machines
 
-V8POOL(opencv,MAXMACHINES,CVMACHINE)
+V8POOL(cvPool,MAXMACHINES,CVMACHINE)
 
 V8NUMBER run(const V8STACK& args) {
 	V8SCOPE scope = args.Env();
-	return V8NUMBER::New(scope,opencv(args) );
+	return V8NUMBER::New(scope,cvPool(args) );
 }
 
 V8OBJECT Init(V8SCOPE scope, V8OBJECT exports) {

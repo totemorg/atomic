@@ -3,6 +3,7 @@
 
 #define QUOTE "'"
 #define TRACE "R>"
+#define MAXMACHINES 1
 
 typedef Rcpp::RObject ROBJECT;
 typedef Rcpp::String RSTRING;
@@ -269,12 +270,14 @@ int Rmac(int argc, char *argv[]) {
 }
 */
 
-RMACHINE Rmac;
+//RMACHINE Rmac;
 
+V8POOL(rPool, MAXMACHINES, RMACHINE)
+	
 V8NUMBER runMachine(const V8STACK& args) {
 	V8SCOPE scope = args.Env();
-	printf("in run\n");
-	return V8NUMBER::New(scope,Rmac.run(args) );
+	//return V8NUMBER::New(scope,Rmac.run(args) );
+	return V8NUMBER::New(scope,rPool(args) );
 }
 
 V8OBJECT Init(V8SCOPE scope, V8OBJECT exports) {

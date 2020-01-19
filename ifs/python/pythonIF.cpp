@@ -3,7 +3,8 @@
 /*
 Reserves a pool of V8 python machines accessed using:
  
- 	error = pythonIF( id string, code || port string, context hash || event list )
+ 	error = pythonIF( id string, code string, context hash )
+ 	error = pythonIF( id string, port string, event list )
  
 where the returned error code is:
 
@@ -43,9 +44,7 @@ parameters to/from a machine.  Empty code will cause the machine to monitor its 
 #define TRACE "py>"
 #define LOCAL(X) PyDict_GetItemString(pLocals,X)
 
-/*
-#define CTXINDEX(X) "CTX['" X "']"
-*/
+// #define CTXINDEX(X) "CTX['" X "']"
 
 // machine context parameters
 #define PYERR "ERR"			// parameter to hold error code
@@ -339,11 +338,11 @@ printf(TRACE "stateless step err=%d\n",err);
 
 // Generate a pool python_machine[0 ... MAXMACHINES-1] of python machines.
 
-V8POOL(python, MAXMACHINES, PYMACHINE)
+V8POOL(pyPool, MAXMACHINES, PYMACHINE)
 
 V8NUMBER run(const V8STACK& args) {
 	V8SCOPE scope = args.Env();
-	return V8NUMBER::New(scope,python(args) );
+	return V8NUMBER::New(scope,pyPool(args) );
 	/*
 	V8OBJECT obj = V8OBJECT::New(scope);
 	obj[ V8TOSTRING("msg") ] = args[0].ToString();
