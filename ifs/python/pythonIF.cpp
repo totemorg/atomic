@@ -1,7 +1,7 @@
 ﻿// UNCLASSIFIED
 
 /*
-Reserves a pool of V8 python machines accessed using:
+Reserves a pool of python machines accessed using:
  
  	error = pythonIF( id string, code string, context hash )
  	error = pythonIF( id string, port string, event list )

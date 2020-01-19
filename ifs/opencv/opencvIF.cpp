@@ -1,7 +1,7 @@
 // UNCLASSIFIED
 
 /*
-Reserves a pool of V8 opencv machines accessed using:
+Reserves a pool of opencv machines accessed using:
  
  	error = opencvIF( id string, code string, context hash )
  	error = opencvIF( id string, port string, event list )

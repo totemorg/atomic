@@ -1,3 +1,33 @@
+// UNCLASSIFIED
+
+/*
+Reserves a pool of R machines accessed using:
+ 
+ 	error = RIF( id string, code string, context hash )
+ 	error = RIF( id string, port string, event list )
+ 
+where the returned error code is:
+
+	ok			0
+	badModule 	101
+	badStep 	102
+	badPort		103
+	badCode 	104
+	badPool		105
+	badArgs		106
+
+A machine id (typically "Name.Client.Instance") uniquely identifies the machine's compute thread.  Compute
+threads can be freely added to the pool until the pool becomes full.  
+ 
+When stepping a machine, port specifies either the name of the input port on which arriving events [ tau, tau, ... ] 
+are latched, or the name of the output port on which departing events [ tau, tau, ... ] are latched; thus stepping the 
+machine in a stateful way (to maximize data restfulness).  An empty port will cause the machine to be 
+stepped in a stateless way with the supplied context hash.
+ 
+When programming a machine, the context hash = { ports: {name1: {...}, name2: {...}, ...}, key: value, .... } defines 
+parameters to/from a machine.  Empty code will cause the machine to monitor its current parameters.  
+*/
+
 #include <RInside.h>                    // for the embedded R via RInside
 #include <macIF.h>						// Node V8 interface
 
