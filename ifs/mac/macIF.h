@@ -72,7 +72,7 @@ typedef Napi::Value V8VALUE;
 #define NAMEARG(X) (X[0].IsString() ? V8TOSTR(X[0]) : V8NULLSTR)
 #define CODEARG(X) (X[1].IsString() ? V8TOSTR(X[1]) : V8NULLSTR)
 #define TAUARG(X)  (X[2].IsArray() ? X[2] : V8NULLARR)
-#define CTXARG(X)  (X[2].IsObject() ? X[2].ToObject()  : V8NULLOBJ)
+#define CTXARG(X)  ( (X[2].IsObject() && !X[2].IsArray()) ? X[2].ToObject()  : V8NULLOBJ)
 #define V8NULLSTR (str) ""
 #define V8NULLARR V8ARRAY::New(scope)
 #define V8NULLOBJ V8OBJECT::New(scope)
@@ -121,14 +121,14 @@ printf(TRACE "construct machine\n");
 	
 	int setup(const V8STACK& args) {   // setup used when machine is called
 		err = 0;	// signal ok
-		scope = V8ENTRY(args);
+		scope = V8ENTRY(args);	// define v8 garbage collection thread
 
 		if ( args.Length() != 3 ) return badArgs;	// text engine args list
 		if ( !args[0].IsString() ) return badArgs;  // test engine name string
 		if ( !args[1].IsString() ) return badArgs;	// test engine code/port string
 
 		port = "";
-		code = CODEARG(args);
+		code = CODEARG(args);	// retain machine code string
 
 		if ( args[2].IsNull() ) {  // init/clear/reset the machine
 			init = true;
@@ -136,7 +136,9 @@ printf(TRACE "construct machine\n");
 
 		else {	// program/execute the machine
 			init = false;
+//printf(TRACE "arg[2] isobj=%d isarr=%d\n", args[2].IsObject(), args[2].IsArray() );
 			ctx = CTXARG(args);  // define context or empty object if not an object
+			//ctx["zzz"] = 123;
 			V8ARRAY x(scope,TAUARG(args));	// define event taus or empty list if not a list
 			tau = x;
 //printf(TRACE "setup name=%s code=%s args=%d initialized=%d err=%d\n",name,code,args.Length(),(int) init, err);
@@ -146,18 +148,45 @@ printf(TRACE "construct machine\n");
 	}
 
 	// latch V8 objects to host js-script
-	void latch(V8OBJECT tar, V8OBJECT src) {
+	void latch(V8OBJECT& tar, V8OBJECT src) {
 		V8ARRAY keys = src.GetPropertyNames();
-//printf(TRACE "set keys=%d\n",keys.Length());
+//printf(TRACE "latch keys=%d\n",keys.Length());
 
 		for (int n=0,N=keys.Length(); n<N; n++) {
 			V8VALUE key = keys[n];
-			tar[key.ToString()] = src[key.ToString()];
+			string Key = key.ToString();
+//printf(TRACE "latch key=%s\n", Key.c_str() );
+			V8VALUE Src = src[Key];
+			
+			if ( Src.IsNumber() ) 
+				tar[Key] = Src.ToNumber();
+			
+			else
+			if ( Src.IsString() ) 
+				tar[Key] = Src.ToString();
+			
+			else
+			if ( Src.IsArray() ) {
+				V8ARRAY xSrc(scope,Src);
+				tar[Key] = xSrc;
+			}
+			
+			else
+			if ( Src.IsObject() ) 
+				tar[Key] = Src.ToObject();
+				
+			else
+			if ( Src.IsBoolean() )
+				tar[Key] = Src.ToBoolean();
+			
+			else
+				tar[Key] = 0;
+			
 		}
 	}
 
 	void latch(V8ARRAY tar, V8VALUE src) {
-//printf(TRACE "set array\n");
+//printf(TRACE "latch array\n");
 		if (src.IsArray()) {
 			V8ARRAY x(scope,src);
 			latch(tar,x);
@@ -169,7 +198,7 @@ printf(TRACE "construct machine\n");
 	}
 
 	void latch(V8ARRAY tar, V8ARRAY src) {
-//printf(TRACE "set tars=%d\n",src.Length());
+//printf(TRACE "latch tars=%d\n",src.Length());
 		for (int n=0,M=tar.Length(),N=src.Length(); n<N; n++) {
 			if (n<M) 
 				tar[n] = src[n];  // assume src is an array of objects
