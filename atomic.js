@@ -10,7 +10,7 @@
 @requires enum
  */
 
-var 														
+const 														
 	// globals
 	ENV = process.env,
 	
@@ -27,7 +27,7 @@ function Trace(msg,req,fwd) {
 
 const { Copy,Each,Log,isString } = require("enum");
 	
-var
+const
 	ATOM = module.exports = {
 		//require("./ifs/build/Release/engineIF"), 	
 		python: require("pythonIF"),
@@ -64,7 +64,7 @@ var
 		@private
 		Next available core
 		*/
-		nextcore: 0,
+		//nextcore: 0,
 
 		db: { // db connections for each engine tech
 			python: { //< support for python engines
@@ -154,7 +154,7 @@ end
 	
 			Trace(`CONFIGURE`);
 
-			if (opts) Copy(opts,ATOM);
+			if (opts) Copy(opts,ATOM,".");
 
 			/*
 			if (CLUSTER.isMaster) {  // experimental ipc
@@ -253,8 +253,42 @@ end
 			badRequest: new Error("engine worker handoff failed")
 		},
 			
-		context: {},  // engine contexts
+		workers: {},
 		
+		context: (sql,name,cb) => {	// provide an engine context
+			
+				/*
+				// experimental NET sockets as alternative to sockets used here
+				var sock = this.socket = NET.connect("/tmp/totem."+thread+".sock");
+				sock.on("data", function (d) {
+					Log("thread",this.thread,"rx",d);
+				}); 
+				sock.write("hello there");*/
+			const {floor,random} = Math;
+
+			if ( CLUSTER.isMaster ) {	// assign a worker
+				var worker = ATOM.workers[name];
+				
+				if ( !worker )
+					worker = ATOM.workers[name] = ATOM.cores 
+							? CLUSTER.workers[1+floor(random() * ATOM.cores)] 
+							: null;
+						
+				cb({
+					worker: worker,
+					thread: name,
+					req: null
+				});
+			}
+
+			else	// keep on this worker
+				cb({
+					worker: null,
+					thread: name,
+					req: null
+				});
+		},
+				
 		vm: {},  // js-machines
 			
 		tau: function (job) { // default source/sink event tokens when engine in stateful workflows
@@ -310,37 +344,10 @@ end
 			var
 				sql = req.sql,
 				query = req.query,
-				client = req.client.replace(/[\.@]/g,"") || "undefined",
-				table = req.table || "undefined",
-				name = query.Name || query.ID || "undefined",
+				client = req.client.replace(/[\.@]/g,"") || "noclient",
+				table = req.table || "noengine",
+				name = query.Name || query.ID || "nocase",
 				thread = `${client}.${table}.${name}`;
-
-			function CONTEXT (thread) {  // construct pre-initialized engine context for specified thread 
-			/* 
-			Construct pre-initialized (req=null) engine context 
-				
-				{thread, worker, req, engine keys} 
-				
-			for specifed thread = client.plugin.task.shard. 
-			*/
-				
-				this.worker = CLUSTER.isMaster
-					? ATOM.cores  
-							? CLUSTER.workers[ Math.floor(Math.random() * ATOM.cores) ]   // assign a worker
-							: { id: 0 }  // assign to master
-
-					: CLUSTER.worker;  // use this worker
-				
-				this.thread = thread;
-				this.req = null;  // initialize() will prime the request with an ipc request, run context, etc
-				/*
-				// experimental NET sockets as alternative to sockets used here
-				var sock = this.socket = NET.connect("/tmp/totem."+thread+".sock");
-				sock.on("data", function (d) {
-					Log("thread",this.thread,"rx",d);
-				}); 
-				sock.write("hello there");*/
-			}
 
 			function execute(engctx, cb) {  //< callback cb(ctx,stepper) with primed engine ctx and stepper
 				var 
@@ -349,7 +356,7 @@ end
 					port = body.port || "",
 					runctx = Copy( engctx.req.query, req.query); 	// save engine run content for potential handoff // Copy(req.query, engctx.req.query); 
 				
-				Trace( `RUN ${engctx.thread} ON core${engctx.worker.id}`, req, Log );
+				Trace( "EXEC "+engctx.thread, req, Log );
 				//Log("run ctx", runctx);
 				
 				cb( runctx, function step(res) {  // provide this engine stepper to the callback
@@ -386,6 +393,7 @@ end
 				});
 			}
 
+			/*
 			function handoff(engctx, cb) {  //< handoff ctx to worker or  cb(null) if handoff fails
 				var 
 					ipcreq = {  // an ipc request must not contain sql, socket, state etc
@@ -406,7 +414,7 @@ end
 				
 				else // cant handoff 
 					cb( null );
-			}
+			} */
 
 			function initialize(engctx, cb) {  //< prime, program, then execute engine with callback cb(ctx, stepper) or cb(null) if failed
 				
@@ -478,7 +486,7 @@ end
 					query = new Object(req.query),
 					sql = req.sql;
 				
-				Trace( `INIT ${engctx.thread} ON core${engctx.worker.id}`, req, Log );
+				Trace( "INIT "+engctx.thread, req, Log );
 				
 				prime(req, engctx, engctx => {	// prime engine context
 					//Log(">prime", engctx);
@@ -498,8 +506,29 @@ end
 				});
 			}	
 
-			Log(">thread", thread, CLUSTER.isMaster ? "on master" : "on worker", ATOM.context[thread] ? "has ctx":"needs ctx" );
+			ATOM.context(sql, thread, engctx => {
+				
+				Trace(thread + " FOR " + (engctx.worker?engctx.worker.id:"me"));
+				
+				if ( worker = engctx.worker )  // handoff to worker
+					worker.send({  // an ipc request must not contain sql, socket, state etc
+						table: req.table,
+						client: req.client,
+						query: req.query,
+						body: req.body,
+						action: req.action
+					}, req.resSocket() );
+				
+				else { // its all mine
+					if ( engctx.req ) // was already initialized so execute it
+						execute( engctx, cb );
+
+					else   // was not yet initialized so do so
+						initialize( engctx, cb );					
+				}
+			});
 			
+			/*
 			// Handoff this request if needed; otherwise execute this request on this worker/master.
 			
 			if ( CLUSTER.isMaster )  { // on master so handoff to worker or execute 
@@ -538,6 +567,7 @@ end
 					initialize( engctx, cb );
 				}
 			}
+			*/
 		},
 
 		save: function (sql,taus,port,engine,saves) {
