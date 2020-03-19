@@ -1,14 +1,16 @@
 // UNCLASSIFIED
 
 /**
-@class ATOMIC
+[Usage](https://totem.west.ile.nga.ic.gov/atomic)
+
+@module ATOMIC
 @requires child_processby
 @requires fs
 @requires vm 
 @requires pythonIF
 @requires opencvIF
 @requires enum
- */
+*/
 
 const 														
 	// globals
