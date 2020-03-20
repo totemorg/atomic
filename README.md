@@ -1,15 +1,13 @@
-/**
-@class ATOMIC 	
-	[SourceForge](https://sourceforge.net) 
-	[github](https://github.com/acmesds/atomic) 
-	[geointapps](https://git.geointapps.org/acmesds/atomic)
-	[gitlab](https://gitlab.west.nga.ic.gov/acmesds/atomic)
+[SourceForge](https://sourceforge.net) 
+[github](https://github.com/acmesds/atomic) 
+[geointapps](https://git.geointapps.org/acmesds/atomic)
+[gitlab](https://gitlab.west.nga.ic.gov/acmesds/atomic)
+[nsa](https://sc.appdev.proj.coe/acmesds/atomic)
 
 # ATOMIC
 
-ATOMIC provides cloud computing 
-on [python, js, cv, matlab, R, ... engines](https://totem.west.ile.nga.ic.gov/api.view) 
-via the endpoints:
+[ATOMIC](https://totem.west.ile.nga.ic.gov/api.view) provides cloud computing 
+on python, js, cv, matlab, R, ... engines via the endpoints:
 
 	POST advance/step/insert a stateful engine
 	PUT	compile/init/update a stateful engine
@@ -299,5 +297,3 @@ and [milestones](https://totem.west.ile.nga.ic.gov/milestones.view).
 ## License
 
 [MIT](LICENSE)
-
-*/

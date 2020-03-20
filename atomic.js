@@ -1,7 +1,7 @@
 // UNCLASSIFIED
 
 /**
-[Usage](https://totem.west.ile.nga.ic.gov/atomic)
+[Installation and Usage](https://sc.appdev.proj.coe/acmesds/atomic)
 
 @module ATOMIC
 @requires child_processby
