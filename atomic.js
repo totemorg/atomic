@@ -23,8 +23,8 @@ const
 	NET = require("net"),
 	VM = require("vm");
 	
-function Trace(msg,req,fwd) {  
-	"atom".trace(msg,req,fwd);
+function Trace(msg,req,res) {  
+	"atom".trace(msg,req,res);
 }
 
 const { Copy,Each,Log,isString } = require("enum");
@@ -227,7 +227,7 @@ end
 		@member ATOMIC
 		Modules to share accross all js-engines
 		*/
-		plugins: {  // js-engine plugins 
+		jslibs: {  // libs shared with js-engines 
 		},
 			
 		/**
@@ -930,7 +930,7 @@ else:	# entry logic
 					},				
 					gen = ATOM.gen,
 					vm = ATOM.vm[thread] = {
-						ctx: VM.createContext( gen.libs ? Copy( ATOM.plugins, {} ) : {} ),
+						ctx: VM.createContext( gen.libs ? Copy( ATOM.jslibs, {} ) : {} ),
 						code: ""
 					},
 					script = `
@@ -1175,7 +1175,7 @@ end` ;
 					ATOM.sqlThread( sql => {
 						//Copy( {SQL: sql, CTX: ctx, DATA: [], RES: [], PORT: port, PORTS: vm.ctx}, vm.ctx );
 
-						ATOM.plugins.ME.exec( vm.code, Copy(ctx, vm.ctx), vmctx => {
+						ATOM.jslibs.ME.exec( vm.code, Copy(ctx, vm.ctx), vmctx => {
 							//Log("vmctx", vmctx);
 							cb( vmctx );
 						});
@@ -1191,7 +1191,7 @@ end` ;
 					ATOM.sqlThread( sql => {
 						Copy( {SQL: sql, CTX: ctx, DATA: [], RES: [], PORT: port, PORTS: vm.ctx}, vm.ctx );
 						
-						ATOM.plugins.MATH.eval(vm.code,vm.ctx);
+						ATOM.jslibs.MATH.eval(vm.code,vm.ctx);
 						return null;
 					});
 				
