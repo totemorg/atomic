@@ -227,7 +227,7 @@ end
 		@member ATOMIC
 		Modules to share accross all js-engines
 		*/
-		jslibs: {  // libs shared with js-engines 
+		$libs: {  // libs shared with js-engines 
 		},
 			
 		/**
@@ -657,13 +657,13 @@ end
 			});
 		},
 
-		select: function (req,res) {	//< run a stateless engine with callback res(ctx || null) 
 		/**
-		 @method select(read)
-		 @member ATOMIC
 		 Provides engine CRUD interface: step/insert/POST, compile/update/PUT, run/select/GET, and 
 		 free/delete/DELETE.
+		 @method select(read)
+		 @member ATOMIC
 		*/
+		select: function (req,res) {	//< run a stateless engine with callback res(ctx || null) 
 			ATOM.run( req, (ctx, step) => {  // get engine stepper and its context
 				if ( ctx && step ) {
 					Trace( `run ${ctx.thread}`, req, Log);
@@ -675,13 +675,13 @@ end
 			});
 		},
 
-		update: function (req,res) {	//< compile a stateful engine with callback res(ctx || Error)  
 		/**
-		 @method update(init)
-		 @member ATOMIC		  
 		 Provides engine CRUD interface: step/insert/POST, compile/update/PUT, run/select/GET, and 
 		 free/delete/DELETE.
+		 @method update(init)
+		 @member ATOMIC		  
 		*/
+		update: function (req,res) {	//< compile a stateful engine with callback res(ctx || Error)  
 			ATOM.run( req, (ctx,step) => {
 				if ( ctx ) {
 					Trace( `init ${ctx.thread}`, req, Log);
@@ -710,11 +710,7 @@ end
 				return cb( ctx );
 		},
 
-		mixContext: function (sql, sqls, ctx, cb) {  //< serialize import/export (ctx mixin/mixout) using sqls queries with callback cb(ctx) 
 		/**
-		@method mixContext
-		@member ATOMIC
-
 		Callback engine cb(ctx) with its state ctx primed with state from its ctx.Entry, then export its 
 		ctx state specified by its ctx.Exit.
 		The ctx.sqls = {var:"query...", ...} || "query..." enumerates the engine's ctx.Entry (to import 
@@ -722,7 +718,10 @@ end
 		state from its ctx after the engine is run).  If an sqls entry/exit exists, this will cause the 
 		ctx.req = [var, ...] list to be built to synchronously import/export the state into/from the 
 		engine's context.
-		 * */
+		@method mixContext
+		@member ATOMIC
+		*/
+		mixContext: function (sql, sqls, ctx, cb) {  //< serialize import/export (ctx mixin/mixout) using sqls queries with callback cb(ctx) 
 			var 
 				importing = sqls == ctx.Entry,
 				exporting = sqls == ctx.Exit;
@@ -930,7 +929,7 @@ else:	# entry logic
 					},				
 					gen = ATOM.gen,
 					vm = ATOM.vm[thread] = {
-						ctx: VM.createContext( gen.libs ? Copy( ATOM.jslibs, {} ) : {} ),
+						ctx: VM.createContext( gen.libs ? Copy( ATOM.$libs, {} ) : {} ),
 						code: ""
 					},
 					script = `
@@ -1175,7 +1174,7 @@ end` ;
 					ATOM.sqlThread( sql => {
 						//Copy( {SQL: sql, CTX: ctx, DATA: [], RES: [], PORT: port, PORTS: vm.ctx}, vm.ctx );
 
-						ATOM.jslibs.ME.exec( vm.code, Copy(ctx, vm.ctx), vmctx => {
+						ATOM.$libs.ME.exec( vm.code, Copy(ctx, vm.ctx), vmctx => {
 							//Log("vmctx", vmctx);
 							cb( vmctx );
 						});
@@ -1191,7 +1190,7 @@ end` ;
 					ATOM.sqlThread( sql => {
 						Copy( {SQL: sql, CTX: ctx, DATA: [], RES: [], PORT: port, PORTS: vm.ctx}, vm.ctx );
 						
-						ATOM.jslibs.MATH.eval(vm.code,vm.ctx);
+						ATOM.$libs.MATH.eval(vm.code,vm.ctx);
 						return null;
 					});
 				
