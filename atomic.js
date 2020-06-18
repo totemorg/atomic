@@ -187,40 +187,39 @@ end
 				}); 
 			} */
 			
-			if (thread = ATOM.sqlThread)
-				thread( sql => { // compile engines defined in engines DB
+			ATOM.thread( sql => { // compile engines defined in engines DB
 
-					ATOM.matlab.flush(sql, "init_queue");
-					ATOM.matlab.flush(sql, "step_queue");
+				ATOM.matlab.flush(sql, "init_queue");
+				ATOM.matlab.flush(sql, "step_queue");
 
-					// Using https generates a TypeError("Listener must be a function") at runtime.
+				// Using https generates a TypeError("Listener must be a function") at runtime.
 
-					process.on("message", function (req,socket) {  // cant use CLUSTER.worker.process.on
+				process.on("message", function (req,socket) {  // cant use CLUSTER.worker.process.on
 
-						if (req.action) { 		// process only our messages (ignores sockets, etc)
-							if (CLUSTER.isWorker) {
-								Trace( `IPC grab ${CLUSTER.worker.id}/req.action`, req, Log);
+					if (req.action) { 		// process only our messages (ignores sockets, etc)
+						if (CLUSTER.isWorker) {
+							Trace( `IPC grab ${CLUSTER.worker.id}/req.action`, req, Log);
 //Log(req);	
-								if ( route = ATOM[req.action] ) 
-									ATOM.sqlThread( sql => {
-										req.sql = sql;  
-										//delete req.socket;
-										route( req, tau => {
-											Trace( `IPC ${req.table} ON ${CLUSTER.worker.id}` );
-											socket.end( JSON.stringify(tau) );
-										});
+							if ( route = ATOM[req.action] ) 
+								ATOM.sqlThread( sql => {
+									req.sql = sql;  
+									//delete req.socket;
+									route( req, tau => {
+										Trace( `IPC ${req.table} ON ${CLUSTER.worker.id}` );
+										socket.end( JSON.stringify(tau) );
 									});
+								});
 
-								else
-									socket.end( ATOM.errors.badRequest+"" );  
-							}
-							
-							else {
-							}
-								
-						}									
-					});
+							else
+								socket.end( ATOM.errors.badRequest+"" );  
+						}
+
+						else {
+						}
+
+					}									
 				});
+			});
 		},
 
 		flex: null,
