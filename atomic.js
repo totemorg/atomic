@@ -30,7 +30,10 @@ function Trace(msg,req,res) {
 const { Copy,Each,Log,isString } = require("enum");
 	
 const
-	ATOM = module.exports = {
+	{ vmStore, $libs } = ATOM = module.exports = {
+		pipeEngine: (ctx,cb) => {
+		},
+		
 		//require("./ifs/build/Release/engineIF"), 	
 		python: require("pythonIF"),
 		opencv: require("opencvIF"),
@@ -225,7 +228,7 @@ end
 		/**
 		@cfg {Object}
 		@member ATOMIC
-		Modules to share accross all js-engines
+		Modules to share accross all I-engines
 		*/
 		$libs: {  // libs shared with js-engines 
 		},
@@ -291,9 +294,9 @@ end
 				});
 		},
 				
-		vm: {},  // js-machines
+		vmStore: {},  // js-machines
 			
-		tau: function (job) { // default source/sink event tokens when engine in stateful workflows
+		tau: job => { // default source/sink event tokens when engine in stateful workflows
 			return new Object({
 				job: job || "", // Current job thread N.N... 
 				work: 0, 		// Anticipated/delivered data volume (dims, bits, etc)
@@ -306,7 +309,6 @@ end
 			 });
 		},
 	
-		run: function (req, cb) {  //< run engine on a worker with callback cb(context, stepper) or cb(null) if error
 		/**
 		@method run
 		@member ATOMIC
@@ -343,6 +345,7 @@ end
 		This method will callback cb(core) with the requested engine core; null if the core could not
 		 be located or allocated.
 		*/
+		run: (req, cb) => {  //< run engine on a worker with callback cb(context, stepper) or cb(null) if error
 			var
 				sql = req.sql,
 				query = req.query,
@@ -572,13 +575,12 @@ end
 			*/
 		},
 
-		save: function (sql,taus,port,engine,saves) {
 		/**
 		@method save
 		@member ATOMIC
 		Save tau job files.
-		*/
-			
+		*/			
+		save: (sql,taus,port,engine,saves) => {
 			var t = new Date();
 
 			Each(taus, function (n,tau) {
@@ -619,13 +621,13 @@ end
 			});
 		},
 
-		insert: function (req,res) {	//< step a stateful engine with callback res(ctx || Error) 
 		/**
 		 @method insert(step)
 		 @member ATOMIC
 		 Provides engine CRUD interface: step/insert/POST, compile/update/PUT, run/select/GET, and 
 		 free/delete/DELETE.
 		*/
+		insert: (req,res) => {	//< step a stateful engine with callback res(ctx || Error) 
 			ATOM.run(req, (ctx,step) => {
 				if ( ctx && step ) {
 					Trace( `step ${ctx.thread}`, req, Log);
@@ -638,13 +640,13 @@ end
 			});
 		},
 
-		delete: function (req,res) {	//< free a stateful engine with callback res(ctx || Error) 
 		/**
 		 @method delete(kill)
 		 @member ATOMIC
 		 Provides engine CRUD interface: step/insert/POST, compile/update/PUT, run/select/GET, and 
 		 free/delete/DELETE.
 		*/
+		delete: (req,res) => {	//< free a stateful engine with callback res(ctx || Error) 
 			ATOM.run(req, (ctx,step) => {
 				if (ctx) {
 					Trace( `kill ${ctx.thread}`, req, Log);
@@ -663,7 +665,7 @@ end
 		 @method select(read)
 		 @member ATOMIC
 		*/
-		select: function (req,res) {	//< run a stateless engine with callback res(ctx || null) 
+		select: (req,res) => {	//< run a stateless engine with callback res(ctx || null) 
 			ATOM.run( req, (ctx, step) => {  // get engine stepper and its context
 				if ( ctx && step ) {
 					Trace( `run ${ctx.thread}`, req, Log);
@@ -681,7 +683,7 @@ end
 		 @method update(init)
 		 @member ATOMIC		  
 		*/
-		update: function (req,res) {	//< compile a stateful engine with callback res(ctx || Error)  
+		update: (req,res) => {	//< compile a stateful engine with callback res(ctx || Error)  
 			ATOM.run( req, (ctx,step) => {
 				if ( ctx ) {
 					Trace( `init ${ctx.thread}`, req, Log);
@@ -693,7 +695,7 @@ end
 			});
 		},
 
-		call: function (code, ctx, cb) { 
+		call: (code, ctx, cb) => { 
 			if (code) 
 				try {
 					VM.runInContext( code, VM.createContext({ 
@@ -721,7 +723,7 @@ end
 		@method mixContext
 		@member ATOMIC
 		*/
-		mixContext: function (sql, sqls, ctx, cb) {  //< serialize import/export (ctx mixin/mixout) using sqls queries with callback cb(ctx) 
+		mixContext: (sql, sqls, ctx, cb) => {  //< serialize import/export (ctx mixin/mixout) using sqls queries with callback cb(ctx) 
 			var 
 				importing = sqls == ctx.Entry,
 				exporting = sqls == ctx.Exit;
@@ -826,7 +828,11 @@ end
 					return "{" + ports.join(",") + "}";
 				}
 					
+				const { gen, db } = ATOM;
+				
 				var 
+					[client,host,usecase] = thread.split("."),					
+					/*
 					Thread = thread.split("."),
 					Thread = {
 						client: Thread[0],
@@ -834,8 +840,8 @@ end
 						case: Thread[2]
 					},
 					script = "", 
-					gen = ATOM.gen,
-					db = ATOM.db.python,
+					gen = ATOM.gen, */
+				
 					ports = portsDict( ctx.ports || {} ),
 					script = `
 # define ports and locals
@@ -863,7 +869,7 @@ else:	# entry logic
 			# import caffe as CAFFE		#caffe interface
 			# import flow as FLOW		# record buffering and loading logic
 			# setup sql connectors
-			SQL = SQLC.connect(user='${db.user}', password='${db.pass}', database='${db.name}')
+			SQL = SQLC.connect(user='${db.python.user}', password='${db.python.pass}', database='${db.python.name}')
 			# default exit codes and startup
 			ERR = 0
 			INIT = 0
@@ -875,7 +881,7 @@ else:	# entry logic
 			SQL0 = SQL.cursor(buffered=True)
 			SQL1 = SQL.cursor(buffered=True) 
 			# call engine
-			${Thread.plugin}(CTX)
+			${host}(CTX)
 			#exit
 			SQL.commit()
 			SQL0.close()
@@ -891,14 +897,18 @@ else:	# entry logic
 			},
 			
 			cv: function cvInit(thread,code,ctx,cb)  {
+				const { gen } = ATOM;
+				
 				var 
+					[client,host,usecase] = thread.split("."),	
+					/*
 					Thread = thread.split("."),
 					Thread = {
 						case: Thread.pop(),
 						plugin: Thread.pop(),
 						client: Thread.pop()
 					},				
-					gen = ATOM.gen,
+					gen = ATOM.gen,  */
 					script = "",
 					logic = {
 						flush: "",						
@@ -921,54 +931,35 @@ else:	# entry logic
 			
 			js: function jsInit(thread,code,ctx,cb)  {
 				var 
-					Thread = thread.split("."),
-					Thread = {
-						client: Thread[0],
-						plugin: Thread[1],
-						case: Thread[2]
-					},				
-					gen = ATOM.gen,
-					vm = ATOM.vm[thread] = {
-						ctx: VM.createContext( gen.libs ? Copy( ATOM.$libs, {} ) : {} ),
-						code: ""
-					},
-					script = `
-// trace engine context
-//LOG("js>ctx", CTX);
-
-// engine logic
+					[client,host,usecase] = thread.split("."),
+					vm = vmStore[thread] = {
+						ctx: VM.createContext( Copy( $libs, {} ) ),
+						code: `
 ${code}
+${host}($ctx, $res);
+` 
+					};
 
-if ( CTX )
-	if ( port = PORTS[PORT] )   // stateful processing
-		ERR = port(CTX.tau, CTX.ports[PORT]);
-
-	else  // stateless processing
-		ERR = ${Thread.plugin}(CTX, RES);
-` ;
-
-				if (gen.trace) Log(script);
-				vm.code = script;
-				
 				cb( null, ctx );
 			},
 			
 			m: function mInit(thread,code,ctx,cb) {
 				
+				const { matlab, gen } = ATOM;
+				
 				var 
-					Thread = thread.split("."),
+					[client,host,usecase] = thread.split("."),				
+					/*Thread = thread.split("."),
 					Thread = {
 						client: Thread[0],
 						plugin: Thread[1],
 						case: Thread[2]
-					},
+					}, */
 					func = thread.replace(/\./g,"_"),
-					matlab = ATOM.matlab,
 					agent = matlab.path.agent,
 					db = ATOM.db.matlab,
 					usedb = db ? 1 : 0,
 					path = matlab.path.save + func + ".m",
-					gen = ATOM.gen,
 					/*save: `
 	function send(res)
 		fid = fopen('${func}.out', 'wt');
@@ -1018,8 +1009,8 @@ function ws = ${func}( )
 		res = cb(ctx);
 
 		if ${usedb}
-			disp({'${Thread.plugin}', 'where ID=${Thread.case}', res});
-			%close(exec( ws.db, "UPDATE app.${Thread.plugin} SET Save='" +  jsonencode(res) + "' WHERE ID=${Thread.case}" ));
+			disp({'${host}', 'where ID=${usecase}', res});
+			%close(exec( ws.db, "UPDATE app.${host} SET Save='" +  jsonencode(res) + "' WHERE ID=${usecase}" ));
 			q = "INSERT INTO openv.agents SET Script='" +  jsonencode(res) + "', queue='${thread}' " ;
 			disp(q);
 			h = exec( ws.db, q );
@@ -1035,7 +1026,7 @@ function ws = ${func}( )
 	end 
 						
 	function step(ctx)
-		load(ctx, @${Thread.plugin});
+		load(ctx, @${host});
 
 		% engine logic and ports
 		${code}	
@@ -1043,6 +1034,7 @@ function ws = ${func}( )
 end` ;
 
 				if (gen.trace) Log(script);
+				
 				FS.writeFile( path, script, "utf8" );
 
 				matlab.queue( "init_queue", `ws_${func} = ${func}; ` );
@@ -1052,7 +1044,7 @@ end` ;
 
 			me: function meInit(thread,code,ctx,cb) {
 
-				ATOM.vm[thread] = {
+				vmStore[thread] = {
 					ctx: {
 					},
 					code: code
@@ -1108,18 +1100,16 @@ end` ;
 			js: function jsStep(thread,port,ctx,cb) {
 				//Trace("step "+thread);
 
-				if ( vm = ATOM.vm[thread] ) {
-					ATOM.sqlThread( sql => {
-						Copy( {RES: cb, SQL: sql, CTX: ctx, PORT: port, PORTS: vm.ctx}, vm.ctx );
-						
-						//Log(">>>>run", vm.code);
-						try {
-							VM.runInContext(vm.code,vm.ctx);
-						}
-						catch (err) {
-							Log(thread,err);
-						}
-					});
+				if ( vm = vmStore[thread] ) {
+					try {
+						VM.runInContext(vm.code, Copy({
+							$res: cb, 
+							$ctx: ctx
+						}, vm.ctx ) );
+					}
+					catch (err) {
+						Log(thread,err);
+					}
 					return null;
 				}
 				
@@ -1170,11 +1160,11 @@ end` ;
 			},
 			
 			me: function meStep(thread,port,ctx,cb) {
-				if ( vm = ATOM.vm[thread] ) {
+				if ( vm = vmStore[thread] ) {
 					ATOM.sqlThread( sql => {
 						//Copy( {SQL: sql, CTX: ctx, DATA: [], RES: [], PORT: port, PORTS: vm.ctx}, vm.ctx );
 
-						ATOM.$libs.ME.exec( vm.code, Copy(ctx, vm.ctx), vmctx => {
+						$libs.ME.exec( vm.code, Copy(ctx, vm.ctx), vmctx => {
 							//Log("vmctx", vmctx);
 							cb( vmctx );
 						});
@@ -1186,11 +1176,11 @@ end` ;
 					return ATOM.errors.lostContext;	
 				
 				/*
-				if ( vm = ATOM.vm[thread] )
+				if ( vm = vmStore[thread] )
 					ATOM.sqlThread( sql => {
 						Copy( {SQL: sql, CTX: ctx, DATA: [], RES: [], PORT: port, PORTS: vm.ctx}, vm.ctx );
 						
-						ATOM.$libs.MATH.eval(vm.code,vm.ctx);
+						$libs.MATH.eval(vm.code,vm.ctx);
 						return null;
 					});
 				
