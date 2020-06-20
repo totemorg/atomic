@@ -1,9 +1,7 @@
 // UNCLASSIFIED
 
 /**
-[Installation and Usage](https://sc.appdev.proj.coe/acmesds/atomic)
-
-@module ATOMIC
+@module atomic
 @requires child_processby
 @requires fs
 @requires vm 
@@ -38,8 +36,8 @@ const
 		python: require("pythonIF"),
 		opencv: require("opencvIF"),
 		
-		feeder: (req,res) => {},
-		saver: (sql,ctx) => {},
+		ipcFeed: (req,res) => { throw new Error( "atomic ipcFeed not configured" ); },
+		ipcSave: (sql,ctx) => { throw new Error( "atomic ipcSave not configured" ); },
 			
 		/**
 		@cfg {Object}
@@ -60,11 +58,9 @@ const
 		@method sqlThread
 		Start a sql thread
 		*/
-		sqlThread: () => { throw new Error("atomic unconfigured sqlThread method"); },  //< sql threader
+		sqlThread: () => { throw new Error("atomic sqlThread not configured"); },  //< sql threader
 		
 		/**
-		@cfg {Number}
-		@member ATOMIC
 		Number of worker cores (aka threads) to provide in the cluster.  0 cores provides only the master.
 		*/
 		macs: {
@@ -165,9 +161,6 @@ end
 		},
 			
 		/**
-		@cfg {Object}
-		@method config
-		@member ATOMIC
 		Configure are start the engine interface, estblish worker core connections
 		*/
 		config: opts => {  //< configure with options
@@ -219,7 +212,7 @@ end
 										worker: worker.id,
 										node: opts.node,
 										type: type,
-										free: true
+										thread: null
 									} );
 							});
 						}
@@ -233,7 +226,7 @@ end
 				process.on("message", (req,socket) => {  // cant use CLUSTER.worker.process.on
 					const 
 						{ action, table, query } = req,
-						{ feeder, saver } = ATOM;
+						{ ipcFeed, ipcSave } = ATOM;
 					
 					if ( action ) 		// process only our messages (ignores sockets, etc)
 						if ( isWorker ) {		// process only if a worker bee
@@ -242,12 +235,12 @@ end
 								
 								ATOM.sqlThread( sql => {
 									req.sql = sql;
-									query.Feed = cb => feeder(req, cb);
+									query.Feed = cb => ipcFeed(req, cb);
 									query.Trace = msg => Trace( msg, req );
 									
 									route( req, ctx => {
 										if ( ctx ) 
-											saver( req, msg => socket.end(msg || "no Save") );
+											ipcSave( req, msg => socket.end(msg) );
 										
 										else
 											socket.end( "lost context" );
@@ -297,12 +290,15 @@ end
 			badRequest: new Error("engine worker handoff failed")
 		},
 			
-		workers: [],
-		contexts: {		// stash for worker threads
+		workers: [		// stash for engine workers
+		],
+			
+		contexts: {		// stash for engine threads
 		},
 		
 		vmStore: {},  // js-machines
-			
+		
+		// siulation tokens
 		tau: job => { // default source/sink event tokens when engine in stateful workflows
 			return new Object({
 				job: job || "", // Current job thread N.N... 
@@ -317,12 +313,7 @@ end
 		},
 	
 		/**
-		@method run
-		@member ATOMIC
-		
-		The request req = { table, client, query, body, action, state } 
-
-		If the engine's req.state is not provided, then the engine is programmed; otherwise it is stepped.
+		Run an engine.
 		
 		Allocate the supplied callback cb(core) with the engine core that is/was allocated to a Client.Engine.Type.Instance
 		thread as defined by this request (in the req.body and req.log).  If a workflow Instance is
@@ -353,24 +344,21 @@ end
 			const { sql, query, client, table, body, action, resSocket, type, profile, url } = req;
 			
 			var
-				aclient = client.replace(/[\.@]/g,"") || "noclient",
-				atable = table || "noengine",
-				aname = query.Name || query.ID || "nocase",
-				thread = `${aclient}.${atable}.${aname}`;
+				thread = [client,table,query.Name].join(":");
 
 			function allocate (cb) {	// provide an engine context
 
 				function program (engctx, cb) {  //< program engine with callback cb(engctx || null) 
 					var runctx = engctx.req.query;
 
-					Log(">program",thread);
+					//Log(">program",thread);
 					if ( initEngine = engctx.init )
 						mixContext(sql, runctx.Entry, runctx, runctx => {  // mixin sql vars into engine query
 							//Log(">mix", runctx);
 
 							if (runctx) 
 								initEngine(engctx.thread, engctx.code || "", runctx, err => {
-									Log(">init", thread);
+									//Log(">init", thread);
 									cb( err ? null : engctx );
 								});
 
@@ -384,7 +372,7 @@ end
 		
 				function prime (cb) {  //< callback cb(engctx || null) with engine context or null if failed
 
-					Log(">prime", thread);
+					//Log(">prime", thread);
 					
 					sql.query(	// get the requested engine
 						"SELECT * FROM app.engines WHERE Enabled AND Name=? LIMIT 1", 
@@ -421,9 +409,6 @@ end
 					Log("thread",this.thread,"rx",d);
 				}); 
 				sock.write("hello there");*/
-				/*
-				const {floor,random} = Math;
-				const {cores} = ATOM; */
 				
 				if ( isMaster && ATOM.cores ) // allocate a worker
 					sql.query(
@@ -434,15 +419,12 @@ end
 							
 						if ( eng = engs[0] ) 
 							sql.query(
-								"SELECT worker,ID FROM openv.workers WHERE node=? AND type=? AND free LIMIT 1", 
+								"SELECT worker,ID FROM openv.workers WHERE node=? AND type=? AND thread IS NULL LIMIT 1", 
 								[ATOM.node, eng.Type], (err,wrks) => {
-									
-									//Log( ">wrks", wrks, workers.length );
 									
 									if ( wkr = wrks[0] )
 										if ( worker = workers[ wkr.worker ] ) {
-											sql.query("UPDATE openv.workers SET free=0 WHERE ?", {ID:wkr.ID}, err => Log(err) );
-											//Log( ">worker", worker.id);
+											sql.query("UPDATE openv.workers SET thread=? WHERE ID=?", [thread,wkr.ID] );
 											cb( worker );
 										}
 									
@@ -457,18 +439,6 @@ end
 							cb( null );
 					});
 						
-					/*
-						var 
-							worker = workers[thread] || ( workers[thread] = cores 
-									? CLUSTER.workers[1+floor(random() * cores)] 
-									: null );
-
-						cb({
-							worker: worker,
-							thread: thread,
-							req: null
-						}); */
-
 				else	// on this worker
 				if ( engctx = contexts[thread] ) 	// already initialized
 					cb( engctx );
@@ -488,14 +458,13 @@ end
 					body = engctx.req.body,
 					runctx = Copy( engctx.req.query, req.query); 	// save engine run content for potential handoff // Copy(req.query, engctx.req.query); 
 				
-				//Trace( "EXEC "+engctx.thread, req );
-				//Log("run ctx", runctx);
+				//Log("exec ctx", runctx);
 				
 				cb( runctx, function step(res) {  // provide this engine stepper to the callback
 
 					//Log( "step eng", engctx.step );
 					if ( stepEngine = engctx.step ) {
-						Log(">exec", engctx.thread);
+						//Log(">exec", engctx.thread);
 						var err = call( engctx.wrap, runctx, runctx => {  // allow a js-wrapper to modify engine context
 							
 							//Log(">call", runctx);
@@ -507,8 +476,10 @@ end
 										if ( err = stepEngine(engctx.thread, runctx, res) ) 
 											return errors[ err ] || errors.badError;
 										
-										//mixContext( sql, runctx.Exit, runctx );	// mixout sql keys from engine ctx
-										return null;
+										else
+											return 
+												//mixContext( sql, runctx.Exit, runctx );	// mixout sql keys from engine ctx
+												null;
 									}
 
 									catch (err) {
@@ -519,7 +490,7 @@ end
 							else
 								return errors.badEngine;
 						});
-						Log(">end", engctx.thread);
+						//Log(">end", engctx.thread);
 						return err;
 					}
 					
@@ -529,7 +500,7 @@ end
 				});
 			}
 
-			Log(">alloc", thread);
+			//Log(">alloc", thread);
 			
 			allocate( (worker,engctx) => {
 
@@ -555,9 +526,7 @@ end
 		},
 
 		/**
-		@method save
-		@member ATOMIC
-		Save tau job files.
+		Save context tau tokens into job files.
 		*/			
 		save: (sql,taus,engine,saves) => {
 			var t = new Date();
@@ -601,10 +570,10 @@ end
 		},
 
 		/**
-		 @method insert(step)
-		 @member ATOMIC
-		 Provides engine CRUD interface: step/insert/POST, compile/update/PUT, run/select/GET, and 
-		 free/delete/DELETE.
+		Provides engine CRUD interface: step/insert/POST, compile/update/PUT, 
+		run/select/GET, and free/delete/DELETE.
+		@param {Object} req Totem request
+		@param {Function} res Totem response
 		*/
 		insert: (req,res) => {	//< step a stateful engine with callback res(ctx || Error) 
 			run(req, (ctx,step) => {
@@ -619,10 +588,10 @@ end
 		},
 
 		/**
-		 @method delete(kill)
-		 @member ATOMIC
-		 Provides engine CRUD interface: step/insert/POST, compile/update/PUT, run/select/GET, and 
-		 free/delete/DELETE.
+		Provides engine CRUD interface: step/insert/POST, compile/update/PUT, 
+		run/select/GET, and free/delete/DELETE.
+		@param {Object} req Totem request
+		@param {Function} res Totem response
 		*/
 		delete: (req,res) => {	//< free a stateful engine with callback res(ctx || Error) 
 			run(req, (ctx,step) => {
@@ -631,10 +600,10 @@ end
 		},
 
 		/**
-		 Provides engine CRUD interface: step/insert/POST, compile/update/PUT, run/select/GET, and 
-		 free/delete/DELETE.
-		 @method select(read)
-		 @member ATOMIC
+		Provides engine CRUD interface: step/insert/POST, compile/update/PUT, 
+		run/select/GET, and free/delete/DELETE.
+		@param {Object} req Totem request
+		@param {Function} res Totem response
 		*/
 		select: (req,res) => {	//< run a stateless engine with callback res(ctx || null) 
 			run( req, (ctx, step) => {  // get engine stepper and its context
@@ -647,10 +616,10 @@ end
 		},
 
 		/**
-		 Provides engine CRUD interface: step/insert/POST, compile/update/PUT, run/select/GET, and 
-		 free/delete/DELETE.
-		 @method update(init)
-		 @member ATOMIC		  
+		Provides engine CRUD interface: step/insert/POST, compile/update/PUT, 
+		run/select/GET, and free/delete/DELETE.
+		@param {Object} req Totem request
+		@param {Function} res Totem response
 		*/
 		update: (req,res) => {	//< compile a stateful engine with callback res(ctx || Error)  
 			run( req, (ctx,step) => {
@@ -796,18 +765,7 @@ end
 				const { gen, db } = ATOM;
 				
 				var 
-					[client,host,usecase] = thread.split("."),					
-					/*
-					Thread = thread.split("."),
-					Thread = {
-						client: Thread[0],
-						plugin: Thread[1],
-						case: Thread[2]
-					},
-					script = "", 
-					gen = ATOM.gen, */
-				
-					//ports = portsDict( ctx.ports || {} ),
+					[client,host,usecase] = thread.split(":"),					
 					script = `
 # define ports and locals
 LOCALS = locals()			# engine OS context
@@ -853,26 +811,6 @@ else:
 			},
 			
 			cv: function cvInit(thread,code,ctx,cb)  {
-				/*
-				const { gen } = ATOM;
-				
-				var 
-					[client,host,usecase] = thread.split(".");
-					Thread = thread.split("."),
-					Thread = {
-						case: Thread.pop(),
-						plugin: Thread.pop(),
-						client: Thread.pop()
-					},				
-					gen = ATOM.gen,
-					script = "",
-					logic = {
-						flush: "",						
-						save: "",
-						load: "",
-						code: code,
-						startup: ""
-					};  */
 
 				if ( ctx.frame && ctx.detector )
 					if ( err = opencv(thread,code,ctx) )
@@ -887,7 +825,7 @@ else:
 			
 			js: function jsInit(thread,code,ctx,cb)  {
 				var 
-					[client,host,usecase] = thread.split("."),
+					[client,host,usecase] = thread.split(":"),
 					vm = vmStore[thread] = {
 						ctx: VM.createContext( Copy( $libs, {} ) ),
 						code: `
@@ -904,13 +842,7 @@ ${host}($ctx, $res);
 				const { matlab, gen } = ATOM;
 				
 				var 
-					[client,host,usecase] = thread.split("."),				
-					/*Thread = thread.split("."),
-					Thread = {
-						client: Thread[0],
-						plugin: Thread[1],
-						case: Thread[2]
-					}, */
+					[client,host,usecase] = thread.split(":"),				
 					func = thread.replace(/\./g,"_"),
 					agent = matlab.path.agent,
 					db = ATOM.db.matlab,
@@ -998,6 +930,9 @@ end` ;
 				cb(null,ctx);
 			},
 
+			r: function meInit(thread,code,ctx,cb) {
+			},
+			
 			me: function meInit(thread,code,ctx,cb) {
 
 				vmStore[thread] = {
@@ -1113,6 +1048,9 @@ end` ;
 				matlab.queue( "step_queue", `ws_${func}.step( ${arglist(ctx)} );` );
 				
 				return null;
+			},
+			
+			r: function rStep(thread,ctx,cb) {
 			},
 			
 			me: function meStep(thread,ctx,cb) {
