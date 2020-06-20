@@ -40,7 +40,7 @@ parameters to/from a machine.  Empty code will cause the machine to monitor its 
 #include <stdlib.h>
 
 // Machine specs
-#define MAXMACHINES 10
+#define MAXMACHINES 4
 #define TRACE "py>"
 #define LOCAL(X) PyDict_GetItemString(pLocals,X)
 

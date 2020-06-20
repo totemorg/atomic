@@ -1,10 +1,10 @@
-cmd_Release/obj.target/pythonIF/pythonIF.o := g++ '-DNODE_GYP_MODULE_NAME=pythonIF' '-DUSING_UV_SHARED=1' '-DUSING_V8_SHARED=1' '-DV8_DEPRECATION_WARNINGS=1' '-DV8_DEPRECATION_WARNINGS' '-DV8_IMMINENT_DEPRECATION_WARNINGS' '-D_LARGEFILE_SOURCE' '-D_FILE_OFFSET_BITS=64' '-DOPENSSL_NO_PINSHARED' '-DOPENSSL_THREADS' '-DNAPI_DISABLE_CPP_EXCEPTIONS' '-DBUILDING_NODE_EXTENSION' -I/home/admin/.cache/node-gyp/12.14.0/include/node -I/home/admin/.cache/node-gyp/12.14.0/src -I/home/admin/.cache/node-gyp/12.14.0/deps/openssl/config -I/home/admin/.cache/node-gyp/12.14.0/deps/openssl/openssl/include -I/home/admin/.cache/node-gyp/12.14.0/deps/uv/include -I/home/admin/.cache/node-gyp/12.14.0/deps/zlib -I/home/admin/.cache/node-gyp/12.14.0/deps/v8/include -I../. -I../../mac -I/local/anaconda/include/python2.7 -I/local/service/atomic/ifs/python/node_modules/node-addon-api  -fPIC -pthread -Wall -Wextra -Wno-unused-parameter -m64 -O3 -fno-omit-frame-pointer -fno-rtti -std=gnu++1y -MMD -MF ./Release/.deps/Release/obj.target/pythonIF/pythonIF.o.d.raw   -c -o Release/obj.target/pythonIF/pythonIF.o ../pythonIF.cpp
+cmd_Release/obj.target/pythonIF/pythonIF.o := g++ '-DNODE_GYP_MODULE_NAME=pythonIF' '-DUSING_UV_SHARED=1' '-DUSING_V8_SHARED=1' '-DV8_DEPRECATION_WARNINGS=1' '-DV8_DEPRECATION_WARNINGS' '-DV8_IMMINENT_DEPRECATION_WARNINGS' '-D_LARGEFILE_SOURCE' '-D_FILE_OFFSET_BITS=64' '-DOPENSSL_NO_PINSHARED' '-DOPENSSL_THREADS' '-DNAPI_DISABLE_CPP_EXCEPTIONS' '-DBUILDING_NODE_EXTENSION' -I/local/nodejs/include/node -I/local/nodejs/src -I/local/nodejs/deps/openssl/config -I/local/nodejs/deps/openssl/openssl/include -I/local/nodejs/deps/uv/include -I/local/nodejs/deps/zlib -I/local/nodejs/deps/v8/include -I../. -I../../mac -I/local/anaconda/include/python2.7 -I/local/service/atomic/ifs/python/node_modules/node-addon-api  -fPIC -pthread -Wall -Wextra -Wno-unused-parameter -m64 -O3 -fno-omit-frame-pointer -fno-rtti -std=gnu++1y -MMD -MF ./Release/.deps/Release/obj.target/pythonIF/pythonIF.o.d.raw   -c -o Release/obj.target/pythonIF/pythonIF.o ../pythonIF.cpp
 Release/obj.target/pythonIF/pythonIF.o: ../pythonIF.cpp ../../mac/macIF.h \
  /local/service/atomic/ifs/python/node_modules/node-addon-api/napi.h \
- /home/admin/.cache/node-gyp/12.14.0/include/node/node_api.h \
- /home/admin/.cache/node-gyp/12.14.0/include/node/js_native_api.h \
- /home/admin/.cache/node-gyp/12.14.0/include/node/js_native_api_types.h \
- /home/admin/.cache/node-gyp/12.14.0/include/node/node_api_types.h \
+ /local/nodejs/include/node/node_api.h \
+ /local/nodejs/include/node/js_native_api.h \
+ /local/nodejs/include/node/js_native_api_types.h \
+ /local/nodejs/include/node/node_api_types.h \
  /local/service/atomic/ifs/python/node_modules/node-addon-api/napi-inl.h \
  /local/service/atomic/ifs/python/node_modules/node-addon-api/napi-inl.deprecated.h \
  /local/anaconda/include/python2.7/Python.h \
@@ -71,10 +71,10 @@ Release/obj.target/pythonIF/pythonIF.o: ../pythonIF.cpp ../../mac/macIF.h \
 ../pythonIF.cpp:
 ../../mac/macIF.h:
 /local/service/atomic/ifs/python/node_modules/node-addon-api/napi.h:
-/home/admin/.cache/node-gyp/12.14.0/include/node/node_api.h:
-/home/admin/.cache/node-gyp/12.14.0/include/node/js_native_api.h:
-/home/admin/.cache/node-gyp/12.14.0/include/node/js_native_api_types.h:
-/home/admin/.cache/node-gyp/12.14.0/include/node/node_api_types.h:
+/local/nodejs/include/node/node_api.h:
+/local/nodejs/include/node/js_native_api.h:
+/local/nodejs/include/node/js_native_api_types.h:
+/local/nodejs/include/node/node_api_types.h:
 /local/service/atomic/ifs/python/node_modules/node-addon-api/napi-inl.h:
 /local/service/atomic/ifs/python/node_modules/node-addon-api/napi-inl.deprecated.h:
 /local/anaconda/include/python2.7/Python.h:

@@ -97,7 +97,7 @@ typedef Napi::Value V8VALUE;
 class MACHINE {
 	public:
 		MACHINE(void) {
-printf(TRACE "construct machine\n");
+//printf(TRACE "create machine\n" );
 			steps = depth = drops = err = 0; 
 			name = "";
 			code = "";		// NULL signals machine available

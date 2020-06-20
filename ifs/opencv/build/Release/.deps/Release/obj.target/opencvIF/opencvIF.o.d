@@ -1,4 +1,4 @@
-cmd_Release/obj.target/opencvIF/opencvIF.o := g++ '-DNODE_GYP_MODULE_NAME=opencvIF' '-DUSING_UV_SHARED=1' '-DUSING_V8_SHARED=1' '-DV8_DEPRECATION_WARNINGS=1' '-DV8_DEPRECATION_WARNINGS' '-DV8_IMMINENT_DEPRECATION_WARNINGS' '-D_LARGEFILE_SOURCE' '-D_FILE_OFFSET_BITS=64' '-DOPENSSL_NO_PINSHARED' '-DOPENSSL_THREADS' '-DNAPI_DISABLE_CPP_EXCEPTIONS' '-DBUILDING_NODE_EXTENSION' -I/home/admin/.cache/node-gyp/12.14.0/include/node -I/home/admin/.cache/node-gyp/12.14.0/src -I/home/admin/.cache/node-gyp/12.14.0/deps/openssl/config -I/home/admin/.cache/node-gyp/12.14.0/deps/openssl/openssl/include -I/home/admin/.cache/node-gyp/12.14.0/deps/uv/include -I/home/admin/.cache/node-gyp/12.14.0/deps/zlib -I/home/admin/.cache/node-gyp/12.14.0/deps/v8/include -I../. -I../../mac -I/local/include/opencv -I/local/include/cuda -I/local/caffe/build/src -I/local/caffe/include -I/local/include/atlas -I/local/service/atomic/ifs/opencv/node_modules/node-addon-api  -fPIC -pthread -Wall -Wextra -Wno-unused-parameter -m64 -O3 -fno-omit-frame-pointer -D HASCAFFE=0 -D HASGPU=0 -std=gnu++1y -MMD -MF ./Release/.deps/Release/obj.target/opencvIF/opencvIF.o.d.raw   -c -o Release/obj.target/opencvIF/opencvIF.o ../opencvIF.cpp
+cmd_Release/obj.target/opencvIF/opencvIF.o := g++ '-DNODE_GYP_MODULE_NAME=opencvIF' '-DUSING_UV_SHARED=1' '-DUSING_V8_SHARED=1' '-DV8_DEPRECATION_WARNINGS=1' '-DV8_DEPRECATION_WARNINGS' '-DV8_IMMINENT_DEPRECATION_WARNINGS' '-D_LARGEFILE_SOURCE' '-D_FILE_OFFSET_BITS=64' '-DOPENSSL_NO_PINSHARED' '-DOPENSSL_THREADS' '-DNAPI_DISABLE_CPP_EXCEPTIONS' '-DBUILDING_NODE_EXTENSION' -I/local/nodejs/include/node -I/local/nodejs/src -I/local/nodejs/deps/openssl/config -I/local/nodejs/deps/openssl/openssl/include -I/local/nodejs/deps/uv/include -I/local/nodejs/deps/zlib -I/local/nodejs/deps/v8/include -I../. -I../../mac -I/local/include/opencv -I/local/include/cuda -I/local/caffe/build/src -I/local/caffe/include -I/local/include/atlas -I/local/service/atomic/ifs/opencv/node_modules/node-addon-api  -fPIC -pthread -Wall -Wextra -Wno-unused-parameter -m64 -O3 -fno-omit-frame-pointer -D HASCAFFE=0 -D HASGPU=0 -std=gnu++1y -MMD -MF ./Release/.deps/Release/obj.target/opencvIF/opencvIF.o.d.raw   -c -o Release/obj.target/opencvIF/opencvIF.o ../opencvIF.cpp
 Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
  /local/include/opencv/opencv2/objdetect/objdetect.hpp \
  /local/include/opencv/opencv2/objdetect.hpp \
@@ -108,10 +108,10 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
  /local/include/opencv/opencv2/video/background_segm.hpp \
  ../../mac/macIF.h \
  /local/service/atomic/ifs/opencv/node_modules/node-addon-api/napi.h \
- /home/admin/.cache/node-gyp/12.14.0/include/node/node_api.h \
- /home/admin/.cache/node-gyp/12.14.0/include/node/js_native_api.h \
- /home/admin/.cache/node-gyp/12.14.0/include/node/js_native_api_types.h \
- /home/admin/.cache/node-gyp/12.14.0/include/node/node_api_types.h \
+ /local/nodejs/include/node/node_api.h \
+ /local/nodejs/include/node/js_native_api.h \
+ /local/nodejs/include/node/js_native_api_types.h \
+ /local/nodejs/include/node/node_api_types.h \
  /local/service/atomic/ifs/opencv/node_modules/node-addon-api/napi-inl.h \
  /local/service/atomic/ifs/opencv/node_modules/node-addon-api/napi-inl.deprecated.h
 ../opencvIF.cpp:
@@ -223,9 +223,9 @@ Release/obj.target/opencvIF/opencvIF.o: ../opencvIF.cpp \
 /local/include/opencv/opencv2/video/background_segm.hpp:
 ../../mac/macIF.h:
 /local/service/atomic/ifs/opencv/node_modules/node-addon-api/napi.h:
-/home/admin/.cache/node-gyp/12.14.0/include/node/node_api.h:
-/home/admin/.cache/node-gyp/12.14.0/include/node/js_native_api.h:
-/home/admin/.cache/node-gyp/12.14.0/include/node/js_native_api_types.h:
-/home/admin/.cache/node-gyp/12.14.0/include/node/node_api_types.h:
+/local/nodejs/include/node/node_api.h:
+/local/nodejs/include/node/js_native_api.h:
+/local/nodejs/include/node/js_native_api_types.h:
+/local/nodejs/include/node/node_api_types.h:
 /local/service/atomic/ifs/opencv/node_modules/node-addon-api/napi-inl.h:
 /local/service/atomic/ifs/opencv/node_modules/node-addon-api/napi-inl.deprecated.h:

@@ -40,13 +40,13 @@ CFLAGS_CC_Debug := \
 	-std=gnu++1y
 
 INCS_Debug := \
-	-I/home/admin/.cache/node-gyp/12.14.0/include/node \
-	-I/home/admin/.cache/node-gyp/12.14.0/src \
-	-I/home/admin/.cache/node-gyp/12.14.0/deps/openssl/config \
-	-I/home/admin/.cache/node-gyp/12.14.0/deps/openssl/openssl/include \
-	-I/home/admin/.cache/node-gyp/12.14.0/deps/uv/include \
-	-I/home/admin/.cache/node-gyp/12.14.0/deps/zlib \
-	-I/home/admin/.cache/node-gyp/12.14.0/deps/v8/include \
+	-I/local/nodejs/include/node \
+	-I/local/nodejs/src \
+	-I/local/nodejs/deps/openssl/config \
+	-I/local/nodejs/deps/openssl/openssl/include \
+	-I/local/nodejs/deps/uv/include \
+	-I/local/nodejs/deps/zlib \
+	-I/local/nodejs/deps/v8/include \
 	-I$(srcdir)/. \
 	-I$(srcdir)/../mac \
 	-I$(INCLUDE)/opencv \
@@ -91,13 +91,13 @@ CFLAGS_CC_Release := \
 	-std=gnu++1y
 
 INCS_Release := \
-	-I/home/admin/.cache/node-gyp/12.14.0/include/node \
-	-I/home/admin/.cache/node-gyp/12.14.0/src \
-	-I/home/admin/.cache/node-gyp/12.14.0/deps/openssl/config \
-	-I/home/admin/.cache/node-gyp/12.14.0/deps/openssl/openssl/include \
-	-I/home/admin/.cache/node-gyp/12.14.0/deps/uv/include \
-	-I/home/admin/.cache/node-gyp/12.14.0/deps/zlib \
-	-I/home/admin/.cache/node-gyp/12.14.0/deps/v8/include \
+	-I/local/nodejs/include/node \
+	-I/local/nodejs/src \
+	-I/local/nodejs/deps/openssl/config \
+	-I/local/nodejs/deps/openssl/openssl/include \
+	-I/local/nodejs/deps/uv/include \
+	-I/local/nodejs/deps/zlib \
+	-I/local/nodejs/deps/v8/include \
 	-I$(srcdir)/. \
 	-I$(srcdir)/../mac \
 	-I$(INCLUDE)/opencv \

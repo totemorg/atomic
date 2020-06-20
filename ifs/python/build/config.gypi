@@ -72,7 +72,7 @@
     "v8_use_siphash": 1,
     "v8_use_snapshot": 1,
     "want_separate_host_toolset": 0,
-    "nodedir": "/home/admin/.cache/node-gyp/12.14.0",
+    "nodedir": "/local/nodejs",
     "standalone_static_library": 1
   }
 }
