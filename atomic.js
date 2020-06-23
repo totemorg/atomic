@@ -441,7 +441,7 @@ end
 						
 				else	// on this worker
 				if ( engctx = contexts[thread] ) 	// already initialized
-					cb( engctx );
+					cb( null, engctx );
 				
 				else // must initialize
 					prime( engctx => {
