@@ -762,47 +762,43 @@ end
 				}
 					*/
 				
-				const { gen, db } = ATOM;
-				
-				var 
+				const 
+					{ gen, db } = ATOM,
 					[client,host,usecase] = thread.split(":"),					
 					script = `
-# define ports and locals
-LOCALS = locals()			# engine OS context
-# print "py>>locals",LOCALS
-# define engine 
-${code}
-if INIT:	#import global modules and connect to sqldb
+# debug trace
+# print "py>>locals",locals()
+if _INIT:	#import global modules and connect to sqldb
 	try:
-		global IMP, JSON, SYS, FLOW, SQL0, SQL1, NP
-		import sys as SYS			#system info
-		import json as JSON			#json interface
-		from PIL import Image as IMP		#jpeg image interface
-		import mysql.connector as SQLC		#db connector interface
-		import numpy as NP
-		# import caffe as CAFFE		#caffe interface
-		# import flow as FLOW		# record buffering and loading logic
+		global _IMP, _JSON, _SYS, _FLOW, _SQL0, _SQL1, _NP
+		import sys as _SYS			#system info
+		import json as _JSON			#json interface
+		from PIL import Image as _IMP		#jpeg image interface
+		import mysql.connector as _SQLC		#db connector interface
+		import numpy as _NP
+		# import caffe as _CAFFE		#caffe interface
+		# import flow as _FLOW		# record buffering and loading logic
 		# setup sql connectors
-		SQL = SQLC.connect(user='${db.python.user}', password='${db.python.pass}', database='${db.python.name}')
+		_SQL = _SQLC.connect(user='${db.python.user}', password='${db.python.pass}', database='${db.python.name}')
 		# default exit codes and startup
-		ERR = 0
-		INIT = 0
+		_ERR = 0
+		_INIT = 0
 	except:
-		ERR = 107
+		_ERR = 107
 else:
 	try:
 		# entry
-		SQL0 = SQL.cursor(buffered=True)
-		SQL1 = SQL.cursor(buffered=True) 
-		# call engine
-		${host}(CTX)
+		_SQL0 = _SQL.cursor(buffered=True)
+		_SQL1 = _SQL.cursor(buffered=True) 
+		# embed engine
+		${code}
 		#exit
-		SQL.commit()
-		SQL0.close()
-		SQL1.close()
-		ERR = 0
+		_SQL.commit()
+		_SQL0.close()
+		_SQL1.close()
+		_ERR = 0
 	except:
-		ERR = 108
+		_ERR = 108
 ` ;
  			
 				if (gen.trace) Log(script);
@@ -828,10 +824,7 @@ else:
 					[client,host,usecase] = thread.split(":"),
 					vm = vmStore[thread] = {
 						ctx: VM.createContext( Copy( $libs, {} ) ),
-						code: `
-${code}
-${host}($ctx, $res);
-` 
+						code: code
 					};
 
 				cb( null, ctx );
@@ -933,7 +926,7 @@ end` ;
 			r: function meInit(thread,code,ctx,cb) {
 			},
 			
-			me: function meInit(thread,code,ctx,cb) {
+			mj: function meInit(thread,code,ctx,cb) {
 
 				vmStore[thread] = {
 					ctx: {
@@ -979,7 +972,7 @@ end` ;
 			
 			cv: function cvStep(thread,ctx,cb) {
 					
-				if ( err = ATOM.opencv(thread,code,ctx) ) 
+				if ( err = ATOM.opencv(thread,"",ctx) ) 
 					cb( err = errors[err] || errors.badError );
 
 				else  
@@ -994,9 +987,8 @@ end` ;
 				if ( vm = vmStore[thread] ) {
 					try {
 						VM.runInContext(vm.code, Copy({
-							$res: cb, 
-							$ctx: ctx
-						}, vm.ctx ) );
+							$ctx: ctx,
+							$res: cb}, vm.ctx ) );
 					}
 					catch (err) {
 						Log(thread,err);
@@ -1053,7 +1045,7 @@ end` ;
 			r: function rStep(thread,ctx,cb) {
 			},
 			
-			me: function meStep(thread,ctx,cb) {
+			mj: function meStep(thread,ctx,cb) {
 				if ( vm = vmStore[thread] ) {
 					ATOM.sqlThread( sql => {
 						//Copy( {SQL: sql, CTX: ctx, DATA: [], RES: [], PORT: port, PORTS: vm.ctx}, vm.ctx );
