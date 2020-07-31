@@ -791,7 +791,7 @@ else:
 		_SQL0 = _SQL.cursor(buffered=True)
 		_SQL1 = _SQL.cursor(buffered=True) 
 		# embed engine
-		${code}
+		${"\t\t"+code.replace(/\n/mg, "\n\t\t")}
 		#exit
 		_SQL.commit()
 		_SQL0.close()

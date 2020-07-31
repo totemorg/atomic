@@ -219,10 +219,10 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 		
 		// machine program/step interface
 		int run(const V8STACK& args) { 			// Monitor/Program/Step machine	
-printf(TRACE "running\n");
+//printf(TRACE "running\n");
 			
 			err = setup(args);
-printf(TRACE "setup err=%d init=%d pcode=%p\n", err, init, pCode);
+//printf(TRACE "setup err=%d init=%d pcode=%p\n", err, init, pCode);
 			
 			if (err) 
 				return err;
@@ -240,7 +240,7 @@ printf(TRACE "setup err=%d init=%d pcode=%p\n", err, init, pCode);
 
 				path = strstr(port,"\n") ? NULL : port;
 
-printf(TRACE "compile path=%s port=%s\n",path,port);
+//printf(TRACE "compile path=%s port=%s\n",path,port);
 
 				if ( strlen(path) ) { 				// load external module
 					pModule = PyImport_Import(PyString_FromString(path));
@@ -253,7 +253,7 @@ printf(TRACE "compile path=%s port=%s\n",path,port);
 
 					// Prime local dictionary with context hash
 					pLocals = PyModule_GetDict(pModule);
-printf(TRACE "locals=%p/\n",pLocals);
+//printf(TRACE "locals=%p/\n",pLocals);
 
 					//PyDict_Merge(pLocals, clone(ctx), true);
 					
@@ -268,9 +268,9 @@ printf(TRACE "locals=%p/\n",pLocals);
 					pMain = PyImport_AddModule("__main__");
 					pGlobals = PyModule_GetDict(pMain);	
 					//PyDict_SetItemString(pGlobals, PYOS, PyModule_GetDict(pModule));
-printf(TRACE "globals=%p\n",pGlobals);
+//printf(TRACE "globals=%p\n",pGlobals);
 
-printf(TRACE "compile=\n%s infile=%d\n",code.c_str(),Py_file_input);
+//printf(TRACE "compile=\n%s infile=%d\n",code.c_str(),Py_file_input);
 					// Uncomment if there is a need to define ctx at compile
 					//PyDict_SetItemString(pLocals, PYPORT, PyString_FromString( port ) );
 					//PyDict_SetItemString(pLocals, PYCTX, clone( ctx ));
@@ -332,7 +332,7 @@ printf(TRACE "stateful step port=%s\n",port);
 				}
 
 				else {					// Stateless step
-printf(TRACE "stateless step port=%s\n", port);
+//printf(TRACE "stateless step port=%s\n", port);
 					pLocals = PyModule_GetDict(pModule);
 					pGlobals = PyModule_GetDict(pMain);	
 
@@ -340,9 +340,9 @@ printf(TRACE "stateless step port=%s\n", port);
 					
 					clone( ctx, pLocals );
 					//PyDict_SetItemString(pLocals, PYCTX, clone( ctx ));
-printf(TRACE "context cloned\n");
+//printf(TRACE "context cloned\n");
 					PyEval_EvalCode(pCode,pGlobals,pLocals);
-printf(TRACE "code evaled\n");
+//printf(TRACE "code evaled\n");
 
 					latch(ctx, clone( pLocals, '_' ).ToObject() );
 					//latch(ctx, clone( LOCAL(PYCTX) ).ToObject() );
@@ -359,7 +359,7 @@ printf(TRACE "code evaled\n");
 					//Py_Finalize(); // dont do this - will cause segment fault
 			}
 			
-printf(TRACE "stateless step err=%d\n",err);
+//printf(TRACE "stateless step err=%d\n",err);
 			return err;
 		}
 		
