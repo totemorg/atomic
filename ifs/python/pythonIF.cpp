@@ -270,7 +270,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 					//PyDict_SetItemString(pGlobals, PYOS, PyModule_GetDict(pModule));
 //printf(TRACE "globals=%p\n",pGlobals);
 
-//printf(TRACE "compile=\n%s infile=%d\n",code.c_str(),Py_file_input);
+printf(TRACE "compile=\n%s infile=%d\n",code.c_str(),Py_file_input);
 					// Uncomment if there is a need to define ctx at compile
 					//PyDict_SetItemString(pLocals, PYPORT, PyString_FromString( port ) );
 					//PyDict_SetItemString(pLocals, PYCTX, clone( ctx ));

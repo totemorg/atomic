@@ -240,6 +240,9 @@ class MACHINE {
 	V8SCOPE scope = NULL; 		// v8 garbage collection thread	
 };
 
+//printf(TRACE "scan[%d] %s = %s\n", n, name.c_str(), IF##_machine[n].name.c_str() ); \
+//printf(TRACE "define %s\n", name.c_str() ); \
+
 #define V8POOL(IF,MAX,CLASS) \
 CLASS IF##_machine[MAX]; \
 \
@@ -248,7 +251,6 @@ int IF(const V8STACK& args) { \
 	string name = NAMEARG(args); \
 \
 	for (int n=0; n<MAX; n++) { \
-printf(TRACE "scan %s = %s\n",name.c_str(), IF##_machine[n].name.c_str() ); \
 		if ( !STREMPTY( IF##_machine[n].name ) ) \
 			if ( IF##_machine[n].name == name ) { \
 				int err = IF##_machine[n].run(args); \
@@ -260,7 +262,6 @@ printf(TRACE "scan %s = %s\n",name.c_str(), IF##_machine[n].name.c_str() ); \
 	for (int n=0; n<MAX; n++) { \
 		if ( STREMPTY( IF##_machine[n].name ) ) { \
 			IF##_machine[n].name = name; \
-printf(TRACE "define %s\n", name.c_str() ); \
 			return IF##_machine[n].run(args); \
 		} \
 	} \

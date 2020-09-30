@@ -1,1 +1,1 @@
-cmd_Release/pythonIF.node := rm -rf "Release/pythonIF.node" && cp -af "Release/obj.target/pythonIF.node" "Release/pythonIF.node"
+cmd_Release/pythonIF.node := ln -f "Release/obj.target/pythonIF.node" "Release/pythonIF.node" 2>/dev/null || (rm -rf "Release/pythonIF.node" && cp -af "Release/obj.target/pythonIF.node" "Release/pythonIF.node")

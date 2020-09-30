@@ -26,10 +26,10 @@
 		"include_dirs": [
 			".",
 			"../mac",
-			"$(INCLUDE)/RInside",
-			"$(INCLUDE)/Rcpp",
-			"$(INCLUDE)/RcppArmadillo",
-			"$(INCLUDE)/R",
+			"$(INCLUDE)/R/RInside",
+			"$(INCLUDE)/R/Rcpp",
+			#"$(INCLUDE)/R/RcppArmadillo",
+			"$(INCLUDE)/R/R",
 			"<!@(node -p \"require('node-addon-api').include\")"    # has to be last
 		],
 		
@@ -38,12 +38,12 @@
 		],
 		
 		"libraries": [
-			#"$(LIB)/R/libRblas.so",
-			#"$(LIB)/R/libRlapack.so",
-			#"$(LIB)/R/libRrefblas.so",
-			"$(LIB)/R/libR.so",
-			"$(LIB)/RInside/RInside.so",
-			#"$(LIB)/Rcpp/Rcpp.so"		
+			#"$(LIB)/R/R/libRblas.so",
+			#"$(LIB)/R/R/libRlapack.so",
+			#"$(LIB)/R/R/libRrefblas.so",
+			"$(LIB)/R/R/libR.so",
+			"$(LIB)/R/RInside/RInside.so",
+			#"$(LIB)/R/Rcpp/Rcpp.so"
 		],
 
 		"define": [   # caffe make options needed (place in defines?)

@@ -1,1 +1,1 @@
-cmd_Release/obj.target/pythonIF.node := g++ -shared -pthread -rdynamic -m64  -Wl,-soname=pythonIF.node -o Release/obj.target/pythonIF.node -Wl,--start-group Release/obj.target/pythonIF/pythonIF.o -Wl,--end-group /local/lib64/python/libpython2.7.so
+cmd_Release/obj.target/pythonIF.node := g++ -o Release/obj.target/pythonIF.node -shared -pthread -rdynamic -m64  -Wl,-soname=pythonIF.node -Wl,--start-group Release/obj.target/pythonIF/pythonIF.o -Wl,--end-group /local/lib64/python/libpython2.7.so

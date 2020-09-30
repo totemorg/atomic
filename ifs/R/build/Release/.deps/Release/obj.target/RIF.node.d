@@ -1,1 +1,1 @@
-cmd_Release/obj.target/RIF.node := g++ -shared -pthread -rdynamic -m64  -Wl,-soname=RIF.node -o Release/obj.target/RIF.node -Wl,--start-group Release/obj.target/RIF/RIF.o -Wl,--end-group /local/lib64/R/libR.so /local/lib64/RInside/RInside.so
+cmd_Release/obj.target/RIF.node := g++ -o Release/obj.target/RIF.node -shared -pthread -rdynamic -m64  -Wl,-soname=RIF.node -Wl,--start-group Release/obj.target/RIF/RIF.o -Wl,--end-group /local/lib64/R/R/libR.so /local/lib64/R/RInside/RInside.so

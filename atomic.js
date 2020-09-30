@@ -1,13 +1,17 @@
 // UNCLASSIFIED
 
 /**
-@module atomic
-@requires child_processby
-@requires fs
-@requires vm 
-@requires pythonIF
-@requires opencvIF
-@requires enum
+	@module atomic
+	Provides cloud computing on python, js, cv, matlab, R, ... engines via web endpoints.
+	See https://github.com/totemstan/atomic.git.
+	
+	@requires child_process
+	@requires fs
+	@requires vm 
+	@requires pythonIF
+	@requires opencvIF
+	@requires RIF
+	@requires enum
 */
 
 const 														
@@ -15,27 +19,34 @@ const
 	ENV = process.env,
 	
 	// NodeJS modules
-	CP = require("child_process"),
+	{ exec } = require("child_process"),
 	FS = require("fs"),	
-	CLUSTER = require("cluster"),
 	//NET = require("net"),
-	VM = require("vm");
+	VM = require("vm"),
+	{ isWorker, isMaster, fork } = require("cluster"),
+	  
+	// Totem modules
+const { Copy,Each,Log,isString } = require("enum");
+
 	
 function Trace(msg,req,res) {  
 	"atom".trace(msg,req,res);
 }
-
-const { Copy,Each,Log,isString } = require("enum");
-const { isWorker, isMaster } = CLUSTER;
 
 const
 	{ errors, mixContext, vmStore, $libs, call, run, 
 	 	opencv, python, contexts, workers } = ATOM = module.exports = {
 			
 		//require("./ifs/build/Release/engineIF"), 	
+			
+		// engine interfaces
+			
 		python: require("pythonIF"),
 		opencv: require("opencvIF"),
+		R: require("RIF"),
 		
+		// interprocess communications
+			
 		ipcFeed: (req,res) => { throw new Error( "atomic ipcFeed not configured" ); },
 		ipcSave: (sql,ctx) => { throw new Error( "atomic ipcSave not configured" ); },
 			
@@ -201,7 +212,7 @@ end
 					sql.query("DELETE FROM openv.workers WHERE ?",{node:opts.node}, err => {
 						for ( var n=0; n<ATOM.cores; n++ ) {
 							var 
-								worker = CLUSTER.fork();							
+								worker = fork();							
 							
 							Trace( `fork ${worker.id}` );
 							workers[worker.id] = worker;
@@ -950,7 +961,7 @@ end` ;
 			sh: function shInit(thread,code,ctx,cb) {  // Linux shell engines
 				if (code) context.code = code;
 
-				CP.exec(context.code, function (err,stdout,stderr) {
+				exec(context.code, function (err,stdout,stderr) {
 					Log(err || stdout);
 				});
 
@@ -1097,7 +1108,7 @@ end` ;
 			sh: function shStep(thread,ctx,cb) {  // Linux shell engines
 				if (code) context.code = code;
 
-				CP.exec(context.code, function (err,stdout,stderr) {
+				exec(context.code, function (err,stdout,stderr) {
 					Log(err || stdout);
 				});
 

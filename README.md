@@ -1,13 +1,6 @@
-[SourceForge](https://sourceforge.net) 
-[github](https://github.com/acmesds/atomic) 
-[geointapps](https://git.geointapps.org/acmesds/atomic)
-[gitlab](https://gitlab.west.nga.ic.gov/acmesds/atomic)
-[nsa](https://sc.appdev.proj.coe/acmesds/atomic)
-
 # ATOMIC
 
-[ATOMIC](https://totem.west.ile.nga.ic.gov/api.view) provides cloud computing 
-on python, js, cv, matlab, R, ... engines via the endpoints:
+ATOMIC provides cloud computing on python, js, cv, matlab, R, ... engines via web endpoints:
 
 	POST advance/step/insert a stateful engine
 	PUT	compile/init/update a stateful engine
@@ -49,14 +42,17 @@ be freely interpretted and extended by the engine):
 
 ## Installation
 
-Clone [ATOMIC cloud compute](https://github.com/acmesds/atomic) into your PROJECT/atomic folder.  
-Clone [ENUM basic enumerators](https://github.com/acmesds/enum) into your PROJECT/enum folder.  
+Clone [ATOMIC cloud compute](https://github.com/totemstan/atomic) into your PROJECT/atomic folder.  
 
-### Manage 
+## Requires
 
-	npm run [ edit || start ]			# Configure environment
+[ENUM standard enumerators](https://github.com/totemstan/enum) || [COE](https://sc.appdev.proj.coe/acmesds/enum) || [SBU](https://gitlab.west.nga.ic.gov/acmesds/enum)
+
+## Manage 
+
 	npm test [ ? || A1 || A2 || ... ]		# Unit test
-	npm run [ prmprep || prmload ]		# Revise PRM
+	npm run [ edit || start ]				# Configure environment
+	npm run [ prmprep || prmload ]			# Revise PRM
 
 ## Usage
 
@@ -70,8 +66,8 @@ Configure and use ATOMIC like this:
 		console.log( err ? "something evil happended" : "Im running");
 	});
 
-where [its configuration keys](https://totem.west.ile.nga.ic.gov/shares/prm/atomic/index.html) follow 
-the [ENUM deep copy conventions](https://github.com/acmesds/enum).
+where [its configuration keys](http://totem.hopto.org/shares/prm/atomic/index.html) || [COE](https://totem.west.ile.nga.ic.gov/shares/prm/atomic/index.html) || [SBU](https://totem.nga.mil/shares/prm/atomic/index.html)
+follow the [ENUM deep copy conventions](https://github.com/totemstan/enum) || [COE](https://sc.appdev.proj.coe/acmesds/enum) || [SBU](https://gitlab.west.nga.ic.gov/acmesds/enum).
 
 ### A1 - Totem and Atomic Engine interfaces
 
@@ -289,10 +285,14 @@ the [ENUM deep copy conventions](https://github.com/acmesds/enum).
 		thread: TOTEM.thread
 	});
 	
-## Contributing
 
-To contribute to this module, see our [issues](https://totem.west.ile.nga.ic.gov/issues.view)
-and [milestones](https://totem.west.ile.nga.ic.gov/milestones.view).
+
+
+## Contacting, Contributing, Following
+
+Feel free to [submit and status TOTEM issues](http://totem.hopto.org/issues.view) || [COE](https://totem.west.ile.nga.ic.gov/issues.view) || [SBU](https://totem.nga.mil/issues.view), [contribute TOTEM notebooks](http://totem.hopto.org/shares/notebooks/) || [COE](https://totem.west.ile.nga.ic.gov/shares/notebooks/) || [SBU](https://totem.nga.mil/shares/notebooks/),
+[inspect TOTEM requirements](http://totem.hopto.org/reqts.view) || [COE](https://totem.west.ile.nga.ic.gov/reqts.view) || [SBU](https://totem.nga.mil/reqts.view), [browse TOTEM holdings](http://totem.hopto.org/) || [COE](https://totem.west.ile.nga.ic.gov/) || [SBU](https://totem.nga.mil/), 
+or [follow TOTEM milestones](http://totem.hopto.org/milestones.view) || [COE](https://totem.west.ile.nga.ic.gov/milestones.view) || [SBU](https://totem.nga.mil/milestones.view).
 
 ## License
 
