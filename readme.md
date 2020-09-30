@@ -42,7 +42,7 @@ be freely interpretted and extended by the engine):
 
 ## Installation
 
-Clone [ATOMIC cloud compute](https://github.com/totemstan/atomic) into your PROJECT/atomic folder.  
+Clone [ATOMIC cloud compute]REPO{atomic} into your PROJECT/atomic folder.  
 
 ## Requires
 
