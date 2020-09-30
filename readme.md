@@ -25,8 +25,7 @@ supplied event tokens (tau):
 	TAU.port = engine's in/out port to step
 	TAU.thread = engine's 0-base thread counter
 
-where input/output ports and engine code are defined by 
-the [engine context](https://totem.west.ile.nga.ic.gov/api.view).
+where input/output ports and engine code are defined by the [engine context]SITE{api.view}.
 
 An event token typically contain the following default fields (they can 
 be freely interpretted and extended by the engine):

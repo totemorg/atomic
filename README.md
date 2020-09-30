@@ -25,8 +25,7 @@ supplied event tokens (tau):
 	TAU.port = engine's in/out port to step
 	TAU.thread = engine's 0-base thread counter
 
-where input/output ports and engine code are defined by 
-the [engine context](https://totem.west.ile.nga.ic.gov/api.view).
+where input/output ports and engine code are defined by the [engine context](http://totem.hopto.org/api.view) || [COE](https://totem.west.ile.nga.ic.gov/api.view) || [SBU](https://totem.nga.mil/api.view).
 
 An event token typically contain the following default fields (they can 
 be freely interpretted and extended by the engine):
@@ -42,7 +41,7 @@ be freely interpretted and extended by the engine):
 
 ## Installation
 
-Clone [ATOMIC cloud compute](https://github.com/totemstan/atomic) into your PROJECT/atomic folder.  
+Clone [ATOMIC cloud compute](https://github.com/totemstan/atomic) || [COE](https://sc.appdev.proj.coe/acmesds/atomic) || [SBU](https://gitlab.west.nga.ic.gov/acmesds/atomic) into your PROJECT/atomic folder.  
 
 ## Requires
 
