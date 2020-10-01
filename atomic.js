@@ -935,6 +935,8 @@ end` ;
 			},
 
 			R: function meInit(thread,code,ctx,cb) {
+				vmStore[thread] = code;
+				Log(">>R pgm", code);
 			},
 			
 			mj: function meInit(thread,code,ctx,cb) {
@@ -1055,8 +1057,8 @@ end` ;
 			R: function rStep(thread,ctx,cb) {
 				if ( vm = vmStore[thread] ) {
 					try {
-						Log(vm.code);
-						R(thread, vm.code, vm.ctx);
+						Log(vm);
+						R(thread, vm, ctx);
 					}
 					catch (err) {
 						Log(thread,err);
