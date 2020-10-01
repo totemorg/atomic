@@ -26,7 +26,7 @@ const
 	{ isWorker, isMaster, fork } = require("cluster"),
 	  
 	// Totem modules
-const { Copy,Each,Log,isString } = require("enum");
+	{ Copy,Each,Log,isString } = require("enum");
 
 	
 function Trace(msg,req,res) {  
@@ -35,7 +35,7 @@ function Trace(msg,req,res) {
 
 const
 	{ errors, mixContext, vmStore, $libs, call, run, 
-	 	opencv, python, contexts, workers } = ATOM = module.exports = {
+	 	opencv, python, R, contexts, workers } = ATOM = module.exports = {
 			
 		//require("./ifs/build/Release/engineIF"), 	
 			
@@ -934,7 +934,7 @@ end` ;
 				cb(null,ctx);
 			},
 
-			r: function meInit(thread,code,ctx,cb) {
+			R: function meInit(thread,code,ctx,cb) {
 			},
 			
 			mj: function meInit(thread,code,ctx,cb) {
@@ -971,7 +971,6 @@ end` ;
 
 		step: {  //< step engines on given thread with callback cb(ctx) or cb(null) if error
 			py: function pyStep(thread,ctx,cb) {
-				
 				if ( err = python(thread,"",ctx) ) 
 					cb( err = errors[err] || errors.badError  );
 				
@@ -1053,7 +1052,20 @@ end` ;
 				return null;
 			},
 			
-			r: function rStep(thread,ctx,cb) {
+			R: function rStep(thread,ctx,cb) {
+				if ( vm = vmStore[thread] ) {
+					try {
+						Log(vm.code);
+						R(thread, vm.code, vm.ctx);
+					}
+					catch (err) {
+						Log(thread,err);
+					}
+					return null;
+				}
+				
+				else 
+					return errors.lostContext;				
 			},
 			
 			mj: function meStep(thread,ctx,cb) {
