@@ -223,19 +223,19 @@ printf(TRACE "clone array len=%d\n",N);
 			string  runCode;
 			
 			err = setup(args);
-printf(TRACE "run setup err=%d init=%d\n", err, init);
+//printf(TRACE "run setup err=%d init=%d\n", err, init);
 			
 			if (err) 
 				return err;
 			
 			else { 
 				runCode = "ERR=0;\nTAU=" + clone( tau ) + ";\nCTX=" + clone(ctx) + ";\n" + code;
-printf(TRACE "run stateless step port=%s code:\n\n%s\n", port, runCode.c_str() );
+//printf(TRACE "run stateless step port=%s code:\n\n%s\n", port, runCode.c_str() );
 
 				R->parseEvalQ(runCode); 
 				//latch(ctx, .ToObject() );
 				err = (int) (*R)["ERR"];
-printf(TRACE "run err=%d\n", err);
+//printf(TRACE "run err=%d\n", err);
 				
 				//(*R)["junk"] = "this is a test";
 				ROBJECT CTX = (*R)["CTX"];

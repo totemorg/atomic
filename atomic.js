@@ -469,11 +469,10 @@ end
 					body = engctx.req.body,
 					runctx = Copy( engctx.req.query, req.query); 	// save engine run content for potential handoff // Copy(req.query, engctx.req.query); 
 				
-				//Log("exec ctx", runctx);
-				
+				//Log(">exec ctx", runctx);
 				cb( runctx, function step(res) {  // provide this engine stepper to the callback
 
-					//Log( "step eng", engctx.step );
+					//Log( ">step eng", engctx.step );
 					if ( stepEngine = engctx.step ) {
 						//Log(">exec", engctx.thread);
 						var err = call( engctx.wrap, runctx, runctx => {  // allow a js-wrapper to modify engine context
@@ -511,8 +510,7 @@ end
 				});
 			}
 
-			//Log(">alloc", thread);
-			
+			//Log(">alloc", thread);			
 			allocate( (worker,engctx) => {
 
 				if ( worker )  // handoff to worker and provide socket for its response
@@ -775,7 +773,7 @@ end
 				
 				const 
 					{ gen, db } = ATOM,
-					[client,host,usecase] = thread.split(":"),					
+					// [client,host,usecase] = thread.split(":"),					
 					script = `
 # debug trace
 # print "py>>locals",locals()
@@ -818,7 +816,6 @@ else:
 			},
 			
 			cv: function cvInit(thread,code,ctx,cb)  {
-
 				if ( ctx.frame && ctx.detector )
 					if ( err = opencv(thread,code,ctx) )
 						cb( null, ctx );
@@ -831,12 +828,10 @@ else:
 			},
 			
 			js: function jsInit(thread,code,ctx,cb)  {
-				var 
-					[client,host,usecase] = thread.split(":"),
-					vm = vmStore[thread] = {
-						ctx: VM.createContext( Copy( $libs, {} ) ),
-						code: code
-					};
+				vmStore[thread] = {
+					ctx: VM.createContext( Copy( $libs, {} ) ),
+					code: code
+				};
 
 				cb( null, ctx );
 			},
@@ -935,8 +930,12 @@ end` ;
 			},
 
 			R: function meInit(thread,code,ctx,cb) {
-				vmStore[thread] = code;
-				Log(">>R pgm", code);
+				vmStore[thread] = {
+					ctx: {},
+					code: code
+				};
+				//Log(">>R pgm", code);
+				cb(null,ctx);
 			},
 			
 			mj: function meInit(thread,code,ctx,cb) {
@@ -950,7 +949,7 @@ end` ;
 				cb( null, ctx ); 
 			},
 			
-			sq:  function sqInit(thread,code,ctx,cb) {
+			sq: function sqInit(thread,code,ctx,cb) {
 				ATOM.sqlThread( sql => {
 					ctx.SQL[ctx.action](sql, [], function (recs) {
 						//ctx.Save = [1,2,3];  // cant work as no cb exists
@@ -974,7 +973,7 @@ end` ;
 		step: {  //< step engines on given thread with callback cb(ctx) or cb(null) if error
 			py: function pyStep(thread,ctx,cb) {
 				if ( err = python(thread,"",ctx) ) 
-					cb( err = errors[err] || errors.badError  );
+					cb( errors[err] || errors.badError  );
 				
 				else 
 					cb( ctx );
@@ -982,10 +981,9 @@ end` ;
 				return err;
 			},
 			
-			cv: function cvStep(thread,ctx,cb) {
-					
+			cv: function cvStep(thread,ctx,cb) {	
 				if ( err = ATOM.opencv(thread,"",ctx) ) 
-					cb( err = errors[err] || errors.badError );
+					cb( errors[err] || errors.badError );
 
 				else  
 					cb( ctx );
@@ -995,17 +993,19 @@ end` ;
 			
 			js: function jsStep(thread,ctx,cb) {
 				//Log(">>>>>>>>>step", thread, ctx.Host, ctx.Pipe );
-
+				
 				if ( vm = vmStore[thread] ) {
 					try {
 						VM.runInContext(vm.code, Copy({
 							$ctx: ctx,
 							$res: cb}, vm.ctx ) );
+						return null;
 					}
 					catch (err) {
-						Log(thread,err);
+						//Log(thread,err);
+						cb( err );
+						return err;
 					}
-					return null;
 				}
 				
 				else 
@@ -1055,15 +1055,22 @@ end` ;
 			},
 			
 			R: function rStep(thread,ctx,cb) {
+				//Log(">>>step", thread, vmStore[thread], ctx);
 				if ( vm = vmStore[thread] ) {
 					try {
-						Log(vm);
-						R(thread, vm, ctx);
+						if ( err = R(thread, vm.code, ctx) )
+							cb( errors[err] || errors.badError );
+						
+						else
+							cb( ctx );
+						
+						return err;
 					}
 					catch (err) {
-						Log(thread,err);
+						//Log(thread,err);
+						cb( err );
+						return err;
 					}
-					return null;
 				}
 				
 				else 
