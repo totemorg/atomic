@@ -352,7 +352,7 @@ end
 		 be located or allocated.
 		*/
 		run: (req, cb) => {  //< run engine with callback cb(ctx, stepper) or cb(null) if error
-			const { sql, query, client, table, body, action, resSocket, type, profile, url } = req;
+			const { sql, query, client, table, body, action, resSocket, domain, type, profile, url } = req;
 			
 			var
 				thread = [client,table,query.Name].join(":");
