@@ -34,7 +34,7 @@ function Trace(msg,req,res) {
 }
 
 const
-	{ errors, mixContext, vmStore, $libs, call, run, 
+	{ errors, mixContext, vmStore, $libs, wrap, run, 
 	 	opencv, python, R, contexts, workers } = ATOM = module.exports = {
 			
 		//require("./ifs/build/Release/engineIF"), 	
@@ -352,14 +352,14 @@ end
 		 be located or allocated.
 		*/
 		run: (req, cb) => {  //< run engine with callback cb(ctx, stepper) or cb(null) if error
-			const { sql, query, client, table, body, action, resSocket, domain, type, profile, url } = req;
-			
-			var
-				thread = [client,table,query.Name].join(":");
+			const 
+				{ sql, query, client, table, body, action, resSocket, domain, type, profile, url } = req,
+				{ name, Name } = query,
+				thread = [client,table,name || Name].join(":");
 
-			function allocate (cb) {	// provide an engine context
+			function allocateEngine (cb) {	//< callback cb(worker || null,engctx || null) with engine's worker or its context
 
-				function program (engctx, cb) {  //< program engine with callback cb(engctx || null) 
+				function programEngine (engctx, cb) {  //< program engine with callback cb(engctx || null) 
 					var runctx = engctx.req.query;
 
 					//Log(">program",thread);
@@ -381,7 +381,7 @@ end
 						cb( null );
 				}
 		
-				function prime (cb) {  //< callback cb(engctx || null) with engine context or null if failed
+				function primeEngine (cb) {  //< callback cb(engctx || null) with primed engine context 
 
 					//Log(">prime", thread);
 					
@@ -428,12 +428,12 @@ end
 							
 						//Log( ">engs", err,engs, ATOM.node);
 							
-						if ( eng = engs[0] ) 
+						if ( eng = engs[0] ) 		// assign thread to engine's worker
 							sql.query(
 								"SELECT worker,ID FROM openv.workers WHERE node=? AND type=? AND thread IS NULL LIMIT 1", 
-								[ATOM.node, eng.Type], (err,wrks) => {
+								[ATOM.node, eng.Type], (err,workers) => {
 									
-									if ( wkr = wrks[0] )
+									if ( wkr = workers[0] )
 										if ( worker = workers[ wkr.worker ] ) {
 											sql.query("UPDATE openv.workers SET thread=? WHERE ID=?", [thread,wkr.ID] );
 											cb( worker );
@@ -455,29 +455,31 @@ end
 					cb( null, engctx );
 				
 				else // must initialize
-					prime( engctx => {
-						if (engctx) 	// program/compile engine
-							program(engctx, engctx => cb( null, engctx ));
+					primeEngine( engctx => {		
+						if (engctx) 		// program/compile/init the engine	
+							programEngine(engctx, engctx => cb( null, engctx ));
 
 						else 	// send "failed to prime" signal
 							cb( null );						
 					});
 			}
 				
-			function execute (engctx, cb) {  //< callback cb(ctx,stepper) with primed engine ctx and stepper
-				var 
-					body = engctx.req.body,
-					runctx = Copy( engctx.req.query, req.query); 	// save engine run content for potential handoff // Copy(req.query, engctx.req.query); 
+			function executeEngine (engctx, cb) {  //< callback cb(ctx,stepper) with primed engine ctx and stepper
+				const 
+					{ body } = engctx.req,		// exract engine simulation tokens
+					runctx = Copy( engctx.req.query, req.query); 	// save engine run content for potential handoff 
+							// Copy(req.query, engctx.req.query); 
 				
 				//Log(">exec ctx", runctx);
+				
 				cb( runctx, function step(res) {  // provide this engine stepper to the callback
 
 					//Log( ">step eng", engctx.step );
 					if ( stepEngine = engctx.step ) {
 						//Log(">exec", engctx.thread);
-						var err = call( engctx.wrap, runctx, runctx => {  // allow a js-wrapper to modify engine context
+						var err = wrap( engctx.wrap, runctx, runctx => {  // allow a js-wrapper to modify run context
 							
-							//Log(">call", runctx);
+							//Log(">wrap", runctx);
 							if ( runctx )
 								return mixContext(sql, runctx.Entry, runctx, runctx => {  // mixin sql primed keys into engine ctx
 									//Log(">mix", runctx);
@@ -511,21 +513,21 @@ end
 			}
 
 			//Log(">alloc", thread);			
-			allocate( (worker,engctx) => {
+			allocateEngine( (worker,engctx) => {	// get the engine's worker or its context
 
 				if ( worker )  // handoff to worker and provide socket for its response
 					worker.send({  // an ipc request must not contain sql, socket, state, functions etc
-						table: table,
-						client: client,
-						query: query,
-						body: body,
-						action: action,
-						profile: profile
+						table: table,		// engine name
+						client: client,		// owner
+						query: query,		// run ctx keys
+						body: body,			// simulation tokens
+						action: action,		// init, step, kill 
+						profile: profile	// owner's profile
 					}, resSocket() );
 
 				else
-				if ( engctx ) // has context so execute it
-					execute( engctx, cb );
+				if ( engctx ) // has context so execute the engine
+					executeEngine( engctx, cb );
 
 				else		// signal error
 					cb(null);
@@ -636,7 +638,7 @@ end
 			});
 		},
 
-		call: (code, ctx, cb) => { 
+		wrap: (code, ctx, cb) => { 
 			if (code) 
 				try {
 					VM.runInContext( code, VM.createContext({ 
@@ -829,7 +831,10 @@ else:
 			
 			js: function jsInit(thread,code,ctx,cb)  {
 				vmStore[thread] = {
-					ctx: VM.createContext( Copy( $libs, {} ) ),
+					ctx: VM.createContext( Copy( $libs, {
+						//$trace: ctx.$trace,
+						//$pipe:	ctx.$pipe
+					} ) ),
 					code: code
 				};
 
