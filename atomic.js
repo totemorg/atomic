@@ -224,7 +224,7 @@ end
 										node: opts.node,
 										type: type,
 										thread: null
-									} );
+									}, err => Log(">>>worker define", err) );
 							});
 						}
 					});
@@ -383,10 +383,9 @@ end
 		
 				function primeEngine (cb) {  //< callback cb(engctx || null) with primed engine context 
 
-					//Log(">prime", thread);
-					
+					//Log(">prime", thread, table);
 					sql.query(	// get the requested engine
-						"SELECT * FROM app.engines WHERE Enabled AND Name=? LIMIT 1", 
+						"SELECT * FROM openv.engines WHERE Enabled AND Name=? LIMIT 1", 
 						[table], (err,engs) => {
 
 						if ( eng = engs[0] ) 
@@ -423,10 +422,10 @@ end
 				
 				if ( isMaster && ATOM.cores ) // allocate a worker
 					sql.query(
-						"SELECT Type FROM app.engines WHERE Enabled AND Name=? LIMIT 1", 
+						"SELECT Type FROM openv.engines WHERE Enabled AND Name=? LIMIT 1", 
 						[table], (err,engs) => {
 							
-						//Log( ">engs", err,engs, ATOM.node);
+						Log( ">engs", err,engs, ATOM.node);
 							
 						if ( eng = engs[0] ) 		// assign thread to engine's worker
 							sql.query(
@@ -470,7 +469,7 @@ end
 					runctx = Copy( engctx.req.query, req.query); 	// save engine run content for potential handoff 
 							// Copy(req.query, engctx.req.query); 
 				
-				//Log(">exec ctx", runctx);
+				//Log(">exec ctx", engctx);
 				
 				cb( runctx, function step(res) {  // provide this engine stepper to the callback
 
