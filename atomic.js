@@ -246,8 +246,8 @@ end
 								
 								ATOM.sqlThread( sql => {
 									req.sql = sql;
-									query.Feed = cb => ipcFeed(req, cb);
-									query.Trace = msg => Trace( msg, req );
+									//query.Feed = cb => ipcFeed(req, cb);
+									//query.Trace = msg => Trace( msg, req );
 									
 									route( req, ctx => {
 										if ( ctx ) 
