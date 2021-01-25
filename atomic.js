@@ -14,9 +14,13 @@
 	@requires enum
 */
 
-const 														
+const
 	// globals
 	ENV = process.env,
+	Log = (...args) => console.log(">>>atomic", args),
+	Trace = (msg,req,res) => "atomic".trace(msg,req,res);
+
+const 														
 	
 	// NodeJS modules
 	{ exec } = require("child_process"),
@@ -26,13 +30,9 @@ const
 	{ isWorker, isMaster, fork } = require("cluster"),
 	  
 	// Totem modules
-	{ Copy,Each,Log,isString } = require("enum");
+	{ Copy,Each,isString } = require("enum");
 
 	
-function Trace(msg,req,res) {  
-	"atom".trace(msg,req,res);
-}
-
 const
 	{ errors, mixContext, vmStore, $libs, wrap, run, 
 	 	opencv, python, R, contexts, workers } = ATOM = module.exports = {
