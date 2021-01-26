@@ -1,9 +1,10 @@
 // UNCLASSIFIED
 
 /**
-	@module atomic
-	Provides cloud computing on python, js, cv, matlab, R, ... engines via web endpoints.
-	See https://github.com/totemstan/atomic.git.
+	@module ATOMIC
+	
+	[ATOMIC(https://github.com/totemstan/atomic.git) provides cloud computing on python, js, cv, 
+	matlab, R, ... engines via web endpoints.
 	
 	@requires child_process
 	@requires fs
@@ -14,14 +15,9 @@
 	@requires enum
 */
 
-const
-	// globals
-	ENV = process.env,
-	Log = (...args) => console.log(">>>atomic", args),
-	Trace = (msg,req,res) => "atomic".trace(msg,req,res);
-
 const 														
 	
+	ENV = process.env,
 	// NodeJS modules
 	{ exec } = require("child_process"),
 	FS = require("fs"),	
@@ -32,11 +28,15 @@ const
 	// Totem modules
 	{ Copy,Each,isString } = require("enum");
 
-	
 const
-	{ errors, mixContext, vmStore, $libs, wrap, run, 
+	{ 
+		Log, Trace,
+		errors, mixContext, vmStore, $libs, wrap, run, 
 	 	opencv, python, R, contexts, workers } = ATOM = module.exports = {
 			
+		Log: (...args) => console.log(">>>atomic", args),
+		Trace: (msg,req,res) => "atomic".trace(msg,req,res),
+
 		//require("./ifs/build/Release/engineIF"), 	
 			
 		// engine interfaces

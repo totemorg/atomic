@@ -1,6 +1,6 @@
 # ATOMIC
 
-ATOMIC provides cloud computing on python, js, cv, matlab, R, ... engines via web endpoints:
+**ATOMIC** provides cloud computing on python, js, cv, matlab, R, ... engines via web endpoints:
 
 	POST advance/step/insert a stateful engine
 	PUT	compile/init/update a stateful engine
@@ -41,7 +41,7 @@ be freely interpretted and extended by the engine):
 
 ## Installation
 
-Clone [ATOMIC cloud compute](https://github.com/totemstan/atomic) || [COE](https://sc.appdev.proj.coe/acmesds/atomic) || [SBU](https://gitlab.west.nga.ic.gov/acmesds/atomic) into your PROJECT/atomic folder.  
+Clone [**ATOMIC** cloud compute](https://github.com/totemstan/atomic) || [COE](https://sc.appdev.proj.coe/acmesds/atomic) || [SBU](https://gitlab.west.nga.ic.gov/acmesds/atomic) into your PROJECT/atomic folder.  
 
 ## Requires
 
@@ -55,9 +55,9 @@ Clone [ATOMIC cloud compute](https://github.com/totemstan/atomic) || [COE](https
 
 ## Usage
 
-Configure and use ATOMIC like this:
+Configure and use **ATOMIC** like this:
 
-	var ATOMIC = require("atomic").config({
+	var **ATOMIC** = require("atomic").config({
 			key: value, 						// set key
 			"key.key": value, 					// indexed set
 			"key.key.": value					// indexed append
@@ -70,12 +70,12 @@ follow the [ENUM deep copy conventions](https://github.com/totemstan/enum) || [C
 
 ### A1 - Totem and Atomic Engine interfaces
 
-	var ATOMIC = require("../atomic");
+	var **ATOMIC** = require("../atomic");
 	var TOTEM = require("../totem");
 
 	Trace( "A Totem+Engine client has been created", {
-		a_tau_template: ATOMIC.tau("somejob.pdf"),
-		engine_errors: ATOMIC.error,
+		a_tau_template: **ATOMIC**.tau("somejob.pdf"),
+		engine_errors: **ATOMIC**.error,
 		get_endpts: TOTEM.reader,
 		my_paths: TOTEM.paths
 	});
@@ -89,7 +89,7 @@ follow the [ENUM deep copy conventions](https://github.com/totemstan/enum) || [C
 		TOTEM.stop();
 	});
 
-	var ATOMIC = require("../engine").config({
+	var **ATOMIC** = require("../engine").config({
 		thread: TOTEM.thread
 	});
 
@@ -110,7 +110,7 @@ follow the [ENUM deep copy conventions](https://github.com/totemstan/enum) || [C
 
 	});
 
-	var ATOMIC = require("../engine").config({
+	var **ATOMIC** = require("../engine").config({
 		thread: TOTEM.thread
 	});
 
@@ -120,8 +120,8 @@ follow the [ENUM deep copy conventions](https://github.com/totemstan/enum) || [C
 		"byType.": {
 			test: function Chipper(req,res) {
 
-				var itau = [ATOMIC.tau()];
-				var otau = [ATOMIC.tau()];
+				var itau = [**ATOMIC**.tau()];
+				var otau = [**ATOMIC**.tau()];
 
 				switch (req.query.config) {
 					case "cv": // program and step haar opencv machine 
@@ -137,13 +137,13 @@ follow the [ENUM deep copy conventions](https://github.com/totemstan/enum) || [C
 						console.log(parm);
 
 						for (var n=0,N=1;n<N;n++)  // program N>1 to test reprogram
-							console.log(`INIT[${n}] = `, ATOMIC.opencv("opencv.Me.Thread1","setup",parm));
+							console.log(`INIT[${n}] = `, **ATOMIC**.opencv("opencv.Me.Thread1","setup",parm));
 
 						for (var n=0,N=5;n<N;n++) // step N>1 to test multistep
-							console.log(`STEP[${n}] = `, ATOMIC.opencv("opencv.Me.Thread1","frame",itau));
+							console.log(`STEP[${n}] = `, **ATOMIC**.opencv("opencv.Me.Thread1","frame",itau));
 
 						// returns badStep if the cascades were undefined at the program step
-						console.log("STEP = ", ATOMIC.opencv("opencv.Me.Thread1","helipads",otau));
+						console.log("STEP = ", **ATOMIC**.opencv("opencv.Me.Thread1","helipads",otau));
 						console.log(otau);
 						break;
 
@@ -163,7 +163,7 @@ follow the [ENUM deep copy conventions](https://github.com/totemstan/enum) || [C
 						// By default python attempts to connect to mysql.  
 						// So, if mysql service not running or mysql.connector module not found, this will not run.
 						console.log({py:pgm, ctx: parm});
-						console.log("INIT = ", ATOMIC.python("py1.thread",pgm,parm));
+						console.log("INIT = ", **ATOMIC**.python("py1.thread",pgm,parm));
 						console.log(parm.tau);
 						break;
 
@@ -190,14 +190,14 @@ follow the [ENUM deep copy conventions](https://github.com/totemstan/enum) || [C
 								return -103
 							`;		
 						console.log({py:pgm, ctx: parm});
-						console.log("INIT = ", ATOMIC.python("py2.Me.Thread1",pgm,parm));
+						console.log("INIT = ", **ATOMIC**.python("py2.Me.Thread1",pgm,parm));
 						// reprogramming ignored
-						//console.log("INIT = ", ATOMIC.python("py2.Me.Thread1",pgm,parm));
+						//console.log("INIT = ", **ATOMIC**.python("py2.Me.Thread1",pgm,parm));
 
 						for (var n=0,N=1; n<N; n++)
-							console.log(`STEP[${n}] = `, ATOMIC.python("py2.Me.Thread1","frame",itau));
+							console.log(`STEP[${n}] = `, **ATOMIC**.python("py2.Me.Thread1","frame",itau));
 
-						console.log("STEP = ", ATOMIC.python("py2.Me.Thread1","helipads",otau));
+						console.log("STEP = ", **ATOMIC**.python("py2.Me.Thread1","helipads",otau));
 						break;
 
 					case "py3": // program and step python machine string with reinit along the way
@@ -224,11 +224,11 @@ follow the [ENUM deep copy conventions](https://github.com/totemstan/enum) || [C
 							`;
 
 						console.log({py:pgm, ctx: parm});
-						console.log("INIT = ", ATOMIC.python("py3",pgm,parm));
-						console.log("STEP = ", ATOMIC.python("py3","frame",itau));
+						console.log("INIT = ", **ATOMIC**.python("py3",pgm,parm));
+						console.log("STEP = ", **ATOMIC**.python("py3","frame",itau));
 						// reprogramming ignored
-						//console.log("REINIT = ", ATOMIC.python("py3",pgm,parm));
-						//console.log("STEP = ", ATOMIC.python("py3","frame",itau));
+						//console.log("REINIT = ", **ATOMIC**.python("py3",pgm,parm));
+						//console.log("STEP = ", **ATOMIC**.python("py3","frame",itau));
 						console.log(otau);
 						break;
 
@@ -256,12 +256,12 @@ follow the [ENUM deep copy conventions](https://github.com/totemstan/enum) || [C
 							`;
 
 						console.log({py:pgm, ctx: parm});
-						console.log("INIT = ", ATOMIC.js("mytest",pgm,parm));
+						console.log("INIT = ", **ATOMIC**.js("mytest",pgm,parm));
 						// frame should return a 0 = null noerror
-						console.log("STEP = ", ATOMIC.js("mytest","frame",itau));
+						console.log("STEP = ", **ATOMIC**.js("mytest","frame",itau));
 						console.log(itau);
 						// helipads should return a 101 = badload error
-						console.log("STEP = ", ATOMIC.js("mytest","helipads",otau));
+						console.log("STEP = ", **ATOMIC**.js("mytest","helipads",otau));
 						console.log(otau);
 						break;	
 				}
@@ -280,7 +280,7 @@ follow the [ENUM deep copy conventions](https://github.com/totemstan/enum) || [C
 		Trace( "Unit test my engines with /test?config=cv | py1 | py2 | py3 | js" );
 	});
 
-	var ATOMIC = require("../atomic").config({
+	var **ATOMIC** = require("../atomic").config({
 		thread: TOTEM.thread
 	});
 	
