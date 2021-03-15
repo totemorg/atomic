@@ -55,7 +55,7 @@ INCS_Debug := \
 	-I$(CAFFE)/build/src \
 	-I$(CAFFE)/include \
 	-I$(INCLUDE)/atlas \
-	-I/local/service/atomic/ifs/opencv/node_modules/node-addon-api
+	-I/local/service-12/atomic/ifs/opencv/node_modules/node-addon-api
 
 DEFS_Release := \
 	'-DNODE_GYP_MODULE_NAME=opencvIF' \
@@ -107,7 +107,7 @@ INCS_Release := \
 	-I$(CAFFE)/build/src \
 	-I$(CAFFE)/include \
 	-I$(INCLUDE)/atlas \
-	-I/local/service/atomic/ifs/opencv/node_modules/node-addon-api
+	-I/local/service-12/atomic/ifs/opencv/node_modules/node-addon-api
 
 OBJS := \
 	$(obj).target/$(TARGET)/opencvIF.o

@@ -12,7 +12,7 @@
 	@requires pythonIF
 	@requires opencvIF
 	@requires RIF
-	@requires enum
+	@requires enums
 */
 
 const 														
@@ -26,7 +26,7 @@ const
 	{ isWorker, isMaster, fork } = require("cluster"),
 	  
 	// Totem modules
-	{ Copy,Each,isString } = require("enum");
+	{ Copy,Each,isString } = require("enums");
 
 const
 	{ 

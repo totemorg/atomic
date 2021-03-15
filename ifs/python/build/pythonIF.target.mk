@@ -50,7 +50,7 @@ INCS_Debug := \
 	-I$(srcdir)/. \
 	-I$(srcdir)/../mac \
 	-I$(CONDA)/include/python2.7 \
-	-I/local/service/atomic/ifs/python/node_modules/node-addon-api
+	-I/local/service-12/atomic/ifs/python/node_modules/node-addon-api
 
 DEFS_Release := \
 	'-DNODE_GYP_MODULE_NAME=pythonIF' \
@@ -97,7 +97,7 @@ INCS_Release := \
 	-I$(srcdir)/. \
 	-I$(srcdir)/../mac \
 	-I$(CONDA)/include/python2.7 \
-	-I/local/service/atomic/ifs/python/node_modules/node-addon-api
+	-I/local/service-12/atomic/ifs/python/node_modules/node-addon-api
 
 OBJS := \
 	$(obj).target/$(TARGET)/pythonIF.o

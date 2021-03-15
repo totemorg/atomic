@@ -51,7 +51,7 @@ INCS_Debug := \
 	-I$(INCLUDE)/R/RInside \
 	-I$(INCLUDE)/R/Rcpp \
 	-I$(INCLUDE)/R/R \
-	-I/local/service/atomic/ifs/R/node_modules/node-addon-api
+	-I/local/service-12/atomic/ifs/R/node_modules/node-addon-api
 
 DEFS_Release := \
 	'-DNODE_GYP_MODULE_NAME=RIF' \
@@ -99,7 +99,7 @@ INCS_Release := \
 	-I$(INCLUDE)/R/RInside \
 	-I$(INCLUDE)/R/Rcpp \
 	-I$(INCLUDE)/R/R \
-	-I/local/service/atomic/ifs/R/node_modules/node-addon-api
+	-I/local/service-12/atomic/ifs/R/node_modules/node-addon-api
 
 OBJS := \
 	$(obj).target/$(TARGET)/RIF.o

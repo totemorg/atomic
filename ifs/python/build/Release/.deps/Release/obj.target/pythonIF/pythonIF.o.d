@@ -1,12 +1,12 @@
-cmd_Release/obj.target/pythonIF/pythonIF.o := g++ -o Release/obj.target/pythonIF/pythonIF.o ../pythonIF.cpp '-DNODE_GYP_MODULE_NAME=pythonIF' '-DUSING_UV_SHARED=1' '-DUSING_V8_SHARED=1' '-DV8_DEPRECATION_WARNINGS=1' '-DV8_DEPRECATION_WARNINGS' '-DV8_IMMINENT_DEPRECATION_WARNINGS' '-D_LARGEFILE_SOURCE' '-D_FILE_OFFSET_BITS=64' '-D__STDC_FORMAT_MACROS' '-DOPENSSL_NO_PINSHARED' '-DOPENSSL_THREADS' '-DNAPI_DISABLE_CPP_EXCEPTIONS' '-DBUILDING_NODE_EXTENSION' -I/local/nodejs/include/node -I/local/nodejs/src -I/local/nodejs/deps/openssl/config -I/local/nodejs/deps/openssl/openssl/include -I/local/nodejs/deps/uv/include -I/local/nodejs/deps/zlib -I/local/nodejs/deps/v8/include -I../. -I../../mac -I/local/anaconda/include/python2.7 -I/local/service/atomic/ifs/python/node_modules/node-addon-api  -fPIC -pthread -Wall -Wextra -Wno-unused-parameter -m64 -O3 -fno-omit-frame-pointer -fno-rtti -std=gnu++1y -MMD -MF ./Release/.deps/Release/obj.target/pythonIF/pythonIF.o.d.raw   -c
+cmd_Release/obj.target/pythonIF/pythonIF.o := g++ -o Release/obj.target/pythonIF/pythonIF.o ../pythonIF.cpp '-DNODE_GYP_MODULE_NAME=pythonIF' '-DUSING_UV_SHARED=1' '-DUSING_V8_SHARED=1' '-DV8_DEPRECATION_WARNINGS=1' '-DV8_DEPRECATION_WARNINGS' '-DV8_IMMINENT_DEPRECATION_WARNINGS' '-D_LARGEFILE_SOURCE' '-D_FILE_OFFSET_BITS=64' '-D__STDC_FORMAT_MACROS' '-DOPENSSL_NO_PINSHARED' '-DOPENSSL_THREADS' '-DNAPI_DISABLE_CPP_EXCEPTIONS' '-DBUILDING_NODE_EXTENSION' -I/local/nodejs/include/node -I/local/nodejs/src -I/local/nodejs/deps/openssl/config -I/local/nodejs/deps/openssl/openssl/include -I/local/nodejs/deps/uv/include -I/local/nodejs/deps/zlib -I/local/nodejs/deps/v8/include -I../. -I../../mac -I/local/anaconda/include/python2.7 -I/local/service-12/atomic/ifs/python/node_modules/node-addon-api  -fPIC -pthread -Wall -Wextra -Wno-unused-parameter -m64 -O3 -fno-omit-frame-pointer -fno-rtti -std=gnu++1y -MMD -MF ./Release/.deps/Release/obj.target/pythonIF/pythonIF.o.d.raw   -c
 Release/obj.target/pythonIF/pythonIF.o: ../pythonIF.cpp ../../mac/macIF.h \
- /local/service/atomic/ifs/python/node_modules/node-addon-api/napi.h \
+ /local/service-12/atomic/ifs/python/node_modules/node-addon-api/napi.h \
  /local/nodejs/include/node/node_api.h \
  /local/nodejs/include/node/js_native_api.h \
  /local/nodejs/include/node/js_native_api_types.h \
  /local/nodejs/include/node/node_api_types.h \
- /local/service/atomic/ifs/python/node_modules/node-addon-api/napi-inl.h \
- /local/service/atomic/ifs/python/node_modules/node-addon-api/napi-inl.deprecated.h \
+ /local/service-12/atomic/ifs/python/node_modules/node-addon-api/napi-inl.h \
+ /local/service-12/atomic/ifs/python/node_modules/node-addon-api/napi-inl.deprecated.h \
  /local/anaconda/include/python2.7/Python.h \
  /local/anaconda/include/python2.7/patchlevel.h \
  /local/anaconda/include/python2.7/pyconfig.h \
@@ -70,13 +70,13 @@ Release/obj.target/pythonIF/pythonIF.o: ../pythonIF.cpp ../../mac/macIF.h \
  /local/anaconda/include/python2.7/pyfpe.h
 ../pythonIF.cpp:
 ../../mac/macIF.h:
-/local/service/atomic/ifs/python/node_modules/node-addon-api/napi.h:
+/local/service-12/atomic/ifs/python/node_modules/node-addon-api/napi.h:
 /local/nodejs/include/node/node_api.h:
 /local/nodejs/include/node/js_native_api.h:
 /local/nodejs/include/node/js_native_api_types.h:
 /local/nodejs/include/node/node_api_types.h:
-/local/service/atomic/ifs/python/node_modules/node-addon-api/napi-inl.h:
-/local/service/atomic/ifs/python/node_modules/node-addon-api/napi-inl.deprecated.h:
+/local/service-12/atomic/ifs/python/node_modules/node-addon-api/napi-inl.h:
+/local/service-12/atomic/ifs/python/node_modules/node-addon-api/napi-inl.deprecated.h:
 /local/anaconda/include/python2.7/Python.h:
 /local/anaconda/include/python2.7/patchlevel.h:
 /local/anaconda/include/python2.7/pyconfig.h:
