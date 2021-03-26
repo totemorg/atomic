@@ -1,4 +1,4 @@
-cmd_Release/obj.target/RIF/RIF.o := g++ -o Release/obj.target/RIF/RIF.o ../RIF.cpp '-DNODE_GYP_MODULE_NAME=RIF' '-DUSING_UV_SHARED=1' '-DUSING_V8_SHARED=1' '-DV8_DEPRECATION_WARNINGS=1' '-DV8_DEPRECATION_WARNINGS' '-DV8_IMMINENT_DEPRECATION_WARNINGS' '-D_LARGEFILE_SOURCE' '-D_FILE_OFFSET_BITS=64' '-D__STDC_FORMAT_MACROS' '-DOPENSSL_NO_PINSHARED' '-DOPENSSL_THREADS' '-DNAPI_DISABLE_CPP_EXCEPTIONS' '-DBUILDING_NODE_EXTENSION' -I/local/nodejs/include/node -I/local/nodejs/src -I/local/nodejs/deps/openssl/config -I/local/nodejs/deps/openssl/openssl/include -I/local/nodejs/deps/uv/include -I/local/nodejs/deps/zlib -I/local/nodejs/deps/v8/include -I../. -I../../mac -I/local/include/R/RInside -I/local/include/R/Rcpp -I/local/include/R/R -I/local/service-12/atomic/ifs/R/node_modules/node-addon-api  -fPIC -pthread -Wall -Wextra -Wno-unused-parameter -m64 -O3 -fno-omit-frame-pointer -std=gnu++1y -MMD -MF ./Release/.deps/Release/obj.target/RIF/RIF.o.d.raw   -c
+cmd_Release/obj.target/RIF/RIF.o := g++ -o Release/obj.target/RIF/RIF.o ../RIF.cpp '-DNODE_GYP_MODULE_NAME=RIF' '-DUSING_UV_SHARED=1' '-DUSING_V8_SHARED=1' '-DV8_DEPRECATION_WARNINGS=1' '-DV8_DEPRECATION_WARNINGS' '-DV8_IMMINENT_DEPRECATION_WARNINGS' '-D_LARGEFILE_SOURCE' '-D_FILE_OFFSET_BITS=64' '-DOPENSSL_NO_PINSHARED' '-DOPENSSL_THREADS' '-DNAPI_DISABLE_CPP_EXCEPTIONS' '-DBUILDING_NODE_EXTENSION' -I/local/nodejs/include/node -I/local/nodejs/src -I/local/nodejs/deps/openssl/config -I/local/nodejs/deps/openssl/openssl/include -I/local/nodejs/deps/uv/include -I/local/nodejs/deps/zlib -I/local/nodejs/deps/v8/include -I../. -I../../mac -I/local/include/R/RInside -I/local/include/R/Rcpp -I/local/include/R/R -I/local/service/atomic/ifs/R/node_modules/node-addon-api  -fPIC -pthread -Wall -Wextra -Wno-unused-parameter -m64 -O3 -fno-omit-frame-pointer -std=gnu++1y -MMD -MF ./Release/.deps/Release/obj.target/RIF/RIF.o.d.raw   -c
 Release/obj.target/RIF/RIF.o: ../RIF.cpp \
  /local/include/R/RInside/RInside.h \
  /local/include/R/RInside/RInsideCommon.h \
@@ -383,13 +383,13 @@ Release/obj.target/RIF/RIF.o: ../RIF.cpp \
  /local/include/R/Rcpp/Rcpp/algorithm.h /local/include/R/R/Rembedded.h \
  /local/include/R/R/R_ext/RStartup.h /local/include/R/RInside/MemBuf.h \
  /local/include/R/RInside/Callbacks.h ../../mac/macIF.h \
- /local/service-12/atomic/ifs/R/node_modules/node-addon-api/napi.h \
+ /local/service/atomic/ifs/R/node_modules/node-addon-api/napi.h \
  /local/nodejs/include/node/node_api.h \
  /local/nodejs/include/node/js_native_api.h \
  /local/nodejs/include/node/js_native_api_types.h \
  /local/nodejs/include/node/node_api_types.h \
- /local/service-12/atomic/ifs/R/node_modules/node-addon-api/napi-inl.h \
- /local/service-12/atomic/ifs/R/node_modules/node-addon-api/napi-inl.deprecated.h
+ /local/service/atomic/ifs/R/node_modules/node-addon-api/napi-inl.h \
+ /local/service/atomic/ifs/R/node_modules/node-addon-api/napi-inl.deprecated.h
 ../RIF.cpp:
 /local/include/R/RInside/RInside.h:
 /local/include/R/RInside/RInsideCommon.h:
@@ -794,10 +794,10 @@ Release/obj.target/RIF/RIF.o: ../RIF.cpp \
 /local/include/R/RInside/MemBuf.h:
 /local/include/R/RInside/Callbacks.h:
 ../../mac/macIF.h:
-/local/service-12/atomic/ifs/R/node_modules/node-addon-api/napi.h:
+/local/service/atomic/ifs/R/node_modules/node-addon-api/napi.h:
 /local/nodejs/include/node/node_api.h:
 /local/nodejs/include/node/js_native_api.h:
 /local/nodejs/include/node/js_native_api_types.h:
 /local/nodejs/include/node/node_api_types.h:
-/local/service-12/atomic/ifs/R/node_modules/node-addon-api/napi-inl.h:
-/local/service-12/atomic/ifs/R/node_modules/node-addon-api/napi-inl.deprecated.h:
+/local/service/atomic/ifs/R/node_modules/node-addon-api/napi-inl.h:
+/local/service/atomic/ifs/R/node_modules/node-addon-api/napi-inl.deprecated.h:

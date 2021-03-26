@@ -11,7 +11,6 @@ DEFS_Debug := \
 	'-DV8_IMMINENT_DEPRECATION_WARNINGS' \
 	'-D_LARGEFILE_SOURCE' \
 	'-D_FILE_OFFSET_BITS=64' \
-	'-D__STDC_FORMAT_MACROS' \
 	'-DOPENSSL_NO_PINSHARED' \
 	'-DOPENSSL_THREADS' \
 	'-DNAPI_DISABLE_CPP_EXCEPTIONS' \
@@ -51,7 +50,7 @@ INCS_Debug := \
 	-I$(INCLUDE)/R/RInside \
 	-I$(INCLUDE)/R/Rcpp \
 	-I$(INCLUDE)/R/R \
-	-I/local/service-12/atomic/ifs/R/node_modules/node-addon-api
+	-I/local/service/atomic/ifs/R/node_modules/node-addon-api
 
 DEFS_Release := \
 	'-DNODE_GYP_MODULE_NAME=RIF' \
@@ -62,7 +61,6 @@ DEFS_Release := \
 	'-DV8_IMMINENT_DEPRECATION_WARNINGS' \
 	'-D_LARGEFILE_SOURCE' \
 	'-D_FILE_OFFSET_BITS=64' \
-	'-D__STDC_FORMAT_MACROS' \
 	'-DOPENSSL_NO_PINSHARED' \
 	'-DOPENSSL_THREADS' \
 	'-DNAPI_DISABLE_CPP_EXCEPTIONS' \
@@ -99,7 +97,7 @@ INCS_Release := \
 	-I$(INCLUDE)/R/RInside \
 	-I$(INCLUDE)/R/Rcpp \
 	-I$(INCLUDE)/R/R \
-	-I/local/service-12/atomic/ifs/R/node_modules/node-addon-api
+	-I/local/service/atomic/ifs/R/node_modules/node-addon-api
 
 OBJS := \
 	$(obj).target/$(TARGET)/RIF.o
