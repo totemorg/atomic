@@ -1,10 +1,10 @@
 // UNCLASSIFIED
 
 /**
-	@module ATOMIC
-	
-	[ATOMIC(https://github.com/totemstan/atomic.git) provides cloud computing on python, js, cv, 
+	Provides cloud computing on python, js, cv, 
 	matlab, R, ... engines via web endpoints.
+	
+	@module ATOMIC
 	
 	@requires child_process
 	@requires fs

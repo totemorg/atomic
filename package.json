@@ -6,9 +6,10 @@
   "scripts": {
     "prmprep": "source ./maint.sh prmput",
     "prmload": "source ./maint.sh prmget",
-    "edit": "vi ./config.sh",
-    "start": "source ./config.sh",
-    "test": "node atomic.js"
+    "config": "vi ./config.sh; source ./config.sh",
+    "test": "node atomic.js",
+	"redoc": "jsdoc2md --template README.hbs --files atomic.js >README.md; git commit -am 'redoc'; git  push agent master"
+	  
   },
   "repository": {
     "type": "git",
