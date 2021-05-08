@@ -309,6 +309,7 @@ matlab, R, ... engines via web endpoints.
 * [ATOMIC](#module_ATOMIC)
     * _static_
         * [.macs](#module_ATOMIC.macs)
+        * [.errors](#module_ATOMIC.errors)
         * [.config()](#module_ATOMIC.config)
         * [.run()](#module_ATOMIC.run)
         * [.save()](#module_ATOMIC.save)
@@ -316,8 +317,8 @@ matlab, R, ... engines via web endpoints.
         * [.delete(req, res)](#module_ATOMIC.delete)
         * [.select(req, res)](#module_ATOMIC.select)
         * [.update(req, res)](#module_ATOMIC.update)
+        * [.mixContext()](#module_ATOMIC.mixContext)
     * _inner_
-        * [~ATOMIC](#module_ATOMIC..ATOMIC)
         * [~ATOMIC](#module_ATOMIC..ATOMIC)
 
 <a name="module_ATOMIC.macs"></a>
@@ -326,6 +327,13 @@ matlab, R, ... engines via web endpoints.
 Number of worker cores (aka threads) to provide in the cluster.  0 cores provides only the master.
 
 **Kind**: static property of [<code>ATOMIC</code>](#module_ATOMIC)  
+<a name="module_ATOMIC.errors"></a>
+
+### ATOMIC.errors
+Error messages
+
+**Kind**: static property of [<code>ATOMIC</code>](#module_ATOMIC)  
+**Cfg**: <code>Object</code>  
 <a name="module_ATOMIC.config"></a>
 
 ### ATOMIC.config()
@@ -360,7 +368,7 @@ Only the cluster master can see its workers; thus workers can not send work to o
 the master can send work to workers.   
 
 This method will callback cb(core) with the requested engine core; null if the core could not
- be located or allocated.
+be located or allocated.
 
 **Kind**: static method of [<code>ATOMIC</code>](#module_ATOMIC)  
 <a name="module_ATOMIC.save"></a>
@@ -421,14 +429,9 @@ run/select/GET, and free/delete/DELETE.
 | req | <code>Object</code> | Totem request |
 | res | <code>function</code> | Totem response |
 
-<a name="module_ATOMIC..ATOMIC"></a>
+<a name="module_ATOMIC.mixContext"></a>
 
-### ATOMIC~ATOMIC
-**Kind**: inner property of [<code>ATOMIC</code>](#module_ATOMIC)  
-**Cfg**: <code>Object</code>  
-<a name="module_ATOMIC..ATOMIC"></a>
-
-### ATOMIC~ATOMIC
+### ATOMIC.mixContext()
 Callback engine cb(ctx) with its state ctx primed with state from its ctx.Entry, then export its 
 ctx state specified by its ctx.Exit.
 The ctx.sqls = {var:"query...", ...} || "query..." enumerates the engine's ctx.Entry (to import 
@@ -437,7 +440,12 @@ state from its ctx after the engine is run).  If an sqls entry/exit exists, this
 ctx.req = [var, ...] list to be built to synchronously import/export the state into/from the 
 engine's context.
 
+**Kind**: static method of [<code>ATOMIC</code>](#module_ATOMIC)  
+<a name="module_ATOMIC..ATOMIC"></a>
+
+### ATOMIC~ATOMIC
 **Kind**: inner property of [<code>ATOMIC</code>](#module_ATOMIC)  
+**Cfg**: <code>Object</code>  
 
 * * *
 

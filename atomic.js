@@ -276,12 +276,10 @@ end
 		$libs: {  // libs shared with js-engines 
 		},
 			
-		/**
-		Error messages
-		@cfg {Object}
-		@private
-		@member ATOMIC
-		*/
+/**
+Error messages
+@cfg {Object}
+*/
 		errors: {  // error messages
 			0: null,
 			101: new Error("engine could not be loaded"),
@@ -349,7 +347,7 @@ Only the cluster master can see its workers; thus workers can not send work to o
 the master can send work to workers.   
 
 This method will callback cb(core) with the requested engine core; null if the core could not
- be located or allocated.
+be located or allocated.
 */
 		run: (req, cb) => {  //< run engine with callback cb(ctx, stepper) or cb(null) if error
 			const 
@@ -662,8 +660,6 @@ state into its ctx before the engine is run), and enumerates the engine's ctx.Ex
 state from its ctx after the engine is run).  If an sqls entry/exit exists, this will cause the 
 ctx.req = [var, ...] list to be built to synchronously import/export the state into/from the 
 engine's context.
-@method mixContext
-@member ATOMIC
 */
 		mixContext: (sql, sqls, ctx, cb) => {  //< serialize import/export (ctx mixin/mixout) using sqls queries with callback cb(ctx) 
 			var 
