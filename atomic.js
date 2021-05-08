@@ -1,18 +1,18 @@
 // UNCLASSIFIED
 
 /**
-	Provides cloud computing on python, js, cv, 
-	matlab, R, ... engines via web endpoints.
-	
-	@module ATOMIC
-	
-	@requires child_process
-	@requires fs
-	@requires vm 
-	@requires pythonIF
-	@requires opencvIF
-	@requires RIF
-	@requires enums
+Provides cloud computing on python, js, cv, 
+matlab, R, ... engines via web endpoints.
+
+@module ATOMIC
+
+@requires child_process
+@requires fs
+@requires vm 
+@requires pythonIF
+@requires opencvIF
+@requires RIF
+@requires enums
 */
 
 const 														
@@ -277,10 +277,10 @@ end
 		},
 			
 		/**
+		Error messages
 		@cfg {Object}
 		@private
 		@member ATOMIC
-		Error messages
 		*/
 		errors: {  // error messages
 			0: null,
@@ -323,34 +323,34 @@ end
 			 });
 		},
 	
-		/**
-		Run an engine.
-		
-		Allocate the supplied callback cb(core) with the engine core that is/was allocated to a Client.Engine.Type.Instance
-		thread as defined by this request (in the req.body and req.log).  If a workflow Instance is
-		provided, then the engine is assumed to be in a workflow (thus the returned core will remain
-		on the same compile-step thread); otherwise, the engine is assumed to be standalone (thus forcing
-		the engine to re-compile each time it is stepped).
-		 
-		As used here (and elsewhere) the terms "process", "engine core", "safety core", and "worker" are 
-		equivalent, and should not be confused with a physical "cpu core".  Because heavyweight 
-		(spawned) workers run in their own V8 instance, these workers can tollerate all faults (even 
-		core-dump exceptions). The lightweight (cluster) workers used here, however, share the same V8 
-		instance.  Heavyweight workers thus provide greater safety for bound executables (like opencv and 
-		python) at the expense of greater cpu overhead.  
-		
-		The goal of hyperthreading is to balance threads across cpu cores.  The workerless (master only)
-		configuration will intrinsically utilize only one of its underlying cpu cores (the OS remains, 
-		however, free to bounce between cpu cores via SMP).  A worker cluster, however, tends to 
-		balance threads across all cpu cores, especially when the number of allocated workers exceeds
-		the number of physical cpu cores.
-		 
-		Only the cluster master can see its workers; thus workers can not send work to other workers, only
-		the master can send work to workers.   
-		
-		This method will callback cb(core) with the requested engine core; null if the core could not
-		 be located or allocated.
-		*/
+/**
+Run an engine.
+
+Allocate the supplied callback cb(core) with the engine core that is/was allocated to a Client.Engine.Type.Instance
+thread as defined by this request (in the req.body and req.log).  If a workflow Instance is
+provided, then the engine is assumed to be in a workflow (thus the returned core will remain
+on the same compile-step thread); otherwise, the engine is assumed to be standalone (thus forcing
+the engine to re-compile each time it is stepped).
+
+As used here (and elsewhere) the terms "process", "engine core", "safety core", and "worker" are 
+equivalent, and should not be confused with a physical "cpu core".  Because heavyweight 
+(spawned) workers run in their own V8 instance, these workers can tollerate all faults (even 
+core-dump exceptions). The lightweight (cluster) workers used here, however, share the same V8 
+instance.  Heavyweight workers thus provide greater safety for bound executables (like opencv and 
+python) at the expense of greater cpu overhead.  
+
+The goal of hyperthreading is to balance threads across cpu cores.  The workerless (master only)
+configuration will intrinsically utilize only one of its underlying cpu cores (the OS remains, 
+however, free to bounce between cpu cores via SMP).  A worker cluster, however, tends to 
+balance threads across all cpu cores, especially when the number of allocated workers exceeds
+the number of physical cpu cores.
+
+Only the cluster master can see its workers; thus workers can not send work to other workers, only
+the master can send work to workers.   
+
+This method will callback cb(core) with the requested engine core; null if the core could not
+ be located or allocated.
+*/
 		run: (req, cb) => {  //< run engine with callback cb(ctx, stepper) or cb(null) if error
 			const 
 				{ sql, query, client, table, body, action, resSocket, domain, type, profile, url } = req,
@@ -535,9 +535,9 @@ end
 			
 		},
 
-		/**
-		Save context tau tokens into job files.
-		*/			
+/**
+Save context tau tokens into job files.
+*/			
 		save: (sql,taus,engine,saves) => {
 			var t = new Date();
 
@@ -579,12 +579,12 @@ end
 			});
 		},
 
-		/**
-		Provides engine CRUD interface: step/insert/POST, compile/update/PUT, 
-		run/select/GET, and free/delete/DELETE.
-		@param {Object} req Totem request
-		@param {Function} res Totem response
-		*/
+/**
+Provides engine CRUD interface: step/insert/POST, compile/update/PUT, 
+run/select/GET, and free/delete/DELETE.
+@param {Object} req Totem request
+@param {Function} res Totem response
+*/
 		insert: (req,res) => {	//< step a stateful engine with callback res(ctx || Error) 
 			run(req, (ctx,step) => {
 				if ( ctx ) {
@@ -597,24 +597,24 @@ end
 			});
 		},
 
-		/**
-		Provides engine CRUD interface: step/insert/POST, compile/update/PUT, 
-		run/select/GET, and free/delete/DELETE.
-		@param {Object} req Totem request
-		@param {Function} res Totem response
-		*/
+/**
+Provides engine CRUD interface: step/insert/POST, compile/update/PUT, 
+run/select/GET, and free/delete/DELETE.
+@param {Object} req Totem request
+@param {Function} res Totem response
+*/
 		delete: (req,res) => {	//< free a stateful engine with callback res(ctx || Error) 
 			run(req, (ctx,step) => {
 				res( ctx );
 			});
 		},
 
-		/**
-		Provides engine CRUD interface: step/insert/POST, compile/update/PUT, 
-		run/select/GET, and free/delete/DELETE.
-		@param {Object} req Totem request
-		@param {Function} res Totem response
-		*/
+/**
+Provides engine CRUD interface: step/insert/POST, compile/update/PUT, 
+run/select/GET, and free/delete/DELETE.
+@param {Object} req Totem request
+@param {Function} res Totem response
+*/
 		select: (req,res) => {	//< run a stateless engine with callback res(ctx || null) 
 			run( req, (ctx, step) => {  // get engine stepper and its context
 				if ( ctx ) 
@@ -625,12 +625,12 @@ end
 			});
 		},
 
-		/**
-		Provides engine CRUD interface: step/insert/POST, compile/update/PUT, 
-		run/select/GET, and free/delete/DELETE.
-		@param {Object} req Totem request
-		@param {Function} res Totem response
-		*/
+/**
+Provides engine CRUD interface: step/insert/POST, compile/update/PUT, 
+run/select/GET, and free/delete/DELETE.
+@param {Object} req Totem request
+@param {Function} res Totem response
+*/
 		update: (req,res) => {	//< compile a stateful engine with callback res(ctx || Error)  
 			run( req, (ctx,step) => {
 				res( ctx );
@@ -654,17 +654,17 @@ end
 				return cb( ctx );
 		},
 
-		/**
-		Callback engine cb(ctx) with its state ctx primed with state from its ctx.Entry, then export its 
-		ctx state specified by its ctx.Exit.
-		The ctx.sqls = {var:"query...", ...} || "query..." enumerates the engine's ctx.Entry (to import 
-		state into its ctx before the engine is run), and enumerates the engine's ctx.Exit (to export 
-		state from its ctx after the engine is run).  If an sqls entry/exit exists, this will cause the 
-		ctx.req = [var, ...] list to be built to synchronously import/export the state into/from the 
-		engine's context.
-		@method mixContext
-		@member ATOMIC
-		*/
+/**
+Callback engine cb(ctx) with its state ctx primed with state from its ctx.Entry, then export its 
+ctx state specified by its ctx.Exit.
+The ctx.sqls = {var:"query...", ...} || "query..." enumerates the engine's ctx.Entry (to import 
+state into its ctx before the engine is run), and enumerates the engine's ctx.Exit (to export 
+state from its ctx after the engine is run).  If an sqls entry/exit exists, this will cause the 
+ctx.req = [var, ...] list to be built to synchronously import/export the state into/from the 
+engine's context.
+@method mixContext
+@member ATOMIC
+*/
 		mixContext: (sql, sqls, ctx, cb) => {  //< serialize import/export (ctx mixin/mixout) using sqls queries with callback cb(ctx) 
 			var 
 				importing = sqls == ctx.Entry,

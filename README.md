@@ -302,7 +302,7 @@ or [follow TOTEM milestones](http://totem.hopto.org/milestones.view) || [COE](ht
 
 ## ATOMIC
 Provides cloud computing on python, js, cv, 
-	matlab, R, ... engines via web endpoints.
+matlab, R, ... engines via web endpoints.
 
 **Requires**: <code>module:child\_process</code>, <code>module:fs</code>, <code>module:vm</code>, <code>module:pythonIF</code>, <code>module:opencvIF</code>, <code>module:RIF</code>, <code>module:enums</code>  
 
@@ -336,31 +336,31 @@ Configure are start the engine interface, estblish worker core connections
 
 ### ATOMIC.run()
 Run an engine.
-		
-		Allocate the supplied callback cb(core) with the engine core that is/was allocated to a Client.Engine.Type.Instance
-		thread as defined by this request (in the req.body and req.log).  If a workflow Instance is
-		provided, then the engine is assumed to be in a workflow (thus the returned core will remain
-		on the same compile-step thread); otherwise, the engine is assumed to be standalone (thus forcing
-		the engine to re-compile each time it is stepped).
-		 
-		As used here (and elsewhere) the terms "process", "engine core", "safety core", and "worker" are 
-		equivalent, and should not be confused with a physical "cpu core".  Because heavyweight 
-		(spawned) workers run in their own V8 instance, these workers can tollerate all faults (even 
-		core-dump exceptions). The lightweight (cluster) workers used here, however, share the same V8 
-		instance.  Heavyweight workers thus provide greater safety for bound executables (like opencv and 
-		python) at the expense of greater cpu overhead.  
-		
-		The goal of hyperthreading is to balance threads across cpu cores.  The workerless (master only)
-		configuration will intrinsically utilize only one of its underlying cpu cores (the OS remains, 
-		however, free to bounce between cpu cores via SMP).  A worker cluster, however, tends to 
-		balance threads across all cpu cores, especially when the number of allocated workers exceeds
-		the number of physical cpu cores.
-		 
-		Only the cluster master can see its workers; thus workers can not send work to other workers, only
-		the master can send work to workers.   
-		
-		This method will callback cb(core) with the requested engine core; null if the core could not
-		 be located or allocated.
+
+Allocate the supplied callback cb(core) with the engine core that is/was allocated to a Client.Engine.Type.Instance
+thread as defined by this request (in the req.body and req.log).  If a workflow Instance is
+provided, then the engine is assumed to be in a workflow (thus the returned core will remain
+on the same compile-step thread); otherwise, the engine is assumed to be standalone (thus forcing
+the engine to re-compile each time it is stepped).
+
+As used here (and elsewhere) the terms "process", "engine core", "safety core", and "worker" are 
+equivalent, and should not be confused with a physical "cpu core".  Because heavyweight 
+(spawned) workers run in their own V8 instance, these workers can tollerate all faults (even 
+core-dump exceptions). The lightweight (cluster) workers used here, however, share the same V8 
+instance.  Heavyweight workers thus provide greater safety for bound executables (like opencv and 
+python) at the expense of greater cpu overhead.  
+
+The goal of hyperthreading is to balance threads across cpu cores.  The workerless (master only)
+configuration will intrinsically utilize only one of its underlying cpu cores (the OS remains, 
+however, free to bounce between cpu cores via SMP).  A worker cluster, however, tends to 
+balance threads across all cpu cores, especially when the number of allocated workers exceeds
+the number of physical cpu cores.
+
+Only the cluster master can see its workers; thus workers can not send work to other workers, only
+the master can send work to workers.   
+
+This method will callback cb(core) with the requested engine core; null if the core could not
+ be located or allocated.
 
 **Kind**: static method of [<code>ATOMIC</code>](#module_ATOMIC)  
 <a name="module_ATOMIC.save"></a>
@@ -373,7 +373,7 @@ Save context tau tokens into job files.
 
 ### ATOMIC.insert(req, res)
 Provides engine CRUD interface: step/insert/POST, compile/update/PUT, 
-		run/select/GET, and free/delete/DELETE.
+run/select/GET, and free/delete/DELETE.
 
 **Kind**: static method of [<code>ATOMIC</code>](#module_ATOMIC)  
 
@@ -386,7 +386,7 @@ Provides engine CRUD interface: step/insert/POST, compile/update/PUT,
 
 ### ATOMIC.delete(req, res)
 Provides engine CRUD interface: step/insert/POST, compile/update/PUT, 
-		run/select/GET, and free/delete/DELETE.
+run/select/GET, and free/delete/DELETE.
 
 **Kind**: static method of [<code>ATOMIC</code>](#module_ATOMIC)  
 
@@ -399,7 +399,7 @@ Provides engine CRUD interface: step/insert/POST, compile/update/PUT,
 
 ### ATOMIC.select(req, res)
 Provides engine CRUD interface: step/insert/POST, compile/update/PUT, 
-		run/select/GET, and free/delete/DELETE.
+run/select/GET, and free/delete/DELETE.
 
 **Kind**: static method of [<code>ATOMIC</code>](#module_ATOMIC)  
 
@@ -412,7 +412,7 @@ Provides engine CRUD interface: step/insert/POST, compile/update/PUT,
 
 ### ATOMIC.update(req, res)
 Provides engine CRUD interface: step/insert/POST, compile/update/PUT, 
-		run/select/GET, and free/delete/DELETE.
+run/select/GET, and free/delete/DELETE.
 
 **Kind**: static method of [<code>ATOMIC</code>](#module_ATOMIC)  
 
@@ -430,12 +430,12 @@ Provides engine CRUD interface: step/insert/POST, compile/update/PUT,
 
 ### ATOMIC~ATOMIC
 Callback engine cb(ctx) with its state ctx primed with state from its ctx.Entry, then export its 
-		ctx state specified by its ctx.Exit.
-		The ctx.sqls = {var:"query...", ...} || "query..." enumerates the engine's ctx.Entry (to import 
-		state into its ctx before the engine is run), and enumerates the engine's ctx.Exit (to export 
-		state from its ctx after the engine is run).  If an sqls entry/exit exists, this will cause the 
-		ctx.req = [var, ...] list to be built to synchronously import/export the state into/from the 
-		engine's context.
+ctx state specified by its ctx.Exit.
+The ctx.sqls = {var:"query...", ...} || "query..." enumerates the engine's ctx.Entry (to import 
+state into its ctx before the engine is run), and enumerates the engine's ctx.Exit (to export 
+state from its ctx after the engine is run).  If an sqls entry/exit exists, this will cause the 
+ctx.req = [var, ...] list to be built to synchronously import/export the state into/from the 
+engine's context.
 
 **Kind**: inner property of [<code>ATOMIC</code>](#module_ATOMIC)  
 
