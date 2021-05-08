@@ -308,8 +308,11 @@ matlab, R, ... engines via web endpoints.
 
 * [ATOMIC](#module_ATOMIC)
     * _static_
+        * [.paths](#module_ATOMIC.paths)
         * [.macs](#module_ATOMIC.macs)
+        * [.db](#module_ATOMIC.db)
         * [.errors](#module_ATOMIC.errors)
+        * [.sqlThread()](#module_ATOMIC.sqlThread)
         * [.config()](#module_ATOMIC.config)
         * [.run()](#module_ATOMIC.run)
         * [.save()](#module_ATOMIC.save)
@@ -321,12 +324,26 @@ matlab, R, ... engines via web endpoints.
     * _inner_
         * [~ATOMIC](#module_ATOMIC..ATOMIC)
 
+<a name="module_ATOMIC.paths"></a>
+
+### ATOMIC.paths
+Paths to various things.
+
+**Kind**: static property of [<code>ATOMIC</code>](#module_ATOMIC)  
+**Cfg**: <code>Object</code>  
 <a name="module_ATOMIC.macs"></a>
 
 ### ATOMIC.macs
 Number of worker cores (aka threads) to provide in the cluster.  0 cores provides only the master.
 
 **Kind**: static property of [<code>ATOMIC</code>](#module_ATOMIC)  
+<a name="module_ATOMIC.db"></a>
+
+### ATOMIC.db
+Next available core
+
+**Kind**: static property of [<code>ATOMIC</code>](#module_ATOMIC)  
+**Cfg**: <code>Number</code>  
 <a name="module_ATOMIC.errors"></a>
 
 ### ATOMIC.errors
@@ -334,12 +351,20 @@ Error messages
 
 **Kind**: static property of [<code>ATOMIC</code>](#module_ATOMIC)  
 **Cfg**: <code>Object</code>  
+<a name="module_ATOMIC.sqlThread"></a>
+
+### ATOMIC.sqlThread()
+Start a sql thread
+
+**Kind**: static method of [<code>ATOMIC</code>](#module_ATOMIC)  
+**Cfg**: <code>Function</code>  
 <a name="module_ATOMIC.config"></a>
 
 ### ATOMIC.config()
-Configure are start the engine interface, estblish worker core connections
+Configure the engine interface and estblish workers.
 
 **Kind**: static method of [<code>ATOMIC</code>](#module_ATOMIC)  
+**Cfg**: <code>function</code>  
 <a name="module_ATOMIC.run"></a>
 
 ### ATOMIC.run()

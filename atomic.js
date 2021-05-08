@@ -50,30 +50,25 @@ const
 		ipcFeed: (req,res) => { throw new Error( "atomic ipcFeed not configured" ); },
 		ipcSave: (sql,ctx) => { throw new Error( "atomic ipcSave not configured" ); },
 			
-		/**
-		@cfg {Object}
-		@private
-		@member ATOMIC
-		Paths to various things.
-		*/
+/**
+Paths to various things.
+@cfg {Object}
+*/
 		paths: {
 			jobs: "./jobs/"
 		},
 		
 		node: "localhost",
 			
-		/**
-		@cfg {Function}
-		@private
-		@member ATOMIC
-		@method sqlThread
-		Start a sql thread
-		*/
+/**
+Start a sql thread
+@cfg {Function}
+*/
 		sqlThread: () => { throw new Error("atomic sqlThread not configured"); },  //< sql threader
 		
-		/**
-		Number of worker cores (aka threads) to provide in the cluster.  0 cores provides only the master.
-		*/
+/**
+Number of worker cores (aka threads) to provide in the cluster.  0 cores provides only the master.
+*/
 		macs: {
 			py: 4,
 			cv: 4,
@@ -86,11 +81,10 @@ const
 			
 		cores: 0,  //< number of workers
 			
-		/**
-		@cfg {Number}
-		@private
-		Next available core
-		*/
+/**
+Next available core
+@cfg {Number}
+*/
 		//nextcore: 0,
 
 		db: { // db connections for each engine tech
@@ -171,9 +165,10 @@ end
 			}		
 		},
 			
-		/**
-		Configure are start the engine interface, estblish worker core connections
-		*/
+/**
+Configure the engine interface and estblish workers.
+@cfg {function}
+*/
 		config: opts => {  //< configure with options
 	
 			Trace(`CONFIGURE`);
