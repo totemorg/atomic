@@ -69,8 +69,16 @@ Configure and use **ATOMIC** like this:
 		console.log( err ? "something evil happended" : "Im running");
 	});
 
-where [its configuration keys](http://totem.hopto.org/shares/prm/atomic/index.html) || [COE](https://totem.west.ile.nga.ic.gov/shares/prm/atomic/index.html) || [SBU](https://totem.nga.mil/shares/prm/atomic/index.html)
-follow the [ENUM deep copy conventions](https://github.com/totemstan/enum) || [COE](https://sc.appdev.proj.coe/acmesds/enum) || [SBU](https://gitlab.west.nga.ic.gov/acmesds/enum).
+where its configuration keys (
+[WWW](http://totem.zapto.org/shares/prm/totem/index.html) 
+[COE](https://totem.west.ile.nga.ic.gov/shares/prm/totem/index.html) 
+[SBU](https://totem.nga.mil/shares/prm/totem/index.html)
+)
+follow the ENUM deep copy conventions (
+[WWW](https://github.com/totemstan/enum) 
+[COE](https://sc.appdev.proj.coe/acmesds/enum) 
+[SBU](https://gitlab.west.nga.ic.gov/acmesds/enum)
+).
 
 ### A1 - Totem and Atomic Engine interfaces
 
