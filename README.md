@@ -47,7 +47,7 @@ Clone **ATOMIC** from one of its repos:
 	git clone https://sc.appdev.proj.coe/acmesds/atmoic
 	git clone https://gitlab.west.nga.ic.gov/acmesds/atmoic
 
-## Dependent Modules
+Dependent modules:
 
 + ENUMS [WWW](https://github.com/totemstan/enums)  [COE](https://sc.appdev.proj.coe/acmesds/enums)  [SBU](https://gitlab.west.nga.ic.gov/acmesds/enums)  
 
