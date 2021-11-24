@@ -11,6 +11,7 @@ DEFS_Debug := \
 	'-DV8_IMMINENT_DEPRECATION_WARNINGS' \
 	'-D_LARGEFILE_SOURCE' \
 	'-D_FILE_OFFSET_BITS=64' \
+	'-D__STDC_FORMAT_MACROS' \
 	'-DOPENSSL_NO_PINSHARED' \
 	'-DOPENSSL_THREADS' \
 	'-DNAPI_DISABLE_CPP_EXCEPTIONS' \
@@ -48,7 +49,7 @@ INCS_Debug := \
 	-I/local/nodejs/deps/v8/include \
 	-I$(srcdir)/. \
 	-I$(srcdir)/../mac \
-	-I$(CONDA)/include/python2.7 \
+	-I$(PYTHONINC) \
 	-I/local/service/atomic/ifs/python/node_modules/node-addon-api
 
 DEFS_Release := \
@@ -60,6 +61,7 @@ DEFS_Release := \
 	'-DV8_IMMINENT_DEPRECATION_WARNINGS' \
 	'-D_LARGEFILE_SOURCE' \
 	'-D_FILE_OFFSET_BITS=64' \
+	'-D__STDC_FORMAT_MACROS' \
 	'-DOPENSSL_NO_PINSHARED' \
 	'-DOPENSSL_THREADS' \
 	'-DNAPI_DISABLE_CPP_EXCEPTIONS' \
@@ -94,7 +96,7 @@ INCS_Release := \
 	-I/local/nodejs/deps/v8/include \
 	-I$(srcdir)/. \
 	-I$(srcdir)/../mac \
-	-I$(CONDA)/include/python2.7 \
+	-I$(PYTHONINC) \
 	-I/local/service/atomic/ifs/python/node_modules/node-addon-api
 
 OBJS := \
@@ -135,7 +137,7 @@ LDFLAGS_Release := \
 	-m64
 
 LIBS := \
-	$(LIB)/python/libpython2.7.so
+	$(PYTHONLIB)
 
 $(obj).target/pythonIF.node: GYP_LDFLAGS := $(LDFLAGS_$(BUILDTYPE))
 $(obj).target/pythonIF.node: LIBS := $(LIBS)

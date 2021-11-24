@@ -28,7 +28,8 @@
 		"include_dirs": [
 			".",
 			"../mac",
-			"$(CONDA)/include/python2.7",
+			#"$(CONDA)/include/python2.7",
+			"$(PYTHONINC)",
 			"<!@(node -p \"require('node-addon-api').include\")"    # has to be last
 		],
 		"sources": [
@@ -36,7 +37,8 @@
 		],
 		"libraries": [
 			#"$(CONDA)/lib/libpython2.7.so"
-			"$(LIB)/python/libpython2.7.so"
+			#$(LIB)/python/libpython2.7.so"
+			"$(PYTHONLIB)"
 		]	
 	}]
 }

@@ -16,7 +16,7 @@ export PYLINK=$CONDA
 export PYTHON=$CONDA/bin/python2.7
 #export PYTHON=$CONDA/bin/python3.7
 export PYTHONHOME=$CONDA
-export PYTHONPATH=$CAFFE/python:$PYTHON/:$PYTHON/site-packages:$BASE/service/atomic
+export PYTHONPATH=$BASE/caffe/python:$PYTHON/:$PYTHON/site-packages:$BASE/service/atomic
 #export PYTHONORIGIN=/usr
 
 # binders machines and geo shortcuts
