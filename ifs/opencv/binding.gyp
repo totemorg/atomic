@@ -86,7 +86,9 @@
 			"$(LIB)/opencv/libopencv_stitching.so",
 			#"$(LIB)/opencv/libopencv_superres.so",
 			"$(LIB)/opencv/libopencv_video.so",
-			#"$(LIB)/opencv/libopencv_videostab.so"
+			#"$(LIB)/opencv/libopencv_videostab.so",
+			
+			"$(LIB)/conda/libjpeg.so"
 		],
 
 		"define": [   # caffe make options needed (place in defines?)

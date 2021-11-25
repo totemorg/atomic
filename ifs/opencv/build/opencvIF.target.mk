@@ -157,7 +157,8 @@ LIBS := \
 	$(LIB)/opencv/libopencv_objdetect.so \
 	$(LIB)/opencv/libopencv_photo.so \
 	$(LIB)/opencv/libopencv_stitching.so \
-	$(LIB)/opencv/libopencv_video.so
+	$(LIB)/opencv/libopencv_video.so \
+	$(LIB)/conda/libjpeg.so
 
 $(obj).target/opencvIF.node: GYP_LDFLAGS := $(LDFLAGS_$(BUILDTYPE))
 $(obj).target/opencvIF.node: LIBS := $(LIBS)
