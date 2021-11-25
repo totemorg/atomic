@@ -38,7 +38,7 @@
 		],
 		
 		"libraries": [
-			#"$(LIB)/R/R/libRblas.so",
+			"$(LIB)/R/R/libRblas.so",
 			#"$(LIB)/R/R/libRlapack.so",
 			#"$(LIB)/R/R/libRrefblas.so",
 			"$(LIB)/R/R/libR.so",
