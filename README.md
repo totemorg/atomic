@@ -67,7 +67,7 @@ Dependent modules:
 
 Configure and use **ATOMIC** like this:
 
-	var **ATOMIC** = require("atomic").config({
+	var ATOMIC = require("atomic").config({
 			key: value, 						// set key
 			"key.key": value, 					// indexed set
 			"key.key.": value					// indexed append
