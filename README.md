@@ -1,6 +1,7 @@
 # ATOMIC
 
-**ATOMIC** provides cloud computing on python, js, cv, matlab, R, ... engines via web endpoints:
+**ATOMIC** provides cloud computing for python, js, cv, matlab, R, ... engines 
+via the following web endpoints:
 
 	POST advance/step/insert a stateful engine
 	PUT	compile/init/update a stateful engine
@@ -85,7 +86,22 @@ follow the **ENUMS** deep copy conventions (
 [SBU](https://gitlab.west.nga.ic.gov/acmesds/enum)
 ).
 
-### A1 - Totem and Atomic Engine interfaces
+
+## Program Reference
+<details>
+<summary>
+<i>Open/Close</i>
+</summary>
+<a name="module_ATOMIC"></a>
+
+## ATOMIC
+Provides cloud computing on python, js, cv, 
+matlab, R, ... engines via web endpoints.
+
+**Requires**: <code>module:child\_process</code>, <code>module:fs</code>, <code>module:vm</code>, <code>module:pythonIF</code>, <code>module:opencvIF</code>, <code>module:RIF</code>, <code>module:enums</code>  
+**Example**  
+```js
+A1 - Totem and Atomic Engine interfaces:
 
 	var **ATOMIC** = require("../atomic");
 	var TOTEM = require("../totem");
@@ -96,8 +112,10 @@ follow the **ENUMS** deep copy conventions (
 		get_endpts: TOTEM.reader,
 		my_paths: TOTEM.paths
 	});
-
-### A2 - Totem being powered up and down
+```
+**Example**  
+```js
+A2 - Totem being powered up and down:
 
 	var TOTEM = require("../totem");
 
@@ -109,8 +127,10 @@ follow the **ENUMS** deep copy conventions (
 	var **ATOMIC** = require("../engine").config({
 		thread: TOTEM.thread
 	});
-
-### A3 - Totem service with a chipper engine endpoint and a database
+```
+**Example**  
+```js
+A3 - Totem service with a chipper engine endpoint and a database:
 
 	var TOTEM = require("../totem").config({
 		"byType.": {
@@ -130,8 +150,10 @@ follow the **ENUMS** deep copy conventions (
 	var **ATOMIC** = require("../engine").config({
 		thread: TOTEM.thread
 	});
-
-### A4 - Totem with a complete engine test endpoint
+```
+**Example**  
+```js
+A4 - Totem with a complete engine test endpoint:
 
 	var TOTEM = require("../totem").config({
 		"byType.": {
@@ -300,16 +322,7 @@ follow the **ENUMS** deep copy conventions (
 	var **ATOMIC** = require("../atomic").config({
 		thread: TOTEM.thread
 	});
-	
-
-
-<a name="module_ATOMIC"></a>
-
-## ATOMIC
-Provides cloud computing on python, js, cv, 
-matlab, R, ... engines via web endpoints.
-
-**Requires**: <code>module:child\_process</code>, <code>module:fs</code>, <code>module:vm</code>, <code>module:pythonIF</code>, <code>module:opencvIF</code>, <code>module:RIF</code>, <code>module:enums</code>  
+```
 
 * [ATOMIC](#module_ATOMIC)
     * _static_
@@ -476,6 +489,7 @@ engine's context.
 ### ATOMIC~ATOMIC
 **Kind**: inner property of [<code>ATOMIC</code>](#module_ATOMIC)  
 **Cfg**: <code>Object</code>  
+</details>
 
 ## Contacting, Contributing, Following
 
@@ -505,7 +519,6 @@ Feel free to
 [COE](https://totem.west.ile.nga.ic.gov/milestones.view) 
 [SBU](https://totem.nga.mil/milestones.view)
 ).
-
 
 * * *
 
