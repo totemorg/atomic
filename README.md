@@ -520,6 +520,11 @@ Feel free to
 [SBU](https://totem.nga.mil/milestones.view)
 ).
 
+github: totemstan
+patreon: totemstan
+tidelift: npm/octo-package
+
+
 * * *
 
 &copy; 2012 ACMESDS
