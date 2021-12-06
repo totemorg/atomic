@@ -1,8 +1,7 @@
 // UNCLASSIFIED
 
 /**
-Provides cloud computing on python, js, cv, 
-matlab, R, ... engines via web endpoints.
+Provides cloud computing on python, js, cv, matlab, R, ... engines via web endpoints.
 
 @module ATOMIC
 
@@ -271,25 +270,25 @@ const
 		ipcFeed: (req,res) => { throw new Error( "atomic ipcFeed not configured" ); },
 		ipcSave: (sql,ctx) => { throw new Error( "atomic ipcSave not configured" ); },
 			
-/**
-Paths to various things.
-@cfg {Object}
-*/
+		/**
+		Paths to various things.
+		@cfg {Object}
+		*/
 		paths: {
 			jobs: "./jobs/"
 		},
 		
 		node: "localhost",
 			
-/**
-Start a sql thread
-@cfg {Function}
-*/
+		/**
+		Start a sql thread
+		@cfg {Function}
+		*/
 		sqlThread: () => { throw new Error("atomic sqlThread not configured"); },  //< sql threader
 		
-/**
-Number of worker cores (aka threads) to provide in the cluster.  0 cores provides only the master.
-*/
+		/**
+		Number of worker cores (aka threads) to provide in the cluster.  0 cores provides only the master.
+		*/
 		macs: {
 			py: 4,
 			cv: 4,
@@ -302,10 +301,10 @@ Number of worker cores (aka threads) to provide in the cluster.  0 cores provide
 			
 		cores: 0,  //< number of workers
 			
-/**
-Next available core
-@cfg {Number}
-*/
+		/**
+		Next available core
+		@cfg {Number}
+		*/
 		//nextcore: 0,
 
 		db: { // db connections for each engine tech
@@ -386,10 +385,10 @@ end
 			}		
 		},
 			
-/**
-Configure the engine interface and estblish workers.
-@cfg {function}
-*/
+		/**
+		Configure the engine interface and estblish workers.
+		@cfg {function}
+		*/
 		config: opts => {  //< configure with options
 	
 			Trace(`CONFIGURE`);
@@ -492,10 +491,10 @@ Configure the engine interface and estblish workers.
 		$libs: {  // libs shared with js-engines 
 		},
 			
-/**
-Error messages
-@cfg {Object}
-*/
+		/**
+		Error messages
+		@cfg {Object}
+		*/
 		errors: {  // error messages
 			0: null,
 			101: new Error("engine could not be loaded"),
@@ -537,34 +536,34 @@ Error messages
 			 });
 		},
 	
-/**
-Run an engine.
+		/**
+		Run an engine.
 
-Allocate the supplied callback cb(core) with the engine core that is/was allocated to a Client.Engine.Type.Instance
-thread as defined by this request (in the req.body and req.log).  If a workflow Instance is
-provided, then the engine is assumed to be in a workflow (thus the returned core will remain
-on the same compile-step thread); otherwise, the engine is assumed to be standalone (thus forcing
-the engine to re-compile each time it is stepped).
+		Allocate the supplied callback cb(core) with the engine core that is/was allocated to a Client.Engine.Type.Instance
+		thread as defined by this request (in the req.body and req.log).  If a workflow Instance is
+		provided, then the engine is assumed to be in a workflow (thus the returned core will remain
+		on the same compile-step thread); otherwise, the engine is assumed to be standalone (thus forcing
+		the engine to re-compile each time it is stepped).
 
-As used here (and elsewhere) the terms "process", "engine core", "safety core", and "worker" are 
-equivalent, and should not be confused with a physical "cpu core".  Because heavyweight 
-(spawned) workers run in their own V8 instance, these workers can tollerate all faults (even 
-core-dump exceptions). The lightweight (cluster) workers used here, however, share the same V8 
-instance.  Heavyweight workers thus provide greater safety for bound executables (like opencv and 
-python) at the expense of greater cpu overhead.  
+		As used here (and elsewhere) the terms "process", "engine core", "safety core", and "worker" are 
+		equivalent, and should not be confused with a physical "cpu core".  Because heavyweight 
+		(spawned) workers run in their own V8 instance, these workers can tollerate all faults (even 
+		core-dump exceptions). The lightweight (cluster) workers used here, however, share the same V8 
+		instance.  Heavyweight workers thus provide greater safety for bound executables (like opencv and 
+		python) at the expense of greater cpu overhead.  
 
-The goal of hyperthreading is to balance threads across cpu cores.  The workerless (master only)
-configuration will intrinsically utilize only one of its underlying cpu cores (the OS remains, 
-however, free to bounce between cpu cores via SMP).  A worker cluster, however, tends to 
-balance threads across all cpu cores, especially when the number of allocated workers exceeds
-the number of physical cpu cores.
+		The goal of hyperthreading is to balance threads across cpu cores.  The workerless (master only)
+		configuration will intrinsically utilize only one of its underlying cpu cores (the OS remains, 
+		however, free to bounce between cpu cores via SMP).  A worker cluster, however, tends to 
+		balance threads across all cpu cores, especially when the number of allocated workers exceeds
+		the number of physical cpu cores.
 
-Only the cluster master can see its workers; thus workers can not send work to other workers, only
-the master can send work to workers.   
+		Only the cluster master can see its workers; thus workers can not send work to other workers, only
+		the master can send work to workers.   
 
-This method will callback cb(core) with the requested engine core; null if the core could not
-be located or allocated.
-*/
+		This method will callback cb(core) with the requested engine core; null if the core could not
+		be located or allocated.
+		*/
 		run: (req, cb) => {  //< run engine with callback cb(ctx, stepper) or cb(null) if error
 			const 
 				{ sql, query, client, table, body, action, resSocket, domain, type, profile, url } = req,
@@ -639,7 +638,7 @@ be located or allocated.
 						"SELECT Type FROM openv.engines WHERE Enabled AND Name=? LIMIT 1", 
 						[table], (err,engs) => {
 							
-						Log( ">engs", err,engs, ATOM.node);
+						//Log( ">engs", err,engs, ATOM.node);
 							
 						if ( eng = engs[0] ) 		// assign thread to engine's worker
 							sql.query(
@@ -690,7 +689,7 @@ be located or allocated.
 					//Log( ">step eng", engctx.step );
 					if ( stepEngine = engctx.step ) {
 						//Log(">exec", engctx.thread);
-						var err = wrap( engctx.wrap, runctx, runctx => {  // allow a js-wrapper to modify run context
+						const err = wrap( engctx.wrap, runctx, runctx => {  // allow a js-wrapper to modify run context
 							
 							//Log(">wrap", runctx);
 							if ( runctx )
@@ -698,7 +697,11 @@ be located or allocated.
 									//Log(">mix", runctx);
 
 									try {  	// step the engine then return an error if it failed or null if it worked
-										if ( err = stepEngine(engctx.thread, runctx, res) ) 
+										const err = stepEngine(engctx.thread, runctx, res);
+										
+										//Log(">err", err);
+										
+										if ( err ) 
 											return errors[ err ] || errors.badError;
 										
 										else
@@ -749,9 +752,9 @@ be located or allocated.
 			
 		},
 
-/**
-Save context tau tokens into job files.
-*/			
+		/**
+		Save context tau tokens into job files.
+		*/			
 		save: (sql,taus,engine,saves) => {
 			var t = new Date();
 
@@ -793,12 +796,12 @@ Save context tau tokens into job files.
 			});
 		},
 
-/**
-Provides engine CRUD interface: step/insert/POST, compile/update/PUT, 
-run/select/GET, and free/delete/DELETE.
-@param {Object} req Totem request
-@param {Function} res Totem response
-*/
+		/**
+		Provides engine CRUD interface: step/insert/POST, compile/update/PUT, 
+		run/select/GET, and free/delete/DELETE.
+		@param {Object} req Totem request
+		@param {Function} res Totem response
+		*/
 		insert: (req,res) => {	//< step a stateful engine with callback res(ctx || Error) 
 			run(req, (ctx,step) => {
 				if ( ctx ) {
@@ -811,40 +814,46 @@ run/select/GET, and free/delete/DELETE.
 			});
 		},
 
-/**
-Provides engine CRUD interface: step/insert/POST, compile/update/PUT, 
-run/select/GET, and free/delete/DELETE.
-@param {Object} req Totem request
-@param {Function} res Totem response
-*/
+		/**
+		Provides engine CRUD interface: step/insert/POST, compile/update/PUT, 
+		run/select/GET, and free/delete/DELETE.
+		@param {Object} req Totem request
+		@param {Function} res Totem response
+		*/
 		delete: (req,res) => {	//< free a stateful engine with callback res(ctx || Error) 
 			run(req, (ctx,step) => {
 				res( ctx );
 			});
 		},
 
-/**
-Provides engine CRUD interface: step/insert/POST, compile/update/PUT, 
-run/select/GET, and free/delete/DELETE.
-@param {Object} req Totem request
-@param {Function} res Totem response
-*/
+		/**
+		Provides engine CRUD interface: step/insert/POST, compile/update/PUT, 
+		run/select/GET, and free/delete/DELETE.
+		@param {Object} req Totem request
+		@param {Function} res Totem response
+		*/
 		select: (req,res) => {	//< run a stateless engine with callback res(ctx || null) 
+			//Log("atom run");
 			run( req, (ctx, step) => {  // get engine stepper and its context
+				//Log("atom run ctx", ctx, step);
+				
 				if ( ctx ) 
-					step( ctx => res( ctx ) );
+					step( ctx => {
+						// Log("step ctx", ctx);
+						res( ctx );
+					});
 
 				else
 					res( null );
 			});
 		},
 
-/**
-Provides engine CRUD interface: step/insert/POST, compile/update/PUT, 
-run/select/GET, and free/delete/DELETE.
-@param {Object} req Totem request
-@param {Function} res Totem response
-*/
+		/**
+		Provides engine CRUD interface: step/insert/POST, compile/update/PUT, 
+		run/select/GET, and free/delete/DELETE.
+		@param {Object} req Totem request
+		@param {Function} res Totem response
+		*/
 		update: (req,res) => {	//< compile a stateful engine with callback res(ctx || Error)  
 			run( req, (ctx,step) => {
 				res( ctx );
@@ -868,15 +877,15 @@ run/select/GET, and free/delete/DELETE.
 				return cb( ctx );
 		},
 
-/**
-Callback engine cb(ctx) with its state ctx primed with state from its ctx.Entry, then export its 
-ctx state specified by its ctx.Exit.
-The ctx.sqls = {var:"query...", ...} || "query..." enumerates the engine's ctx.Entry (to import 
-state into its ctx before the engine is run), and enumerates the engine's ctx.Exit (to export 
-state from its ctx after the engine is run).  If an sqls entry/exit exists, this will cause the 
-ctx.req = [var, ...] list to be built to synchronously import/export the state into/from the 
-engine's context.
-*/
+		/**
+		Callback engine cb(ctx) with its state ctx primed with state from its ctx.Entry, then export its 
+		ctx state specified by its ctx.Exit.
+		The ctx.sqls = {var:"query...", ...} || "query..." enumerates the engine's ctx.Entry (to import 
+		state into its ctx before the engine is run), and enumerates the engine's ctx.Exit (to export 
+		state from its ctx after the engine is run).  If an sqls entry/exit exists, this will cause the 
+		ctx.req = [var, ...] list to be built to synchronously import/export the state into/from the 
+		engine's context.
+		*/
 		mixContext: (sql, sqls, ctx, cb) => {  //< serialize import/export (ctx mixin/mixout) using sqls queries with callback cb(ctx) 
 			var 
 				importing = sqls == ctx.Entry,
@@ -986,7 +995,8 @@ engine's context.
 				
 				const 
 					{ gen, db } = ATOM,
-					// [client,host,usecase] = thread.split(":"),					
+					// [client,host,usecase] = thread.split(":"),	
+					pyEngine = "\t\t"+code.replace(/\n/mg, "\n\t\t"),
 					script = `
 # debug trace
 # print "py>>locals",locals()
@@ -1013,7 +1023,7 @@ else:
 		_SQL0 = _SQL.cursor(buffered=True)
 		_SQL1 = _SQL.cursor(buffered=True) 
 		# embed engine
-		${"\t\t"+code.replace(/\n/mg, "\n\t\t")}
+		${pyEngine}
 		#exit
 		_SQL.commit()
 		_SQL0.close()
@@ -1040,7 +1050,7 @@ else:
 					cb( errors.badContext, ctx );
 			},
 			
-			js: function jsInit(thread,code,ctx,cb)  {
+			/*js: function jsInit(thread,code,ctx,cb)  {
 				vmStore[thread] = {
 					ctx: VM.createContext( Copy( $libs, {
 						//$trace: ctx.$trace,
@@ -1048,8 +1058,20 @@ else:
 					} ) ),
 					code: code
 				};
-
+	
 				cb( null, ctx );
+			},*/
+			
+			js: function jsInit(thread,code,ctx,cb)  {
+				try {
+					VM.runInContext(code, vmStore[thread] = VM.createContext( Copy( $libs, {}) ) );		
+					cb( null, ctx );
+				}
+				
+				catch (err) {
+					Log("JS INIT ERROR", err);
+					cb(err, null);
+				}
 			},
 			
 			m: function mInit(thread,code,ctx,cb) {
@@ -1212,13 +1234,17 @@ end` ;
 				
 				if ( vm = vmStore[thread] ) {
 					try {
-						VM.runInContext(vm.code, Copy({
+						//Log(">>>step vm", vm.$log);
+						
+						VM.runInContext(`${ctx.Host}($ctx,$res,$vm)`, Copy({
 							$ctx: ctx,
-							$res: cb}, vm.ctx ) );
+							$res: cb,
+							$vm: vm
+						}, vm) );
 						return null;
 					}
 					catch (err) {
-						//Log(thread,err);
+						Log("js STEP ERROR", thread, err);
 						cb( err );
 						return err;
 					}
