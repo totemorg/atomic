@@ -1,7 +1,8 @@
 // UNCLASSIFIED
 
 /**
-Provides cloud computing on python, js, cv, matlab, R, ... engines via web endpoints.
+Provides cloud computing on python, js, cv, matlab, R, ... engines via web endpoints.  This module 
+documented in accordance with [jsdoc]{@link https://jsdoc.app/}.
 
 @module ATOMIC
 
