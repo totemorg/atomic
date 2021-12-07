@@ -99,6 +99,7 @@ Provides cloud computing on python, js, cv, matlab, R, ... engines via web endpo
 documented in accordance with [jsdoc](https://jsdoc.app/).
 
 **Requires**: <code>module:child\_process</code>, <code>module:fs</code>, <code>module:vm</code>, <code>module:pythonIF</code>, <code>module:opencvIF</code>, <code>module:RIF</code>, <code>module:enums</code>  
+**Author**: [ACMESDS](https://totemstan.github.io)  
 **Example**  
 ```js
 A1 - Totem and Atomic Engine interfaces:

@@ -5,6 +5,7 @@ Provides cloud computing on python, js, cv, matlab, R, ... engines via web endpo
 documented in accordance with [jsdoc]{@link https://jsdoc.app/}.
 
 @module ATOMIC
+@author [ACMESDS](https://totemstan.github.io)
 
 @requires child_process
 @requires fs
@@ -250,8 +251,7 @@ const
 	{ Copy,Each,isString } = require("enums");
 
 const
-	{ 
-		Log, Trace,
+	{ 	Log, Trace,
 		errors, mixContext, vmStore, $libs, wrap, run, 
 	 	opencv, python, R, contexts, workers } = ATOM = module.exports = {
 			
