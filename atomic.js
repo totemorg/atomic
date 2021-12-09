@@ -1065,7 +1065,13 @@ else:
 			
 			js: function jsInit(thread,code,ctx,cb)  {
 				try {
-					VM.runInContext(code, vmStore[thread] = VM.createContext( Copy( $libs, {}) ) );		
+					VM.runInContext(
+						"for (var f in $array) Array.prototype[f] = $array[f]; " +
+						"for (var f in $string) String.prototype[f] = $string[f]; " +
+						code, vmStore[thread] = VM.createContext( Copy( $libs, {
+							$array: Array.prototype,
+							$string: String.prototype
+						}) ) );		
 					cb( null, ctx );
 				}
 				
