@@ -571,7 +571,7 @@ end
 				{ name, Name } = query,
 				thread = [client,table,name || Name].join(":");
 
-			function allocateEngine (cb) {	//< callback cb(worker || null,engctx || null) with engine's worker or its context
+			function allocateEngine (cb) {	//< callback cb(worker || null,engctx || null) with engine''s worker or its context
 
 				function programEngine (engctx, cb) {  //< program engine with callback cb(engctx || null) 
 					var runctx = engctx.req.query;
@@ -598,21 +598,41 @@ end
 				function primeEngine (cb) {  //< callback cb(engctx || null) with primed engine context 
 
 					//Log(">prime", thread, table);
+					/*
+					sql.getContext( "openv.engines", query, ctx => {
+						cb( contexts[thread] = {	// define engine context
+							thread: thread,			// thread name client.notebook.usecase
+							req: {  				// reduced http request for ATOM CRUD i/f
+								table: table,		// engine name
+								client: client,		// engine owner
+								profile: profile, 	// client''s profile
+								url: url, 			// url
+								query: Copy(ctx.State || {}, query), 
+								body: body,			// engine tau parameters
+								action: action		// engine CRUD request
+							},			  // http request  
+							type: ctx.Type,			// engine type: js, py, etc
+							code: ctx.Code, 		// engine code
+							wrap: ctx.Wrap, 		// js-code step wrapper
+							init: ATOM.init[ ctx.Type ],  // method to initialize/program the engine
+							step: ATOM.step[ ctx.Type ]  // method to advance the engine
+						} );
+					});  */
 					sql.query(	// get the requested engine
-						"SELECT * FROM openv.engines WHERE Enabled AND Name=? LIMIT 1", 
-						[table], (err,engs) => {
+						"SELECT * FROM openv.engines WHERE Enabled AND ? LIMIT 1", 
+						[{Name:table}], (err,engs) => {
 
 						if ( eng = engs[0] ) 
 							cb( contexts[thread] = {				// define engine context
 								thread: thread,	// thread name client.notebook.usecase
-								req: {  				// reduced http request for ATOM CRUD i/f
-									table: table,	// engine name
-									client: client,	// engine owner
-									profile: profile, 	// client's profile
-									url: url, 	// url
-									query: eng.State.parseJSON() || {}, 	// query = engine ctx
-									body: body,		// engine tau parameters
-									action: action	// engine CRUD request
+								req: {  							// reduced http request for ATOM CRUD i/f
+									table: table,					// engine name
+									client: client,					// engine owner
+									profile: profile, 				// client''s profile
+									url: url, 						// url
+									query: eng.State.parseJSON() || {Host: table}, // initial engine ctx
+									body: body,						// engine tau parameters
+									action: action					// engine CRUD request
 								},			// http request  
 								type: eng.Type,   // engine type: js, py, etc
 								code: eng.Code, // engine code
@@ -623,7 +643,7 @@ end
 
 						else
 							cb( null );
-					});
+					}); 
 				}
 				
 				/*
@@ -632,7 +652,7 @@ end
 				sock.on("data", function (d) {
 					Log("thread",this.thread,"rx",d);
 				}); 
-				sock.write("hello there");*/
+				sock.write("hello there"); */
 				
 				if ( isMaster && ATOM.cores ) // allocate a worker
 					sql.query(
@@ -641,7 +661,7 @@ end
 							
 						//Log( ">engs", err,engs, ATOM.node);
 							
-						if ( eng = engs[0] ) 		// assign thread to engine's worker
+						if ( eng = engs[0] ) 		// assign thread to engine''s worker
 							sql.query(
 								"SELECT worker,ID FROM openv.workers WHERE node=? AND type=? AND thread IS NULL LIMIT 1", 
 								[ATOM.node, eng.Type], (err,workers) => {
@@ -663,12 +683,13 @@ end
 							cb( null );
 					});
 						
+				
 				else	// on this worker
 				if ( engctx = contexts[thread] ) 	// already initialized
 					cb( null, engctx );
 				
 				else // must initialize
-					primeEngine( engctx => {		
+					primeEngine( engctx => {	
 						if (engctx) 		// program/compile/init the engine	
 							programEngine(engctx, engctx => cb( null, engctx ));
 
@@ -681,9 +702,8 @@ end
 				const 
 					{ body } = engctx.req,		// exract engine simulation tokens
 					runctx = Copy( engctx.req.query, req.query); 	// save engine run content for potential handoff 
-							// Copy(req.query, engctx.req.query); 
 				
-				//Log(">exec ctx", engctx);
+				// Log(">runctx", runctx);
 				
 				cb( runctx, function step(res) {  // provide this engine stepper to the callback
 
@@ -730,7 +750,7 @@ end
 			}
 
 			//Log(">alloc", thread);			
-			allocateEngine( (worker,engctx) => {	// get the engine's worker or its context
+			allocateEngine( (worker,engctx) => {	// get the engine''s worker or its context on this worker
 
 				if ( worker )  // handoff to worker and provide socket for its response
 					worker.send({  // an ipc request must not contain sql, socket, state, functions etc
@@ -739,7 +759,7 @@ end
 						query: query,		// run ctx keys
 						body: body,			// simulation tokens
 						action: action,		// init, step, kill 
-						profile: profile	// owner's profile
+						profile: profile	// owner''s profile
 					}, resSocket() );
 
 				else
@@ -1237,7 +1257,7 @@ end` ;
 			},
 			
 			js: function jsStep(thread,ctx,cb) {
-				//Log(">>>>>>>>>step", thread, ctx.Host, ctx.Pipe );
+				// Log(">step", thread, ctx.Host, ctx.Pipe );
 				
 				if ( vm = vmStore[thread] ) {
 					try {
