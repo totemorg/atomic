@@ -1412,7 +1412,7 @@ end` ;
 switch (process.argv[2]) {	//< unit testers
 	case "A?":
 	case "?":
-		Log("unit test with 'node atomic.js [A1 || ...]'");
+		Trace("unit test with 'node atomic.js [A1 || ...]'");
 		break;
 		
 	case "A$":
@@ -1422,8 +1422,7 @@ switch (process.argv[2]) {	//< unit testers
 	case "A1": 
 		var TOTEM = require("../totem");
 
-		Trace({
-			msg: "A Totem+Engine client has been created", 
+		Trace("A Totem+Engine client has been created", {
 			a_tau_template: ATOM.tau("somejob.pdf"),
 			engine_errors: ATOM.error,
 			get_endpts: TOTEM.byTable,
@@ -1475,7 +1474,7 @@ switch (process.argv[2]) {	//< unit testers
 					var itau = [ ATOM.tau("test.jpg") ];
 					var otau = [ ATOM.tau() ];
 
-					Log("query",req.query);
+					Trace("query",req.query);
 					// Python attempts to connect to mysql,  so, if mysql service not running or 
 					// mysql.connector module not found, python engines will not run.
 					
