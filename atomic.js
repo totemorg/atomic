@@ -248,15 +248,14 @@ const
 	{ isWorker, isMaster, fork } = require("cluster"),
 	  
 	// Totem modules
-	{ Copy,Each,isString } = require("enums");
+	{ Copy,Each,Log,Debug,isString } = require("../enums");
 
 const
-	{ 	Log, Trace,
+	{ 	Trace,
 		errors, mixContext, vmStore, $libs, wrap, run, 
 	 	opencv, python, R, contexts, workers } = ATOM = module.exports = {
 			
-		Log: (...args) => console.log(">>>atomic", args),
-		Trace: (msg,req,res) => "atomic".trace(msg,req,res),
+		Trace: (msg, ...args) => `atomic>>>${msg}`.trace( args ),
 
 		//require("./ifs/build/Release/engineIF"), 	
 			
@@ -1411,8 +1410,13 @@ end` ;
 //================== Unit testing
 
 switch (process.argv[2]) {	//< unit testers
+	case "A?":
 	case "?":
 		Log("unit test with 'node atomic.js [A1 || ...]'");
+		break;
+		
+	case "A$":
+		Debug(ATOM);
 		break;
 		
 	case "A1": 
