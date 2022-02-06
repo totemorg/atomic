@@ -7,13 +7,19 @@ documented in accordance with [jsdoc]{@link https://jsdoc.app/}.
 @module ATOMIC
 @author [ACMESDS](https://totemstan.github.io)
 
+### Env Dependencies
+
+	HASGPU = 1|0
+	HASCAFFE = 1|0
+
+@requires [enums](https://github.com/totemstan/enums)
+
 @requires child_process
 @requires fs
 @requires vm 
 @requires pythonIF
 @requires opencvIF
 @requires RIF
-@requires enums
 
 @example
 A1 - Totem and Atomic Engine interfaces:

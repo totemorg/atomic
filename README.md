@@ -1,4 +1,4 @@
-# ATOMIC
+# ATOMIC [WWW](https://github.com/totemstan/atomic)  [COE](https://sc.appdev.proj.coe/acmesds/atomic)  [SBU](https://gitlab.west.nga.ic.gov/acmesds/atomic)
 
 **ATOMIC** provides cloud computing for python, js, cv, matlab, R, ... engines 
 via the following web endpoints:
@@ -48,15 +48,6 @@ Clone **ATOMIC** from one of its repos:
 	git clone https://sc.appdev.proj.coe/acmesds/atmoic
 	git clone https://gitlab.west.nga.ic.gov/acmesds/atmoic
 
-and define env vars:
-
-	HASGPU = 1|0
-	HASCAFFE = 1|0
-
-Dependent modules:
-
-+ ENUMS [WWW](https://github.com/totemstan/enums)  [COE](https://sc.appdev.proj.coe/acmesds/enums)  [SBU](https://gitlab.west.nga.ic.gov/acmesds/enums)  
-
 ## Manage 
 
 	npm test [ ? || A1 || A2 || ... ]		# Unit test
@@ -98,8 +89,13 @@ follow the **ENUMS** deep copy conventions (
 Provides cloud computing on python, js, cv, matlab, R, ... engines via web endpoints.  This module 
 documented in accordance with [jsdoc](https://jsdoc.app/).
 
-**Requires**: <code>module:child\_process</code>, <code>module:fs</code>, <code>module:vm</code>, <code>module:pythonIF</code>, <code>module:opencvIF</code>, <code>module:RIF</code>, <code>module:enums</code>  
-**Author**: [ACMESDS](https://totemstan.github.io)  
+**Requires**: <code>module:[enums](https://github.com/totemstan/enums)</code>, <code>module:child\_process</code>, <code>module:fs</code>, <code>module:vm</code>, <code>module:pythonIF</code>, <code>module:opencvIF</code>, <code>module:RIF</code>  
+**Author**: [ACMESDS](https://totemstan.github.io)
+
+### Env Dependencies
+
+	HASGPU = 1|0
+	HASCAFFE = 1|0  
 **Example**  
 ```js
 A1 - Totem and Atomic Engine interfaces:
