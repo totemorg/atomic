@@ -1,31 +1,13 @@
 ﻿// UNCLASSIFIED
 
-/*
-Reserves a pool of python machines accessed using:
- 
- 	error = pythonIF( id string, code string, context hash )
- 	error = pythonIF( id string, port string, event list )
- 
-where the returned error code is:
+/**
+Provides a python engine with a pool of python-machines
 
-	ok			0
-	badModule 	101
-	badStep 	102
-	badPort		103
-	badCode 	104
-	badPool		105
-	badArgs		106
+ 	error = python( "thread name", "run code", { context } )
+ 	error = python( "thread name", "port name", [ event, ... ] )
+	
+See mac.h for machine information.
 
-A machine id (typically "Name.Client.Instance") uniquely identifies the machine's compute thread.  Compute
-threads can be freely added to the pool until the pool becomes full.  
- 
-When stepping a machine, port specifies either the name of the input port on which arriving events [ tau, tau, ... ] 
-are latched, or the name of the output port on which departing events [ tau, tau, ... ] are latched; thus stepping the 
-machine in a stateful way (to maximize data restfulness).  An empty port will cause the machine to be 
-stepped in a stateless way with the supplied context hash.
- 
-When programming a machine, the context hash = { ports: {name1: {...}, name2: {...}, ...}, key: value, .... } defines 
-parameters to/from a machine.  Empty code will cause the machine to monitor its current parameters.  
 */
 
 // V8 interface
@@ -58,10 +40,11 @@ parameters to/from a machine.  Empty code will cause the machine to monitor its 
 
 // Define python machine
 
-class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
+class PYMACHINE : public MACHINE {  				// Python machine
 	public:
 	
-		// inherit the base machine
+		// Inherit the base machine
+	
 		PYMACHINE(void) : MACHINE() { 
 			pModule = NULL;
 			pCode = NULL;
@@ -72,7 +55,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 		~PYMACHINE(void) {
 		};
 	
-		// V8 to python converters
+		// Latch python-ports to/from V8-ports
 
 		V8VALUE clone(PyObject *src, char skip) { 				// clone python value to v8 value
 			V8OBJECT tar = V8OBJECT::New(scope);
@@ -217,7 +200,8 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 			return tar;
 		}
 		
-		// machine program/step interface
+		// Program/step the machine
+	
 		int run(const V8STACK& args) { 			// Monitor/Program/Step machine	
 //printf(TRACE "running\n");
 			
@@ -270,7 +254,7 @@ class PYMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 					//PyDict_SetItemString(pGlobals, PYOS, PyModule_GetDict(pModule));
 //printf(TRACE "globals=%p\n",pGlobals);
 
-printf(TRACE "compile=\n%s infile=%d\n",code.c_str(),Py_file_input);
+//printf(TRACE "compile=\n%s infile=%d\n",code.c_str(),Py_file_input);
 					// Uncomment if there is a need to define ctx at compile
 					//PyDict_SetItemString(pLocals, PYPORT, PyString_FromString( port ) );
 					//PyDict_SetItemString(pLocals, PYCTX, clone( ctx ));
@@ -355,7 +339,7 @@ printf(TRACE "stateful step port=%s\n",port);
 				
 			else {
 				err = badCode;
-				printf(TRACE "compile err=%d\n%s\n", err, code.c_str());
+				//printf(TRACE "compile err=%d\n%s\n", err, code.c_str());
 					//Py_Finalize(); // dont do this - will cause segment fault
 			}
 			

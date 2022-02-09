@@ -1,31 +1,12 @@
 // UNCLASSIFIED
 
-/*
-Reserves a pool of R machines accessed using:
- 
- 	error = RIF( id string, code string, context hash )
- 	error = RIF( id string, port string, event list )
- 
-where the returned error code is:
+/**
+Provides an R engine with a pool of R-machines
 
-	ok			0
-	badModule 	101
-	badStep 	102
-	badPort		103
-	badCode 	104
-	badPool		105
-	badArgs		106
-
-A machine id (typically "Name.Client.Instance") uniquely identifies the machine's compute thread.  Compute
-threads can be freely added to the pool until the pool becomes full.  
- 
-When stepping a machine, port specifies either the name of the input port on which arriving events [ tau, tau, ... ] 
-are latched, or the name of the output port on which departing events [ tau, tau, ... ] are latched; thus stepping the 
-machine in a stateful way (to maximize data restfulness).  An empty port will cause the machine to be 
-stepped in a stateless way with the supplied context hash.
- 
-When programming a machine, the context hash = { ports: {name1: {...}, name2: {...}, ...}, key: value, .... } defines 
-parameters to/from a machine.  Empty code will cause the machine to monitor its current parameters.  
+ 	error = R( "thread name", "run code", { context } )
+ 	error = R( "thread name", "port name", [ event, ... ] )
+	
+See mac.h for machine information.
 */
 
 #include <RInside.h>                    // for the embedded R via RInside
@@ -46,7 +27,8 @@ typedef Rcpp::List RLIST;
 class RMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 	public:
 	
-		// inherit the base machine
+		// Inherit the base machine
+	
 		RMACHINE(void) : MACHINE() { 
 			char	*argv[] = {};
 			int		argc = 0;
@@ -59,7 +41,7 @@ class RMACHINE : public MACHINE {  				// Python machine extends MACHINE class
 		~RMACHINE(void) {
 		};
 	
-		// data converters
+		// Latch R-ports to/from V8-ports
 
 		V8VALUE clone( ROBJECT src ) {  // R to V8
 			if ( RISSTRING(src) ) {
@@ -218,7 +200,8 @@ printf(TRACE "clone array len=%d\n",N);
 			return obj+")";
 		}
 
-		// machine program/step interface
+		// Program/step the machine
+	
 		int run(const V8STACK& args) { 			// Monitor/Program/Step machine	
 			string  runCode;
 			

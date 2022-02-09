@@ -1,33 +1,12 @@
 // UNCLASSIFIED
 
-/*
-Reserves a pool of opencv machines accessed using:
- 
- 	error = opencvIF( id string, code string, context hash )
- 	error = opencvIF( id string, port string, event list )
- 
-where the returned error code is:
+/**
+Provides an opencv engine with a pool of opencv-machines
 
-	ok			0
-	badModule 	101
-	badStep 	102
-	badPort		103
-	badCode 	104
-	badPool		105
-	badArgs		106
+ 	error = opencv( "thread name", "run code", { context } )
+ 	error = opencv( "thread name", "port name", [ event, ... ] )
 
-A machine id (typically "Name.Client.Instance") uniquely identifies the machine's compute thread.  Compute
-threads can be freely added to the pool until the pool becomes full.  
- 
-When stepping a machine, port specifies either the name of the input port on which arriving events [ tau, tau, ... ] 
-are latched, or the name of the output port on which departing events [ tau, tau, ... ] are latched; thus stepping the 
-machine in a stateful way (to maximize data restfulness).  An empty port will cause the machine to be 
-stepped in a stateless way with the supplied context hash.
- 
-When programming a machine, the context hash = { ports: {name1: {...}, name2: {...}, ...}, key: value, .... } defines 
-parameters to/from a machine.  Empty code will cause the machine to monitor its current parameters.  
-
-The opencv machine implemented here is a HAAR cascade feature detector with the key-parameters:
+which use HAAR-Lie-identifiers having parameters
 
 	scale = 0:1 
 		specifies how much the image size is reduced at each image scale step, and thus defines a 
@@ -45,17 +24,23 @@ The opencv machine implemented here is a HAAR cascade feature detector with the 
 	net = string
 		path to prototxt file used to train caffe cnn
 	
-See the tauIF.cpp for usage examples.  This interface is created using node-gyp with the binding.gyp provided
-and expects the following compile directives:
+with CAFFE-CNN-cassifiers having parameters
 
- 		HASCAFFE = 1/0 if machine has/hasnot installed caffe
- 		HASGPU = 1/0 if machine has/hasnot a gpu
+	TBD
+
+See mac.h for machine information.
+
+This interface is created using node-gyp with the binding.gyp provided
+and expects the following compile directives
+
+	HASCAFFE = 1/0 if machine has/hasnot installed caffe
+	HASGPU = 1/0 if machine has/hasnot a gpu
 */
 
 #define MAXPORTS 32
 #define MAXCASCADES 10
 #define MAXMACHINES 4
-#define CVBUGJPG "prime.jpg"
+#define CVBUGJPG "./prime.jpg"
 
 /*
 #define JSONIFY \
@@ -440,7 +425,6 @@ int main(int argc, char** argv) {
 //================================================================
 // HAAR feature detection machine for an opencvIF machine.
 
-
 class IPORT {							 		// HAAR i/o port
 	public:
 		IPORT(void) {
@@ -452,12 +436,7 @@ class IPORT {							 		// HAAR i/o port
 		IPORT(V8SCOPE scope, string Name, V8OBJECT Parm) {
 			name = Name;
 				
-			/*
-			printf(TRACE "inport %s CAFFE %s GPU %s\n", 
-				name,
-				HASCAFFE ? "enabled" : "disabled",
-				HASGPU ? "enabled" : "disabled");
-			*/
+printf(TRACE "program %s port: CAFFE=%d GPU=%d\n", TOSTR(name), HASCAFFE, HASGPU );
 			
 			//<< cv bug. frame init required to prevent a "pure virtual method called" error when stepped
 			frame = cv::imread( CVBUGJPG , 1 );  
@@ -491,12 +470,7 @@ class OPORT {							 		// HAAR i/o port
 		OPORT(V8SCOPE scope, string Name, V8OBJECT Parm) {
 			name = Name;
 
-			/*
-			printf(TRACE "out port %s CAFFE %s GPU %s\n", 
-				name, 
-				HASCAFFE ? "enabled" : "disabled",
-				HASGPU ? "enabled" : "disabled");
-			*/
+printf(TRACE "program %s port: CAFFE=%d GPU=%d\n", TOSTR(name), HASCAFFE, HASGPU );
 			
 			// Initialize HAAR locator 
 
@@ -514,8 +488,8 @@ class OPORT {							 		// HAAR i/o port
 			for (int n=0; n<cascades; n++) 
 				HAAR_cascade[n] = V8GETSTRING(Cascade,n);
 
-			printf(TRACE "HAAR cascades=%d scale=%g dim=%g delta=%g hits=%d depth=%d min=%d,%d max=%d,%d\n",
-					cascades,scale,dim,delta,hits,cascades,min.width,min.height,max.width,max.height);
+printf(TRACE "HAAR cascades=%d scale=%g dim=%g delta=%g hits=%d depth=%d min=%d,%d max=%d,%d\n",
+	cascades,scale,dim,delta,hits,cascades,min.width,min.height,max.width,max.height);
 
 			for (int n=0; n<cascades; n++) {
 				//str fparts[] = {"","","",0,".xml",0};
@@ -523,10 +497,10 @@ class OPORT {							 		// HAAR i/o port
 				string fname = HAAR_cascade[n] + string(".xml");
 
 				if( !HAAR_classify[n].load(fname) ) 
-					printf(TRACE "HAAR ignored %s\n", TOSTR(fname)); 
+					printf(TRACE "HAAR ignored cascade %s\n", TOSTR(fname)); 
 				
 				else
-					printf(TRACE "HAAR loaded %s\n", TOSTR(fname));
+					printf(TRACE "HAAR loaded cascade %s\n", TOSTR(fname));
 			}
 
 			// Initialize CNN Classifier 
@@ -728,9 +702,10 @@ printf(TRACE "feature=%s depth=%d frameWH=%d,%d scale=%g hits=%d detects=%d\n",
 		string	json(void);				// method to jsonize this feature
 };
 
-class CVMACHINE : public MACHINE {  	// HAAR machine via the MACHINE class
+class CVMACHINE : public MACHINE {  	// The HAAR+CNN machine 
 	public:
-		// inherit base machine
+		// Inherit the base machine
+
 		CVMACHINE(void) : MACHINE() {
 			oPort = NULL;
 			iPort = NULL;
@@ -743,7 +718,8 @@ class CVMACHINE : public MACHINE {  	// HAAR machine via the MACHINE class
 //printf(TRACE "]free ports\n");
 		};
 	
-		// provide V8-C convertors
+		// Latch cv-ports to/from V8-ports
+
 		void latch(V8ARRAY tar, FEATURE &src) { 	// Set array of HAAR features
 			int n,N=tar.Length();
 //printf(TRACE "set features=%d into tau length=%d\n", src.features, N);
@@ -781,14 +757,7 @@ class CVMACHINE : public MACHINE {  	// HAAR machine via the MACHINE class
 		}
 		*/
 		
-		/*
-		 * A machine implements 3 operations: (1) latch V8 input events to a specified input 
-		 * port, (2) step the machine and latch its events to a specified output port, (3) latch
-		 * program code and parameter hash.  After completing the requested operation, the machine 
-		 * returns a V8 error handle.  
-		 * */
-		
-		int latch(V8OBJECT tau, OPORT &port) { 	// Latch output port to output context tau
+		int latch(V8OBJECT tau, OPORT &port) { 	
 			
 			if ( iPort->frame.empty() ) 
 				return badStep;
@@ -811,7 +780,7 @@ class CVMACHINE : public MACHINE {  	// HAAR machine via the MACHINE class
 			}
 		}
 	
-		int latch(IPORT &port, V8OBJECT tau) { 	// Latch input context tau to input port
+		int latch(IPORT &port, V8OBJECT tau) { 	
 			string job = V8GETSTRING(tau,"job");
 
 //printf(TRACE "job=%s\n", TOSTR(job));
@@ -876,18 +845,18 @@ printf(TRACE "detects=%d\n",detects.features);
 			return badStep;  
 		}
 
+		// Program/step the machine
+	
 		int program (void) { 
-			string Key = "detector";
-
-//printf(TRACE "pgm port %s\n", TOSTR(Key));
+			str iKey = "input", oKey = "output";
+			
+printf(TRACE "pgm %s port\n", oKey );
 			if (oPort) delete oPort;  
-			oPort = new OPORT(scope, Key, V8GETOBJECT(ctx,Key) );
+			oPort = new OPORT(scope, oKey, V8GETOBJECT(ctx,string(oKey) ) );
 
-			Key = "frame";
-
-//printf(TRACE "pgm port %s\n", TOSTR(Key));
+printf(TRACE "pgm %s port\n", iKey);
 			if (iPort) delete iPort;  
-			iPort = new IPORT(scope, Key, V8GETOBJECT(ctx,Key) );
+			iPort = new IPORT(scope, iKey, V8GETOBJECT(ctx,string(iKey) ) );
 
 			init = true;
 			return 0;
@@ -895,20 +864,22 @@ printf(TRACE "detects=%d\n",detects.features);
 
 		int run(const V8STACK& args) {
 			
-//printf(TRACE "init=%d\n", init);
+printf(TRACE "run init mode=%d\n", init);
 			err  = setup(args);
 			
 			if ( err ) 
 				return err;
 
 			else
-			if ( init ) 
+			if ( init ) // already initialized so step machine
 				return stepStateless();
 				
-			else 
+			else 		// must initialize the machine
 				return program();
 			
 		}
+	
+		// Define i/o ports
 	
 		OPORT *oPort;
 		IPORT *iPort;
