@@ -254,7 +254,7 @@ const
 	{ isWorker, isMaster, fork } = require("cluster"),
 	  
 	// Totem modules
-	{ Copy,Each,Log,Debug,isString } = require("../enums");
+	{ Copy,Each,Log,Debug,isString,sqlThread } = require("../enums");
 
 const
 	{ 	Trace,
@@ -286,12 +286,6 @@ const
 		
 		node: "localhost",
 			
-		/**
-		Start a sql thread
-		@cfg {Function}
-		*/
-		sqlThread: () => { throw new Error("atomic sqlThread not configured"); },  //< sql threader
-		
 		/**
 		Number of worker cores (aka threads) to provide in the cluster.  0 cores provides only the master.
 		*/
@@ -380,7 +374,7 @@ end
 			
 			queue: function (qname, script) { //< append script job to qname=init|step|... queue
 				
-				ATOM.sqlThread( sql => {
+				sqlThread( sql => {
 					sql.query("INSERT INTO openv.agents SET ?", {
 						queue: qname,
 						script: script
@@ -427,7 +421,7 @@ end
 				}); 
 			} */
 			
-			ATOM.sqlThread( sql => { // setup atomic env
+			sqlThread( sql => { // setup atomic env
 
 				if ( isMaster )	// create workers
 					sql.query("DELETE FROM openv.workers WHERE ?",{node:opts.node}, err => {
@@ -465,7 +459,7 @@ end
 							if ( route = ATOM[action] ) {
 								Trace( `ipc ${action} ${table}`, req );
 								
-								ATOM.sqlThread( sql => {
+								sqlThread( sql => {
 									req.sql = sql;
 									//query.Feed = cb => ipcFeed(req, cb);
 									//query.Trace = msg => Trace( msg, req );
@@ -1220,7 +1214,7 @@ end` ;
 			},
 			
 			sq: function sqInit(thread,code,ctx,cb) {
-				ATOM.sqlThread( sql => {
+				sqlThread( sql => {
 					ctx.SQL[ctx.action](sql, [], function (recs) {
 						//ctx.Save = [1,2,3];  // cant work as no cb exists
 					});
@@ -1353,7 +1347,7 @@ end` ;
 			
 			mj: function meStep(thread,ctx,cb) {
 				if ( vm = vmStore[thread] ) {
-					ATOM.sqlThread( sql => {
+					sqlThread( sql => {
 						//Copy( {SQL: sql, CTX: ctx, DATA: [], RES: [], PORT: port, PORTS: vm.ctx}, vm.ctx );
 
 						$libs.ME.exec( vm.code, Copy(ctx, vm.ctx), vmctx => {
@@ -1369,7 +1363,7 @@ end` ;
 				
 				/*
 				if ( vm = vmStore[thread] )
-					ATOM.sqlThread( sql => {
+					sqlThread( sql => {
 						Copy( {SQL: sql, CTX: ctx, DATA: [], RES: [], PORT: port, PORTS: vm.ctx}, vm.ctx );
 						
 						$libs.MATH.eval(vm.code,vm.ctx);
