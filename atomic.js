@@ -1409,10 +1409,10 @@ end` ;
 
 //================== Unit testing
 
-switch (process.argv[2]) {	//< unit testers
+switch ( process.argv[2] ) {	//< unit testers
 	case "A?":
 	case "?":
-		Trace("unit test with 'node atomic.js [A1 || ...]'");
+		Trace("node atomic.js [A$ || A1 || ...]");
 		break;
 		
 	case "A$":
