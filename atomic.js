@@ -1407,19 +1407,10 @@ end` ;
 			
 	};
 
-//================== Unit testing
-
-switch (process.argv[2]) {	//< unit testers
-	case "A?":
-	case "?":
-		Trace("unit test with 'node atomic.js [A1 || ...]'");
-		break;
-		
-	case "A$":
-		Debug(ATOM);
-		break;
-		
-	case "A1": 
+Debug("atomic", {
+	$: ATOM,
+	
+	A1: () => { 
 		var TOTEM = require("../totem");
 
 		Trace("A Totem+Engine client has been created", {
@@ -1428,9 +1419,9 @@ switch (process.argv[2]) {	//< unit testers
 			get_endpts: TOTEM.byTable,
 			my_paths: TOTEM.paths
 		});
-		break;
-		
-	case "A2": 
+	},
+	
+	A2: () => { 
 		var TOTEM = require("../totem");
 
 		TOTEM.config({}, err => {
@@ -1441,9 +1432,9 @@ switch (process.argv[2]) {	//< unit testers
 		ATOM.config({
 			thread: TOTEM.thread
 		});
-		break;
-		
-	case "A3": 
+	},
+	
+	A3: () => {
 		var TOTEM = require("../totem");
 		
 		TOTEM.config({
@@ -1463,8 +1454,9 @@ switch (process.argv[2]) {	//< unit testers
 		ATOM.config({
 			thread: TOTEM.thread
 		});
-		
-	case "A4": 
+	},
+	
+	A4: () => {
 		var TOTEM = require("../totem");
 		
 		TOTEM.config({
@@ -1644,8 +1636,8 @@ function faces(tau,parms) { return 102; }
 		ATOM.config({
 			thread: TOTEM.thread
 		});
-		break;
-}
+	}
+});
 		
 // UNCLASSIFIED
 

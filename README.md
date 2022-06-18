@@ -327,7 +327,6 @@ A4 - Totem with a complete engine test endpoint:
         * [.macs](#module_ATOMIC.macs)
         * [.db](#module_ATOMIC.db)
         * [.errors](#module_ATOMIC.errors)
-        * [.sqlThread()](#module_ATOMIC.sqlThread)
         * [.config()](#module_ATOMIC.config)
         * [.run()](#module_ATOMIC.run)
         * [.save()](#module_ATOMIC.save)
@@ -366,13 +365,6 @@ Error messages
 
 **Kind**: static property of [<code>ATOMIC</code>](#module_ATOMIC)  
 **Cfg**: <code>Object</code>  
-<a name="module_ATOMIC.sqlThread"></a>
-
-### ATOMIC.sqlThread()
-Start a sql thread
-
-**Kind**: static method of [<code>ATOMIC</code>](#module_ATOMIC)  
-**Cfg**: <code>Function</code>  
 <a name="module_ATOMIC.config"></a>
 
 ### ATOMIC.config()
