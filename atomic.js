@@ -1083,14 +1083,18 @@ else:
 			},*/
 			
 			js: function jsInit(thread,code,ctx,cb)  {
+				console.log(">init", thread);
+				const
+					vm = vmStore[thread] = VM.createContext( Copy( $libs, {
+						$array: Array.prototype,
+						$string: String.prototype
+					}) );
+				
 				try {
 					VM.runInContext(
 						"for (var f in $array) Array.prototype[f] = $array[f]; " +
 						"for (var f in $string) String.prototype[f] = $string[f]; " +
-						code, vmStore[thread] = VM.createContext( Copy( $libs, {
-							$array: Array.prototype,
-							$string: String.prototype
-						}) ) );		
+						code, vm );		
 					cb( null, ctx );
 				}
 				
@@ -1256,7 +1260,7 @@ end` ;
 			},
 			
 			js: function jsStep(thread,ctx,cb) {
-				// Log(">step", thread, ctx.Host, ctx.Pipe );
+				Log(">step", thread, ctx.Host, ctx.Pipe );
 				
 				if ( vm = vmStore[thread] ) {
 					try {
@@ -1269,6 +1273,7 @@ end` ;
 						}, vm) );
 						return null;
 					}
+					
 					catch (err) {
 						Log("js STEP ERROR", thread, err);
 						cb( err );
@@ -1402,7 +1407,7 @@ end` ;
 				});
 
 				return null;
-			}			
+			}
 		}
 			
 	};
