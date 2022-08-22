@@ -95,21 +95,21 @@ documented in accordance with [jsdoc](https://jsdoc.app/).
 	HASCAFFE = 1|0  
 **Example**  
 ```js
-A1 - Totem and Atomic Engine interfaces:
+// Totem and Atomic Engine interfaces:
 
-	var **ATOMIC** = require("../atomic");
+	var ATOMIC = require("../atomic");
 	var TOTEM = require("../totem");
 
 	Trace( "A Totem+Engine client has been created", {
-		a_tau_template: **ATOMIC**.tau("somejob.pdf"),
-		engine_errors: **ATOMIC**.error,
+		a_tau_template: ATOMIC.tau("somejob.pdf"),
+		engine_errors: ATOMIC.error,
 		get_endpts: TOTEM.reader,
 		my_paths: TOTEM.paths
 	});
 ```
 **Example**  
 ```js
-A2 - Totem being powered up and down:
+// Totem being powered up and down:
 
 	var TOTEM = require("../totem");
 
@@ -118,13 +118,13 @@ A2 - Totem being powered up and down:
 		TOTEM.stop();
 	});
 
-	var **ATOMIC** = require("../engine").config({
+	var ATOMIC = require("../engine").config({
 		thread: TOTEM.thread
 	});
 ```
 **Example**  
 ```js
-A3 - Totem service with a chipper engine endpoint and a database:
+// Totem service with a chipper engine endpoint and a database:
 
 	var TOTEM = require("../totem").config({
 		"byType.": {
@@ -141,20 +141,20 @@ A3 - Totem service with a chipper engine endpoint and a database:
 
 	});
 
-	var **ATOMIC** = require("../engine").config({
+	var ATOMIC = require("../engine").config({
 		thread: TOTEM.thread
 	});
 ```
 **Example**  
 ```js
-A4 - Totem with a complete engine test endpoint:
+// Totem with a complete engine test endpoint:
 
 	var TOTEM = require("../totem").config({
 		"byType.": {
 			test: function Chipper(req,res) {
 
-				var itau = [**ATOMIC**.tau()];
-				var otau = [**ATOMIC**.tau()];
+				var itau = [ATOMIC.tau()];
+				var otau = [ATOMIC.tau()];
 
 				switch (req.query.config) {
 					case "cv": // program and step haar opencv machine 
@@ -170,13 +170,13 @@ A4 - Totem with a complete engine test endpoint:
 						console.log(parm);
 
 						for (var n=0,N=1;n<N;n++)  // program N>1 to test reprogram
-							console.log(`INIT[${n}] = `, **ATOMIC**.opencv("opencv.Me.Thread1","setup",parm));
+							console.log(`INIT[${n}] = `, ATOMIC.opencv("opencv.Me.Thread1","setup",parm));
 
 						for (var n=0,N=5;n<N;n++) // step N>1 to test multistep
-							console.log(`STEP[${n}] = `, **ATOMIC**.opencv("opencv.Me.Thread1","frame",itau));
+							console.log(`STEP[${n}] = `, ATOMIC.opencv("opencv.Me.Thread1","frame",itau));
 
 						// returns badStep if the cascades were undefined at the program step
-						console.log("STEP = ", **ATOMIC**.opencv("opencv.Me.Thread1","helipads",otau));
+						console.log("STEP = ", ATOMIC.opencv("opencv.Me.Thread1","helipads",otau));
 						console.log(otau);
 						break;
 
@@ -196,7 +196,7 @@ A4 - Totem with a complete engine test endpoint:
 						// By default python attempts to connect to mysql.  
 						// So, if mysql service not running or mysql.connector module not found, this will not run.
 						console.log({py:pgm, ctx: parm});
-						console.log("INIT = ", **ATOMIC**.python("py1.thread",pgm,parm));
+						console.log("INIT = ", ATOMIC.python("py1.thread",pgm,parm));
 						console.log(parm.tau);
 						break;
 
@@ -223,14 +223,14 @@ A4 - Totem with a complete engine test endpoint:
 								return -103
 							`;		
 						console.log({py:pgm, ctx: parm});
-						console.log("INIT = ", **ATOMIC**.python("py2.Me.Thread1",pgm,parm));
+						console.log("INIT = ", ATOMIC.python("py2.Me.Thread1",pgm,parm));
 						// reprogramming ignored
-						//console.log("INIT = ", **ATOMIC**.python("py2.Me.Thread1",pgm,parm));
+						//console.log("INIT = ", ATOMIC.python("py2.Me.Thread1",pgm,parm));
 
 						for (var n=0,N=1; n<N; n++)
-							console.log(`STEP[${n}] = `, **ATOMIC**.python("py2.Me.Thread1","frame",itau));
+							console.log(`STEP[${n}] = `, ATOMIC.python("py2.Me.Thread1","frame",itau));
 
-						console.log("STEP = ", **ATOMIC**.python("py2.Me.Thread1","helipads",otau));
+						console.log("STEP = ", ATOMIC.python("py2.Me.Thread1","helipads",otau));
 						break;
 
 					case "py3": // program and step python machine string with reinit along the way
@@ -257,11 +257,11 @@ A4 - Totem with a complete engine test endpoint:
 							`;
 
 						console.log({py:pgm, ctx: parm});
-						console.log("INIT = ", **ATOMIC**.python("py3",pgm,parm));
-						console.log("STEP = ", **ATOMIC**.python("py3","frame",itau));
+						console.log("INIT = ", ATOMIC.python("py3",pgm,parm));
+						console.log("STEP = ", ATOMIC.python("py3","frame",itau));
 						// reprogramming ignored
-						//console.log("REINIT = ", **ATOMIC**.python("py3",pgm,parm));
-						//console.log("STEP = ", **ATOMIC**.python("py3","frame",itau));
+						//console.log("REINIT = ", ATOMIC.python("py3",pgm,parm));
+						//console.log("STEP = ", ATOMIC.python("py3","frame",itau));
 						console.log(otau);
 						break;
 
@@ -289,12 +289,12 @@ A4 - Totem with a complete engine test endpoint:
 							`;
 
 						console.log({py:pgm, ctx: parm});
-						console.log("INIT = ", **ATOMIC**.js("mytest",pgm,parm));
+						console.log("INIT = ", ATOMIC.js("mytest",pgm,parm));
 						// frame should return a 0 = null noerror
-						console.log("STEP = ", **ATOMIC**.js("mytest","frame",itau));
+						console.log("STEP = ", ATOMIC.js("mytest","frame",itau));
 						console.log(itau);
 						// helipads should return a 101 = badload error
-						console.log("STEP = ", **ATOMIC**.js("mytest","helipads",otau));
+						console.log("STEP = ", ATOMIC.js("mytest","helipads",otau));
 						console.log(otau);
 						break;	
 				}
@@ -313,7 +313,7 @@ A4 - Totem with a complete engine test endpoint:
 		Trace( "Unit test my engines with /test?config=cv | py1 | py2 | py3 | js" );
 	});
 
-	var **ATOMIC** = require("../atomic").config({
+	var ATOMIC = require("../atomic").config({
 		thread: TOTEM.thread
 	});
 ```
