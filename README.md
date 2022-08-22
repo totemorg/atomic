@@ -95,7 +95,7 @@ documented in accordance with [jsdoc](https://jsdoc.app/).
 	HASCAFFE = 1|0  
 **Example**  
 ```js
-// Totem and Atomic Engine interfaces:
+### Totem and Atomic Engine interfaces:
 
 	var ATOMIC = require("../atomic");
 	var TOTEM = require("../totem");
@@ -109,7 +109,7 @@ documented in accordance with [jsdoc](https://jsdoc.app/).
 ```
 **Example**  
 ```js
-// Totem being powered up and down:
+### Totem being powered up and down:
 
 	var TOTEM = require("../totem");
 
@@ -124,7 +124,7 @@ documented in accordance with [jsdoc](https://jsdoc.app/).
 ```
 **Example**  
 ```js
-// Totem service with a chipper engine endpoint and a database:
+### Totem service with a chipper engine endpoint and a database:
 
 	var TOTEM = require("../totem").config({
 		"byType.": {
@@ -147,7 +147,7 @@ documented in accordance with [jsdoc](https://jsdoc.app/).
 ```
 **Example**  
 ```js
-// Totem with a complete engine test endpoint:
+### Totem with a complete engine test endpoint:
 
 	var TOTEM = require("../totem").config({
 		"byType.": {

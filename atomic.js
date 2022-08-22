@@ -22,7 +22,7 @@ documented in accordance with [jsdoc]{@link https://jsdoc.app/}.
 @requires [RIF](https://github.com/totemstan/atomic) 
 
 @example
-// Totem and Atomic Engine interfaces:
+### Totem and Atomic Engine interfaces:
 
 	var ATOMIC = require("../atomic");
 	var TOTEM = require("../totem");
@@ -35,7 +35,7 @@ documented in accordance with [jsdoc]{@link https://jsdoc.app/}.
 	});
 
 @example
-// Totem being powered up and down:
+### Totem being powered up and down:
 
 	var TOTEM = require("../totem");
 
@@ -49,7 +49,7 @@ documented in accordance with [jsdoc]{@link https://jsdoc.app/}.
 	});
 
 @example
-// Totem service with a chipper engine endpoint and a database:
+### Totem service with a chipper engine endpoint and a database:
 
 	var TOTEM = require("../totem").config({
 		"byType.": {
@@ -71,7 +71,7 @@ documented in accordance with [jsdoc]{@link https://jsdoc.app/}.
 	});
 
 @example
-// Totem with a complete engine test endpoint:
+### Totem with a complete engine test endpoint:
 
 	var TOTEM = require("../totem").config({
 		"byType.": {
