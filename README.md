@@ -42,28 +42,25 @@ be freely interpretted and extended by the engine):
 
 ## Installation
 
-Clone **ATOMIC** from one of its repos:
+Clone **ATOMIC** and its dependencies from one of its REPOs:
 
-	git clone https://github.com/totemstan/atmoic
-	git clone https://sc.appdev.proj.coe/acmesds/atmoic
-	git clone https://gitlab.west.nga.ic.gov/acmesds/atmoic
+	git clone REPO/totemstan/atomic
+	git clone REPO/totemstan/enums
 
-## Manage 
+To configure and maintain **ENUMS**:
 
-	npm test [ ? || A1 || A2 || ... ]		# Unit test
-	npm run [ edit || start ]				# Configure environment
-	npm run [ prmprep || prmload ]			# Revise PRM
+	npm test [ ? | ... ]					# Unit test
+	npm run [ edit | start ]				# Configure environment
+	npm run [ prmprep | prmload ]			# Revise PRM
 
 ## Usage
 
 Configure and use **ATOMIC** like this:
 
 	var ATOMIC = require("atomic").config({
-			key: value, 						// set key
-			"key.key": value, 					// indexed set
-			"key.key.": value					// indexed append
-		}, function (err) {
-		console.log( err ? "something evil happended" : "Im running");
+		key: value, 						// set key
+		"key.key": value, 					// indexed set
+		"key.key.": value					// indexed append
 	});
 
 where its configuration keys (
@@ -76,7 +73,7 @@ follow the **ENUMS** deep copy conventions (
 [COE](https://sc.appdev.proj.coe/acmesds/enum) 
 [SBU](https://gitlab.west.nga.ic.gov/acmesds/enum)
 ).
-
+See the Program Reference for examples.
 
 ## Program Reference
 <details>
@@ -89,7 +86,7 @@ follow the **ENUMS** deep copy conventions (
 Provides cloud computing on python, js, cv, matlab, R, ... engines via web endpoints.  This module 
 documented in accordance with [jsdoc](https://jsdoc.app/).
 
-**Requires**: <code>module:[enums](https://github.com/totemstan/enums)</code>, <code>module:child\_process</code>, <code>module:fs</code>, <code>module:vm</code>, <code>module:pythonIF</code>, <code>module:opencvIF</code>, <code>module:RIF</code>  
+**Requires**: <code>module:[enums](https://github.com/totemstan/enums)</code>, <code>module:[child\_process](https://nodejs.org/docs/latest/api/)</code>, <code>module:[fs](https://nodejs.org/docs/latest/api/)</code>, <code>module:[vm](https://nodejs.org/docs/latest/api/)</code>, <code>module:[pythonIF](https://github.com/totemstan/atomic)</code>, <code>module:[opencvIF](https://github.com/totemstan/atomic)</code>, <code>module:[RIF](https://github.com/totemstan/atomic)</code>  
 **Author**: [ACMESDS](https://totemstan.github.io)
 
 ### Env Dependencies
