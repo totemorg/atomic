@@ -14,12 +14,12 @@ documented in accordance with [jsdoc]{@link https://jsdoc.app/}.
 
 @requires [enums](https://github.com/totemstan/enums)
 
-@requires child_process
-@requires fs
-@requires vm 
-@requires pythonIF
-@requires opencvIF
-@requires RIF
+@requires [child_process](https://nodejs.org/docs/latest/api/)
+@requires [fs](https://nodejs.org/docs/latest/api/)
+@requires [vm](https://nodejs.org/docs/latest/api/)
+@requires [pythonIF](https://github.com/totemstan/atomic) 
+@requires [opencvIF](https://github.com/totemstan/atomic) 
+@requires [RIF](https://github.com/totemstan/atomic) 
 
 @example
 A1 - Totem and Atomic Engine interfaces:
@@ -254,7 +254,7 @@ const
 	{ isWorker, isMaster, fork } = require("cluster"),
 	  
 	// Totem modules
-	{ Copy,Each,Log,Debug,isString,sqlThread } = require("../enums");
+	{ Copy,Each,Log,Start,isString,sqlThread } = require("./enums");
 
 const
 	{ 	Trace,
@@ -479,6 +479,7 @@ end
 						}
 				});
 			});
+			return ATOM;
 		},
 
 		flex: null,
@@ -1412,8 +1413,8 @@ end` ;
 			
 	};
 
-Debug("atomic", {
-	$: ATOM,
+Start("atomic", {
+	ctx: ATOM,
 	
 	A1: () => { 
 		var TOTEM = require("../totem");
