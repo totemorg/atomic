@@ -47,15 +47,16 @@ Clone **ATOMIC** and its dependencies from one of its REPOs:
 	git clone REPO/totemstan/atomic
 	git clone REPO/totemstan/enums
 
-To configure and maintain **ENUMS**:
+To start and manage **ATOMIC**:
 
-	npm test [ ? | ... ]					# Unit test
-	npm run [ edit | start ]				# Configure environment
-	npm run [ prmprep | prmload ]			# Revise PRM
+	npm run start [ ? | $ | ...]	# Unit test
+	npm run verminor				# Roll minor version
+	npm run vermajor				# Roll major version
+	npm run redoc					# Regen documentation
 
 ## Usage
 
-Configure and use **ATOMIC** like this:
+Acquire and optionally configure **ATOMIC** like this:
 
 	var ATOMIC = require("atomic").config({
 		key: value, 						// set key
