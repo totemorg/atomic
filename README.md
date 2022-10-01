@@ -1,4 +1,4 @@
-# ATOMIC [WWW](https://github.com/totemstan/atomic)  [COE](https://sc.appdev.proj.coe/acmesds/atomic)  [SBU](https://gitlab.west.nga.ic.gov/acmesds/atomic)
+# [ATOMIC](https://github.com/totem-man/atomic)
 
 **ATOMIC** provides cloud computing for python, js, cv, matlab, R, ... engines 
 via the following web endpoints:
@@ -44,8 +44,8 @@ be freely interpretted and extended by the engine):
 
 Clone **ATOMIC** and its dependencies from one of its REPOs:
 
-	git clone REPO/totemstan/atomic
-	git clone REPO/totemstan/enums
+	git clone REPO/totem-man/atomic
+	git clone REPO/totem-man/enums
 
 To start and manage **ATOMIC**:
 
@@ -64,17 +64,8 @@ Acquire and optionally configure **ATOMIC** like this:
 		"key.key.": value					// indexed append
 	});
 
-where its configuration keys (
-[WWW](http://totem.zapto.org/shares/prm/totem/index.html) 
-[COE](https://totem.west.ile.nga.ic.gov/shares/prm/totem/index.html) 
-[SBU](https://totem.nga.mil/shares/prm/totem/index.html)
-)
-follow the **ENUMS** deep copy conventions (
-[WWW](https://github.com/totemstan/enum) 
-[COE](https://sc.appdev.proj.coe/acmesds/enum) 
-[SBU](https://gitlab.west.nga.ic.gov/acmesds/enum)
-).
-See the Program Reference for examples.
+where configuration keys follow [ENUMS deep copy conventions](https://github.com/totem-man/enums)
+
 
 ## Program Reference
 <details>
@@ -481,31 +472,11 @@ Callback engine cb(ctx) with its state ctx primed with state from its ctx.Entry,
 ## Contacting, Contributing, Following
 
 Feel free to 
-* submit and status **TOTEM** issues (
-[WWW](http://totem.zapto.org/issues.view) 
-[COE](https://totem.west.ile.nga.ic.gov/issues.view) 
-[SBU](https://totem.nga.mil/issues.view)
-)  
-* contribute to **TOTEM** notebooks (
-[WWW](http://totem.zapto.org/shares/notebooks/) 
-[COE](https://totem.west.ile.nga.ic.gov/shares/notebooks/) 
-[SBU](https://totem.nga.mil/shares/notebooks/)
-)  
-* revise **TOTEM** requirements (
-[WWW](http://totem.zapto.org/reqts.view) 
-[COE](https://totem.west.ile.nga.ic.gov/reqts.view) 
-[SBU](https://totem.nga.mil/reqts.view), 
-)  
-* browse **TOTEM** holdings (
-[WWW](http://totem.zapto.org/) 
-[COE](https://totem.west.ile.nga.ic.gov/) 
-[SBU](https://totem.nga.mil/)
-)  
-* or follow **TOTEM** milestones (
-[WWW](http://totem.zapto.org/milestones.view) 
-[COE](https://totem.west.ile.nga.ic.gov/milestones.view) 
-[SBU](https://totem.nga.mil/milestones.view)
-).
+* submit and status [TOTEM issues](http://totem.hopto.org/issues.view) 
+* contribute to [TOTEM notebooks](http://totem.hopto.org/shares/notebooks/) 
+* revise [TOTEM requirements](http://totem.hopto.org/reqts.view) 
+* browse [TOTEM holdings](http://totem.hopto.org/) 
+* or follow [TOTEM milestones](http://totem.hopto.org/milestones.view) 
 
 
 * * *
