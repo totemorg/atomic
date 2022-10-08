@@ -40,15 +40,9 @@ be freely interpretted and extended by the engine):
 	status = 0	= Status code
 	value = 0	= Flow calculation
 
-## Installation
+## Manage
 
-Clone **ATOMIC** and its dependencies from one of its REPOs:
-
-	git clone REPO/totem-man/atomic
-	git clone REPO/totem-man/enums
-
-To start and manage **ATOMIC**:
-
+	npm install @totemstan/atomic	# install
 	npm run start [ ? | $ | ...]	# Unit test
 	npm run verminor				# Roll minor version
 	npm run vermajor				# Roll major version
