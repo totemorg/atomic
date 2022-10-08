@@ -267,9 +267,9 @@ const
 			
 		// engine interfaces
 			
-		python: require("pythonIF"),
-		//opencv: require("opencvIF"),
-		//R: require("RIF"),
+		python: require("./pythonIF"),
+		//opencv: require("./opencvIF"),
+		//R: require("./RIF"),
 		
 		// interprocess communications
 			

@@ -1,6 +1,6 @@
 var 
 	Log = console.log,
-	pythonIF = require("pythonIF"); // require('bindings')('pythonIF')
+	pythonIF = require("./pythonIF"); // require('bindings')('pythonIF')
 
 //Log(pythonIF("test1", "print 'you da man'\nprint locals()\n", [{ev:1}, {ev:2}] ) )
 Log(pythonIF("test2", "print 'you da man'\nprint locals()\n", {a: 1, b:2, c: ["hello","there"]} ) );

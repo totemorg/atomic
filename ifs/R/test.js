@@ -1,6 +1,6 @@
 var 
 	Log  = console.log,
-	RIF = require("RIF"); //require('bindings')('RIF');
+	RIF = require("./RIF"); //require('bindings')('RIF');
 
 var ctx = {a:10,b:11,c:20};
 				//[{ev:1}, {ev:2}] ) )

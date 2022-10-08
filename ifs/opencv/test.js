@@ -1,6 +1,6 @@
 var 
 	Log = console.log,
-	opencvIF = require("opencvIF") //require('bindings')('opencvIF')
+	opencvIF = require("./opencvIF") //require('bindings')('opencvIF')
 
 Log(opencvIF("init ports", "nada", {
 	output: {
