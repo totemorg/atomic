@@ -1,6 +1,6 @@
 {
   "name": "@totemorg/atomic",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "description": "Cloud compute for python, js, cv, matlab, R, etc engines",
   "main": "atomic.js",
   "scripts": {
@@ -25,7 +25,7 @@
   "author": "ACME Software Disposal Service",
   "license": "ISC",
   "dependencies": {
-    "@totemorg/enums": "^1.17.0",
+    "@totemorg/enums": "^1.21.0",
     "mathjs": "^6.2.5"
   }
 }
