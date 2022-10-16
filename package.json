@@ -1,6 +1,6 @@
 {
   "name": "@totemorg/atomic",
-  "version": "1.10.0",
+  "version": "2.0.0",
   "description": "Cloud compute for python, js, cv, matlab, R, etc engines",
   "main": "atomic.js",
   "scripts": {
