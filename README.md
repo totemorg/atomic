@@ -1,4 +1,4 @@
-# [ATOMIC](https://github.com/totem-man/atomic)
+# [ATOMIC](https://www.npmjs.com/package/@totemorg/atomic)
 
 **ATOMIC** provides cloud computing for python, js, cv, matlab, R, ... engines 
 via the following web endpoints:
@@ -42,7 +42,7 @@ be freely interpretted and extended by the engine):
 
 ## Manage
 
-	npm install @totemstan/atomic	# install
+	npm install @totemorg/atomic	# install
 	npm run start [ ? | $ | ...]	# Unit test
 	npm run verminor				# Roll minor version
 	npm run vermajor				# Roll major version
@@ -58,7 +58,7 @@ Acquire and optionally configure **ATOMIC** like this:
 		"key.key.": value					// indexed append
 	});
 
-where configuration keys follow [ENUMS deep copy conventions](https://github.com/totem-man/enums)
+where configuration keys follow [ENUMS deep copy conventions](https://www.npmjs.com/package/@totemorg/enums).
 
 
 ## Program Reference
