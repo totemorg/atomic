@@ -72,8 +72,8 @@ where configuration keys follow [ENUMS deep copy conventions](https://www.npmjs.
 Provides cloud computing on python, js, cv, matlab, R, ... engines via web endpoints.  This module 
 documented in accordance with [jsdoc](https://jsdoc.app/).
 
-**Requires**: <code>module:[enums](https://github.com/totemstan/enums)</code>, <code>module:[child\_process](https://nodejs.org/docs/latest/api/)</code>, <code>module:[fs](https://nodejs.org/docs/latest/api/)</code>, <code>module:[vm](https://nodejs.org/docs/latest/api/)</code>, <code>module:[pythonIF](https://github.com/totemstan/atomic)</code>, <code>module:[opencvIF](https://github.com/totemstan/atomic)</code>, <code>module:[RIF](https://github.com/totemstan/atomic)</code>  
-**Author**: [ACMESDS](https://totemstan.github.io)
+**Requires**: <code>module:[enums](https://github.com/totemorg/enums)</code>, <code>module:[child\_process](https://nodejs.org/docs/latest/api/)</code>, <code>module:[fs](https://nodejs.org/docs/latest/api/)</code>, <code>module:[vm](https://nodejs.org/docs/latest/api/)</code>, <code>module:[pythonIF](https://github.com/totemorg/atomic)</code>, <code>module:[opencvIF](https://github.com/totemorg/atomic)</code>, <code>module:[RIF](https://github.com/totemorg/atomic)</code>  
+**Author**: [ACMESDS](https://totemorg.github.io)
 
 ### Env Dependencies
 

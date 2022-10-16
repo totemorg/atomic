@@ -5,21 +5,21 @@ Provides cloud computing on python, js, cv, matlab, R, ... engines via web endpo
 documented in accordance with [jsdoc]{@link https://jsdoc.app/}.
 
 @module ATOMIC
-@author [ACMESDS](https://totemstan.github.io)
+@author [ACMESDS](https://totemorg.github.io)
 
 ### Env Dependencies
 
 	HASGPU = 1|0
 	HASCAFFE = 1|0
 
-@requires [enums](https://github.com/totemstan/enums)
+@requires [enums](https://github.com/totemorg/enums)
 
 @requires [child_process](https://nodejs.org/docs/latest/api/)
 @requires [fs](https://nodejs.org/docs/latest/api/)
 @requires [vm](https://nodejs.org/docs/latest/api/)
-@requires [pythonIF](https://github.com/totemstan/atomic) 
-@requires [opencvIF](https://github.com/totemstan/atomic) 
-@requires [RIF](https://github.com/totemstan/atomic) 
+@requires [pythonIF](https://github.com/totemorg/atomic) 
+@requires [opencvIF](https://github.com/totemorg/atomic) 
+@requires [RIF](https://github.com/totemorg/atomic) 
 
 @example
 ### Totem and Atomic Engine interfaces:
