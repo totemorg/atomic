@@ -254,7 +254,7 @@ const
 	{ isWorker, isMaster, fork } = require("cluster"),
 	  
 	// Totem modules
-	{ Copy,Each,Log,Start,isString,sqlThread } = require("./enums");
+	{ Copy,Each,Log,Start,isString,sqlThread } = require("@totemorg/enums");
 
 const
 	{ 	Trace,

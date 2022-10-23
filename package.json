@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@git.geointapps.org:acme/atomic.git"
+    "url": "git@git.geointapps.org:totemorg/atomic.git"
   },
   "keywords": [
     "cloud compute",
@@ -22,10 +22,10 @@
     "r",
     "opencv"
   ],
-  "author": "ACME Software Disposal Service",
+  "author": "totemorg Software Disposal Service",
   "license": "ISC",
   "dependencies": {
-    "@totemorg/enums": "^1.21.0",
+    "@totemorg/enums": "^1.27.0",
     "mathjs": "^6.2.5"
   }
 }
